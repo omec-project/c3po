@@ -1,0 +1,17 @@
+{
+ "common": {
+    "fdcfg": "conf/pcef.conf",
+    "originhost": "pcef.test3gpp.net",
+    "originrealm": "test3gpp.net"
+ },
+ "pcef": {
+    "pcrfhost": "pcrf.test3gpp.net",
+    "pcrfrealm": "test3gpp.net",
+    "casshost": "10.31.14.79",
+    "casskeyspace": "pcrf",
+    "logsize": 20,
+    "lognumber": 5,
+    "logname": "logs/pcef.log",
+    "logqsize": 8192
+ }
+}

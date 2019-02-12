@@ -1,0 +1,32 @@
+{
+ "common": {
+  "fdcfg": "conf/pcrf.conf",
+  "originhost": "pcrf.test3gpp.net",
+  "originrealm": "test3gpp.net"
+ },
+ "pcrf": {
+  "hsshost": "hss.localdomain",
+  "hssrealm": "localdomain",
+  "casshost": "192.168.33.10",
+  "casskeyspace": "pcrf",
+  "logsize": 20,
+  "lognumber": 5,
+  "logname": "logs/c3popcrf.log",
+  "logqsize": 8192,
+  "selfredirect": false,
+  "enableruletimers": true,
+  "rulecallbackport": 9081,
+  "rulecallbackthreads": 1,
+  "rulecallbackurl": "http://192.168.33.18:9081/ruleTimer",
+  "chronosapiurl": "http://192.168.33.17:7253",
+  "statlogsize": 20,
+  "statlognumber": 5,
+  "statlogname": "logs/pcrf_stat.log",
+  "auditlogsize": 20,
+  "auditlognumber": 5,
+  "auditlogname": "logs/pcrf_audit.log",
+  "statfreq": 2000,
+  "ossport" : 9082,
+  "ossfile" : "conf/oss.json"
+ }
+}

@@ -1,0 +1,21 @@
+[submodule "modules/c-ares"]
+	path = modules/c-ares
+	url = https://github.com/c-ares/c-ares.git
+[submodule "modules/rapidjson"]
+	path = modules/rapidjson
+	url = https://github.com/miloyip/rapidjson.git
+[submodule "modules/cpp-driver"]
+	path = modules/cpp-driver
+	url = https://github.com/datastax/cpp-driver.git
+[submodule "modules/spdlog"]
+	path = modules/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "modules/freeDiameter"]
+	path = modules/freeDiameter
+	url = https://gerrit.opencord.org/freeDiameter-old
+[submodule "modules/pistache"]
+	path = modules/pistache
+	url = https://github.com/oktal/pistache.git
+[submodule "modules/linux-sgx"]
+	path = modules/linux-sgx
+	url = https://github.com/intel/linux-sgx

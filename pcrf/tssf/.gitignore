@@ -1,0 +1,7 @@
+build
+bin/tssf
+gmon.out
+conf/*pem
+conf/demoCA
+out.txt
+logs

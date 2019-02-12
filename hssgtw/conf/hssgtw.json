@@ -1,0 +1,14 @@
+{"common": {
+ },
+ "hssgtw": {
+    "gtwhost": "*",
+    "gtwport" : 9081,
+    "casssrv": "10.31.14.79",
+    "cassusr": "root",
+    "casspwd": "root",
+    "cassdb" : "oai_db",
+    "userschema" : "./conf/user-imsi-schema.json",
+    "hss_target_host" : "localhost",
+    "hss_target_port" : 9080
+ }
+}

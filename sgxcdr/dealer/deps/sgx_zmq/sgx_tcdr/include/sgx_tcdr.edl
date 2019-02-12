@@ -1,0 +1,49 @@
+/* sgx_tcdr.edl - Top EDL file. */
+
+enclave {
+	from "/opt/intel/sgxsdk/include/sgx_tprotected_fs.edl" 
+			import u_sgxprotectedfs_exclusive_file_open,
+			u_sgxprotectedfs_check_if_file_exists, u_sgxprotectedfs_fread_node,
+			u_sgxprotectedfs_fwrite_node, u_sgxprotectedfs_fclose,
+			u_sgxprotectedfs_fflush, u_sgxprotectedfs_remove,
+			u_sgxprotectedfs_recovery_file_open,
+			u_sgxprotectedfs_fwrite_recovery_node,
+			u_sgxprotectedfs_do_file_recovery;
+    
+	untrusted {
+    
+		void* u_sgxcdr_connect_cdr_mq([in, string] const char* host,
+				uint16_t port, uint8_t pattern);
+    	
+		int32_t u_sgxcdr_get_cdr_message([user_check]void* handle,
+				[out, size=buffer_size] uint8_t* buffer, uint32_t buffer_size);
+
+		int32_t u_sgxcdr_send_cdr_message([user_check] void* handle,
+				[in, size=buffer_size] uint8_t* buffer, uint32_t buffer_size);
+    	
+		int32_t u_sgxcdr_close_cdr_mq([user_check] void* handle);
+
+		void* u_sgxcdr_connect_to_zmq_router([in, string] const char* host,
+				uint16_t port, uint8_t mode,
+				[in, string] const char* identity, [out] int8_t* err,
+				[user_check] void * context);
+
+		int32_t u_sgxcdr_send_zmq_router_socket([user_check] void* handle,
+				[in, size=buffer_size] uint8_t* buffer, uint32_t buffer_size);
+
+		void u_sgxcdr_zmq_router_read_poll([user_check] void* handle,
+				uint32_t msec, [out] int8_t* result,
+				[out, size=buffer_size] uint8_t* buffer, uint32_t buffer_size);
+
+		void u_sgxcdr_recv_zmq_router_socket([user_check]void* handle,
+				[out, size=buffer_size] uint8_t* buffer, uint32_t buffer_size,
+				[out] int32_t* actual_read);
+
+		int32_t u_sgxcdr_close_zmq_router([user_check] void* handle,
+				[user_check] void * context);
+    };
+
+	trusted {
+		public int ecall_sgx_tcdr();
+    };
+};

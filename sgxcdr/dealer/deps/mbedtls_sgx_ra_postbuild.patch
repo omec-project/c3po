@@ -1,0 +1,35 @@
+--- trusted/mbedtls-2.6.0/library-2.15.1/net_sockets.c	2018-12-17 19:42:44.707733126 -0800
++++ trusted/mbedtls-2.6.0/library/net_sockets.c	2018-12-17 21:14:10.931754954 -0800
+@@ -24,26 +24,6 @@
+  * Harmless on other platforms. */
+ #define _POSIX_C_SOURCE 200112L
+ 
+-#if !defined(MBEDTLS_CONFIG_FILE)
+-#include "mbedtls/config.h"
+-#else
+-#include MBEDTLS_CONFIG_FILE
+-#endif
+-
+-#if defined(MBEDTLS_NET_C)
+-
+-#if !defined(unix) && !defined(__unix__) && !defined(__unix) && \
+-    !defined(__APPLE__) && !defined(_WIN32) && !defined(__QNXNTO__) && \
+-    !defined(__HAIKU__)
+-#error "This module only works on Unix and Windows, see MBEDTLS_NET_C in config.h"
+-#endif
+-
+-#if defined(MBEDTLS_PLATFORM_C)
+-#include "mbedtls/platform.h"
+-#else
+-#include <stdlib.h>
+-#endif
+-
+ #include "mbedtls/net_sockets.h"
+ 
+ #include <string.h>
+@@ -664,5 +644,3 @@
+ 
+     ctx->fd = -1;
+ }
+-
+-#endif /* MBEDTLS_NET_C */

@@ -1,0 +1,14 @@
+build
+cert_mme/*
+demoCA/*
+bin/ctf
+gmon.out
+out
+test.csv
+tracktest
+tracktest2
+conf/*pem
+conf/demoCA
+test/archive/
+test/data/
+test/tracking/

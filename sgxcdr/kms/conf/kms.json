@@ -1,0 +1,8 @@
+{
+    "kms": {
+        "storepath": "./store",
+        "port": "8443",
+        "maxconnections": "16"
+    }
+}
+

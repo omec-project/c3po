@@ -1,0 +1,7 @@
+modules/libmemcached-1.0.18/
+.DS_Store
+.cproject
+.project
+.settings/
+modules/.DS_Store
+.agree

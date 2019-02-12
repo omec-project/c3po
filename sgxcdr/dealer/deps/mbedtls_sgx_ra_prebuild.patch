@@ -1,0 +1,338 @@
+diff -Naur library-2.15.1/rsa.c library/rsa.c
+--- trusted/mbedtls-2.6.0/library-2.15.1/rsa.c        2018-12-14 01:08:52.794435987 -0800
++++ trusted/mbedtls-2.6.0/library/rsa.c       2018-12-13 08:39:30.134199809 -0800
+@@ -51,6 +51,7 @@
+ #include "mbedtls/platform_util.h"
+
+ #include <string.h>
++#include "sgx_trts.h"
+
+ #if defined(MBEDTLS_PKCS1_V21)
+ #include "mbedtls/md.h"
+@@ -2258,7 +2259,8 @@
+         rng_state  = NULL;
+
+     for( i = 0; i < len; ++i )
+-        output[i] = rand();
++        sgx_read_rand(&output[i],1);
++        //output[i] = rand();
+ #else
+     if( rng_state != NULL )
+         rng_state = NULL;
+diff -Naur include-2.15.1/glue.h include/glue.h
+--- trusted/mbedtls-2.6.0/include-2.15.1/glue.h	1969-12-31 16:00:00.000000000 -0800
++++ trusted/mbedtls-2.6.0/include/glue.h	2018-12-13 05:14:47.218150940 -0800
+@@ -0,0 +1,35 @@
++/*
++ * (C) Copyright 2016 Fan Zhang (bl4ck5unxx@gmail.com)
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ *
++ * Authors:
++ *     Fan Zhang <bl4ck5unxx@gmail.com>
++ */
++
++#pragma once
++
++#define _vsnprintf vsnprintf
++#include <stdio.h>      /* vsnprintf */
++
++#if defined(__cplusplus)
++extern "C" {
++#endif
++
++int mbedtls_sgx_drbg_random( void *p_rng, unsigned char *output, size_t out_len );
++int mbedtls_hardware_poll(void *data, unsigned char *output, size_t len, size_t *olen );
++int printf_sgx(const char *fmt, ...);
++
++#if defined(__cplusplus)
++}
++#endif
+diff -Naur include-2.15.1/mbedtls/config.h include/mbedtls/config.h
+--- trusted/mbedtls-2.6.0/include-2.15.1/mbedtls/config.h	2018-12-14 01:09:19.422436093 -0800
++++ trusted/mbedtls-2.6.0/include/mbedtls/config.h	2018-12-13 09:02:08.034205211 -0800
+@@ -32,6 +32,7 @@
+ #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_DEPRECATE)
+ #define _CRT_SECURE_NO_DEPRECATE 1
+ #endif
++#include "glue.h"
+ 
+ /**
+  * \name SECTION: System support
+@@ -132,7 +133,7 @@
+  *
+  * Comment if your system does not support time functions
+  */
+-#define MBEDTLS_HAVE_TIME
++#undef MBEDTLS_HAVE_TIME
+ 
+ /**
+  * \def MBEDTLS_HAVE_TIME_DATE
+@@ -153,7 +154,7 @@
+  * mbedtls_platform_gmtime_r() at compile-time by using the macro
+  * MBEDTLS_PLATFORM_GMTIME_R_ALT.
+  */
+-#define MBEDTLS_HAVE_TIME_DATE
++#undef MBEDTLS_HAVE_TIME_DATE
+ 
+ /**
+  * \def MBEDTLS_PLATFORM_MEMORY
+@@ -476,7 +477,7 @@
+  *
+  * Uncomment to use your own hardware entropy collector.
+  */
+-//#define MBEDTLS_ENTROPY_HARDWARE_ALT
++#define MBEDTLS_ENTROPY_HARDWARE_ALT
+ 
+ /**
+  * \def MBEDTLS_AES_ROM_TABLES
+@@ -1033,7 +1034,7 @@
+  *
+  * Enable functions that use the filesystem.
+  */
+-#define MBEDTLS_FS_IO
++#undef MBEDTLS_FS_IO
+ 
+ /**
+  * \def MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
+@@ -1057,7 +1058,7 @@
+  *
+  * Uncomment this macro to disable the built-in platform entropy functions.
+  */
+-//#define MBEDTLS_NO_PLATFORM_ENTROPY
++#define MBEDTLS_NO_PLATFORM_ENTROPY
+ 
+ /**
+  * \def MBEDTLS_ENTROPY_FORCE_SHA256
+@@ -1717,7 +1718,7 @@
+  *
+  * This modules adds support for the AES-NI instructions on x86-64
+  */
+-#define MBEDTLS_AESNI_C
++#undef MBEDTLS_AESNI_C
+ 
+ /**
+  * \def MBEDTLS_AES_C
+@@ -2416,7 +2417,7 @@
+  *
+  * This module provides networking routines.
+  */
+-#define MBEDTLS_NET_C
++#undef MBEDTLS_NET_C
+ 
+ /**
+  * \def MBEDTLS_OID_C
+@@ -2721,7 +2722,7 @@
+  *
+  * Requires: MBEDTLS_SSL_CACHE_C
+  */
+-#define MBEDTLS_SSL_CACHE_C
++#undef MBEDTLS_SSL_CACHE_C
+ 
+ /**
+  * \def MBEDTLS_SSL_COOKIE_C
+@@ -2832,7 +2833,7 @@
+  *
+  * This module is used by the HAVEGE random number generator.
+  */
+-#define MBEDTLS_TIMING_C
++#undef MBEDTLS_TIMING_C
+ 
+ /**
+  * \def MBEDTLS_VERSION_C
+@@ -3027,7 +3028,7 @@
+ //#define MBEDTLS_PLATFORM_TIME_MACRO            time /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
+ //#define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
+ //#define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
+-//#define MBEDTLS_PLATFORM_PRINTF_MACRO        printf /**< Default printf macro to use, can be undefined */
++#define MBEDTLS_PLATFORM_PRINTF_MACRO        printf_sgx /**< Default printf macro to use, can be undefined */
+ /* Note: your snprintf must correclty zero-terminate the buffer! */
+ //#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    snprintf /**< Default snprintf macro to use, can be undefined */
+ //#define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
+diff -Naur include-2.15.1/mbedtls/net_sockets.h include/mbedtls/net_sockets.h
+--- trusted/mbedtls-2.6.0/include-2.15.1/mbedtls/net_sockets.h	2018-12-14 01:09:19.426436093 -0800
++++ trusted/mbedtls-2.6.0/include/mbedtls/net_sockets.h	2018-12-13 05:08:47.674149510 -0800
+@@ -84,7 +84,7 @@
+  * (eg two file descriptors for combined IPv4 + IPv6 support, or additional
+  * structures for hand-made UDP demultiplexing).
+  */
+-typedef struct mbedtls_net_context
++typedef struct
+ {
+     int fd;             /**< The underlying file descriptor                 */
+ }
+@@ -96,7 +96,7 @@
+  *
+  * \param ctx      Context to initialize
+  */
+-void mbedtls_net_init( mbedtls_net_context *ctx );
++void mbedtls_net_init_ocall( mbedtls_net_context *ctx );
+ 
+ /**
+  * \brief          Initiate a connection with host:port in the given protocol
+@@ -113,7 +113,7 @@
+  *
+  * \note           Sets the socket in connected mode even with UDP.
+  */
+-int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host, const char *port, int proto );
++int mbedtls_net_connect_ocall( mbedtls_net_context *ctx, const char *host, const char *port, int proto );
+ 
+ /**
+  * \brief          Create a receiving socket on bind_ip:port in the chosen
+@@ -132,17 +132,16 @@
+  * \note           Regardless of the protocol, opens the sockets and binds it.
+  *                 In addition, make the socket listening if protocol is TCP.
+  */
+-int mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char *port, int proto );
++int mbedtls_net_bind_ocall( mbedtls_net_context *ctx, const char *bind_ip, const char *port, int proto );
+ 
+ /**
+  * \brief           Accept a connection from a remote client
+  *
+  * \param bind_ctx  Relevant socket
+  * \param client_ctx Will contain the connected client socket
+- * \param client_ip Will contain the client IP address, can be NULL
++ * \param client_ip Will contain the client IP address
+  * \param buf_size  Size of the client_ip buffer
+- * \param ip_len    Will receive the size of the client IP written,
+- *                  can be NULL if client_ip is null
++ * \param ip_len    Will receive the size of the client IP written
+  *
+  * \return          0 if successful, or
+  *                  MBEDTLS_ERR_NET_ACCEPT_FAILED, or
+@@ -150,41 +149,18 @@
+  *                  MBEDTLS_ERR_SSL_WANT_READ if bind_fd was set to
+  *                  non-blocking and accept() would block.
+  */
+-int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
++int mbedtls_net_accept_ocall( mbedtls_net_context *bind_ctx,
+                         mbedtls_net_context *client_ctx,
+                         void *client_ip, size_t buf_size, size_t *ip_len );
+ 
+ /**
+- * \brief          Check and wait for the context to be ready for read/write
+- *
+- * \param ctx      Socket to check
+- * \param rw       Bitflag composed of MBEDTLS_NET_POLL_READ and
+- *                 MBEDTLS_NET_POLL_WRITE specifying the events
+- *                 to wait for:
+- *                 - If MBEDTLS_NET_POLL_READ is set, the function
+- *                   will return as soon as the net context is available
+- *                   for reading.
+- *                 - If MBEDTLS_NET_POLL_WRITE is set, the function
+- *                   will return as soon as the net context is available
+- *                   for writing.
+- * \param timeout  Maximal amount of time to wait before returning,
+- *                 in milliseconds. If \c timeout is zero, the
+- *                 function returns immediately. If \c timeout is
+- *                 -1u, the function blocks potentially indefinitely.
+- *
+- * \return         Bitmask composed of MBEDTLS_NET_POLL_READ/WRITE
+- *                 on success or timeout, or a negative return code otherwise.
+- */
+-int mbedtls_net_poll( mbedtls_net_context *ctx, uint32_t rw, uint32_t timeout );
+-
+-/**
+  * \brief          Set the socket blocking
+  *
+  * \param ctx      Socket to set
+  *
+  * \return         0 if successful, or a non-zero error code
+  */
+-int mbedtls_net_set_block( mbedtls_net_context *ctx );
++int mbedtls_net_set_block_ocall( mbedtls_net_context *ctx );
+ 
+ /**
+  * \brief          Set the socket non-blocking
+@@ -193,7 +169,7 @@
+  *
+  * \return         0 if successful, or a non-zero error code
+  */
+-int mbedtls_net_set_nonblock( mbedtls_net_context *ctx );
++int mbedtls_net_set_nonblock_ocall( mbedtls_net_context *ctx );
+ 
+ /**
+  * \brief          Portable usleep helper
+@@ -203,7 +179,7 @@
+  * \note           Real amount of time slept will not be less than
+  *                 select()'s timeout granularity (typically, 10ms).
+  */
+-void mbedtls_net_usleep( unsigned long usec );
++void mbedtls_net_usleep_ocall( unsigned long usec );
+ 
+ /**
+  * \brief          Read at most 'len' characters. If no error occurs,
+@@ -217,7 +193,7 @@
+  *                 or a non-zero error code; with a non-blocking socket,
+  *                 MBEDTLS_ERR_SSL_WANT_READ indicates read() would block.
+  */
+-int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len );
++int mbedtls_net_recv_ocall( void *ctx, unsigned char *buf, size_t len );
+ 
+ /**
+  * \brief          Write at most 'len' characters. If no error occurs,
+@@ -231,7 +207,7 @@
+  *                 or a non-zero error code; with a non-blocking socket,
+  *                 MBEDTLS_ERR_SSL_WANT_WRITE indicates write() would block.
+  */
+-int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len );
++int mbedtls_net_send_ocall( void *ctx, const unsigned char *buf, size_t len );
+ 
+ /**
+  * \brief          Read at most 'len' characters, blocking for at most
+@@ -254,7 +230,7 @@
+  *                 non-blocking. Handling timeouts with non-blocking reads
+  *                 requires a different strategy.
+  */
+-int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
++int mbedtls_net_recv_timeout_ocall( void *ctx, unsigned char *buf, size_t len,
+                       uint32_t timeout );
+ 
+ /**
+@@ -262,7 +238,7 @@
+  *
+  * \param ctx      The context to free
+  */
+-void mbedtls_net_free( mbedtls_net_context *ctx );
++void mbedtls_net_free_ocall( mbedtls_net_context *ctx );
+ 
+ #ifdef __cplusplus
+ }
+--- trusted/mbedtls-2.6.0/include-2.15.1/CMakeLists.txt	2018-12-14 06:23:55.634511193 -0800
++++ trusted/mbedtls-2.6.0/include/CMakeLists.txt	2018-03-26 20:35:12.000000000 -0700
+@@ -4,13 +4,8 @@
+ 
+     file(GLOB headers "mbedtls/*.h")
+ 
+-    install(FILES ${headers}
++    install(FILES ${headers} glue.h
+         DESTINATION include/mbedtls
+         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+ 
+ endif(INSTALL_MBEDTLS_HEADERS)
+-
+-# Make config.h available in an out-of-source build. ssl-opt.sh requires it.
+-if (NOT ${CMAKE_CURRENT_BINARY_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+-    link_to_source(mbedtls)
+-endif()
+--- trusted/mbedtls-2.6.0/library-2.15.1/x509write_crt.c	2018-12-17 19:42:44.711733126 -0800
++++ trusted/mbedtls-2.6.0/library/x509write_crt.c	2018-12-17 21:07:34.163753375 -0800
+@@ -304,7 +304,7 @@
+     unsigned char *c, *c2;
+     unsigned char hash[64];
+     unsigned char sig[MBEDTLS_MPI_MAX_SIZE];
+-    unsigned char tmp_buf[2048];
++    unsigned char tmp_buf[4*2048];
+     size_t sub_len = 0, pub_len = 0, sig_and_oid_len = 0, sig_len;
+     size_t len = 0;
+     mbedtls_pk_type_t pk_alg;

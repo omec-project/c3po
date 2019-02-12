@@ -1,0 +1,218 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://example.com/example.json",
+  "type": "object",
+  "properties": {
+    "imsi": {
+      "id": "/properties/imsi",
+      "type": "string",
+      "title": "The Imsi Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "access_restriction": {
+      "id": "/properties/access_restriction",
+      "type": ["integer", "null"],
+      "title": "The Access_restriction Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "idmmeidentity": {
+      "id": "/properties/idmmeidentity",
+      "type": ["integer", "null"],
+      "title": "The Idmmeidentity Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "imei": {
+      "id": "/properties/imei",
+      "type": ["string", "null"],
+      "title": "The Imei Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "imei_sv": {
+      "id": "/properties/imei_sv",
+      "type": ["string", "null"],
+      "title": "The Imei_sv Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "key": {
+      "id": "/properties/key",
+      "type": ["string", "null"],
+      "title": "The Key Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "lipa_permissions": {
+      "id": "/properties/lipa_permissions",
+      "type": ["string", "null"],
+      "title": "The Lipa_permissions Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "mme_cap": {
+      "id": "/properties/mme_cap",
+      "type": ["integer", "null"],
+      "title": "The Mme_cap Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "mmehost": {
+      "id": "/properties/mmehost",
+      "type": ["string", "null"],
+      "title": "The Mmehost Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "mmeidentity_idmmeidentity": {
+      "id": "/properties/mmeidentity_idmmeidentity",
+      "type": ["integer", "null"],
+      "title": "The Mmeidentity_idmmeidentity Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "mmerealm": {
+      "id": "/properties/mmerealm",
+      "type": ["string", "null"],
+      "title": "The Mmerealm Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "ms_ps_status": {
+      "id": "/properties/ms_ps_status",
+      "type": ["string", "null"],
+      "title": "The Ms_ps_status Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "msisdn": {
+      "id": "/properties/msisdn",
+      "type": ["integer", "null"],
+      "title": "The Msisdn Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "niddvalidity": {
+      "id": "/properties/niddvalidity",
+      "type": ["string", "null"],
+      "title": "The Niddvalidity Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "nir_dest_host": {
+      "id": "/properties/nir_dest_host",
+      "type": ["string", "null"],
+      "title": "The Nir_dest_host Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "nir_dest_realm": {
+      "id": "/properties/nir_dest_realm",
+      "type": ["string", "null"],
+      "title": "The Nir_dest_realm Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "opc": {
+      "id": "/properties/opc",
+      "type": ["string", "null"],
+      "title": "The Opc Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "pgw_id": {
+      "id": "/properties/pgw_id",
+      "type": ["integer", "null"],
+      "title": "The Pgw_id Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "rand": {
+      "id": "/properties/rand",
+      "type": ["string", "null"],
+      "title": "The Rand Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "rfsp_index": {
+      "id": "/properties/rfsp_index",
+      "type": ["integer", "null"],
+      "title": "The Rfsp_index Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "sqn": {
+      "id": "/properties/sqn",
+      "type": ["integer", "null"],
+      "title": "The Sqn Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "subscription_data": {
+      "id": "/properties/subscription_data",
+      "type": ["string", "null"],
+      "title": "The Subscription_data Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "ue_reachability": {
+      "id": "/properties/ue_reachability",
+      "type": ["integer", "null"],
+      "title": "The Ue_reachability Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "urrp_mme": {
+      "id": "/properties/urrp_mme",
+      "type": ["integer", "null"],
+      "title": "The Urrp_mme Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": 0
+    },
+    "user_identifier": {
+      "id": "/properties/user_identifier",
+      "type": ["string", "null"],
+      "title": "The User_identifier Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    },
+    "visited_plmnid": {
+      "id": "/properties/visited_plmnid",
+      "type": ["string", "null"],
+      "title": "The Visited_plmnid Schema.",
+      "description": "An explanation about the purpose of this instance.",
+      "default": ""
+    }
+  },
+  "required": [
+    "imsi",    
+    "access_restriction",
+    "idmmeidentity",
+    "imei",
+    "imei_sv",
+    "key",
+    "lipa_permissions",
+    "mme_cap",
+    "mmehost",
+    "mmeidentity_idmmeidentity",
+    "mmerealm",
+    "ms_ps_status",
+    "msisdn",
+    "niddvalidity",
+    "nir_dest_host",
+    "nir_dest_realm",
+    "opc",
+    "pgw_id",
+    "rand",
+    "rfsp_index",
+    "sqn",
+    "subscription_data",
+    "ue_reachability",
+    "urrp_mme",
+    "user_identifier",
+    "visited_plmnid"
+  ]
+}

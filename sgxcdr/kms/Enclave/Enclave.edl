@@ -1,0 +1,35 @@
+enclave {
+	from "/opt/intel/sgxsdk/include/sgx_tprotected_fs.edl" 
+			import u_sgxprotectedfs_exclusive_file_open,
+			u_sgxprotectedfs_check_if_file_exists, u_sgxprotectedfs_fread_node,
+			u_sgxprotectedfs_fwrite_node, u_sgxprotectedfs_fclose,
+			u_sgxprotectedfs_fflush, u_sgxprotectedfs_remove,
+			u_sgxprotectedfs_recovery_file_open,
+			u_sgxprotectedfs_fwrite_recovery_node,
+			u_sgxprotectedfs_do_file_recovery;
+			
+    from "mbedtls_sgx.edl" import *;
+    from "sgx_tstdc.edl" import *;
+    include "ssl_context.h"
+    include "sgx_utils.h"
+
+    from "sgx_tae_service.edl" import create_session_ocall, exchange_report_ocall, close_session_ocall, invoke_service_ocall;
+
+    include "ra.h"
+
+    /* from "../deps/sgx_zmq/sgx_tcdr/include/sgx_tcdr.edl" import *; */
+    trusted {
+        /* define ECALLs here. */
+        public void ssl_conn_init([in,out] enclave_params_t *params);
+        public void ssl_conn_teardown(void);
+        public void ssl_conn_handle(long int thread_id, [in,out] thread_info_t* thread_info);
+    };
+
+    untrusted {
+        /* define OCALLs here. */
+        void ocall_sgx_init_quote([out] sgx_target_info_t* target_info);
+        void ocall_remote_attestation([in] sgx_report_t* report,
+                                      [out] attestation_verification_report_t* attn_report
+                                      );
+    };                            
+};

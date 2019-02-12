@@ -1,0 +1,15 @@
+{
+ "common": {
+    "fdcfg": "conf/sms.conf",
+    "originhost": "smsrouter.test3gpp.net",
+    "originrealm": "test3gpp.net"
+ },
+ "smsrouter": {
+    "hsshost": "hss.openair4G.eur",
+    "hssrealm": "openair4G.eur",
+    "logsize": 20,
+    "lognumber": 5,
+    "logname": "logs/pcef.log",
+    "logqsize": 8192
+ }
+}

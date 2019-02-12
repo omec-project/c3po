@@ -1,0 +1,5 @@
+build
+bin/hss
+conf/*pem
+conf/demoCA
+out.txt

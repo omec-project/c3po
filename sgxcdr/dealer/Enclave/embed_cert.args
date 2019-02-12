@@ -1,0 +1,5 @@
+-c ./certs
+-e 36fb2eccd79ef59f72aeb806deb7052c38a1f75620f8fc8d947d855d638fd369 
+-s 63ef969cbc34ee465f277cd3c27e9b3c681d743e455f899daced1b3cf85ceb8f
+-i 0
+-f ca_bundle.h

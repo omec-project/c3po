@@ -1,0 +1,11 @@
+Release Notes
+
+MME
+   - created "clean" bash script
+   - combinec "bldmme" and "bldsec" into "build" bash script
+   - Added NOLOG and PERFORMANCE_TIMING arguments to "build" bash script
+     which cause the NOLOG and PERFORMANCE_TIMING code level defines to
+     be set.
+
+HSSSEC
+   - added NODEBUG compile option to suppress runtime debug messages

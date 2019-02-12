@@ -1,0 +1,37 @@
+{"common": {
+    "fdcfg": "conf/hss.conf",
+    "originhost": "hss.openair4G.eur",
+    "originrealm": "openair4G.eur"
+ },
+ "hss": {
+    "gtwhost": "*",
+    "gtwport" : 9080,
+    "restport" : 9081,
+    "ossport" : 9082,
+    "casssrv": "192.168.33.10",
+    "cassusr": "root",
+    "casspwd": "root",
+    "cassdb" : "vhss",
+    "casscoreconnections" : 2,
+    "cassmaxconnections" : 8,
+    "cassioqueuesize" : 32768,
+    "cassiothreads" : 2,
+    "randv"  : true,
+    "optkey" : "63bfa50ee6523365ff14c1f45f88737d",
+    "reloadkey"  : false,
+    "logsize": 20,
+    "lognumber": 5,
+    "logname": "logs/hss.log",
+    "logqsize": 8192,
+    "statlogsize": 20,
+    "statlognumber": 5,
+    "statlogname": "logs/hss_stat.log",
+    "auditlogsize": 20,
+    "auditlognumber": 5,
+    "auditlogname": "logs/hss_audit.log",
+    "statfreq": 2000,
+    "numworkers": 4,
+    "concurrent": 10,
+    "ossfile": "conf/oss.json"
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "common": {
+    "fdcfg": "conf/sms.conf",
+    "originhost": "hssperf.localdomain",
+    "originrealm": "localdomain"
+ },
+ "hssperf": {
+    "logsize": 20,
+    "lognumber": 5,
+    "logname": "logs/hssperf.log",
+    "logqsize": 8192
+ }
+}
