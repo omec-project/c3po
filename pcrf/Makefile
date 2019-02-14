@@ -21,7 +21,7 @@ LIBS := \
  -lcassandra \
  -lmemcached \
  -lrt \
- -lpistache
+ -l:libpistache.a
  
 INCS := \
  -I ./include \
