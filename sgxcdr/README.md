@@ -4,7 +4,7 @@
 
 DPN ---> SGX Dealer-In ----> Router-IN ------> Router-Out -----> Dealer-Out ----> CTF
                                  Router Monitoring
-										
+
 ````
 
 
@@ -69,7 +69,7 @@ E. Run this command again to check for the MRENCALVE and MRSIGNER for dealer-out
 # ./dealer -j conf/dealer.json -x
 ````
 
-F. KMS Set up 
+F. KMS Set up
 Go to clone path cd c3po/sgxcdr/kms
 
 Set the MRENCLAVE and MRSIGNER of dealer-in (or dealer-out) in Enclave/ca_bundle.h file.
@@ -77,18 +77,18 @@ Here, the structure array “const EnclaveMeasurements dealerMeasurements[]” s
 
 ````
 
-{                        
+{
         "9525fc227fde387fxxxxxx...xxxx
         "63ef969cbc34ee46xxxxxx...xxxx
-        0,               
-        0                
-},                       
-{                        
-        "",              
-        "",              
-        0,               
-        0                
-},                       
+        0,
+        0
+},
+{
+        "",
+        "",
+        0,
+        0
+},
 ````
 
 Set the desired configuration in conf/kms.json (MRENCLAVE and MRSIGNER)
@@ -141,13 +141,13 @@ O.How to start the set up.
 
 Follow the below sequence to the executables:
 
-cdf: The command for running cdf is 
+cdf: The command for running cdf is
 
 ````
 # ./bin/cdf -f conf/cdf.conf
 ````
 
-ctf : The command for running ctf is 
+ctf : The command for running ctf is
 
 ````
 # ./bin/ctf -j conf/ctf.json
@@ -171,13 +171,13 @@ Router Out:
 #	python out_queue_router.py
 ````
 
-KMS: 
+KMS:
 
 ````
 # ./kms -j conf/kms.json
 ````
 
-Dealer In: 
+Dealer In:
 
 ````
 # ./dealer -j conf/dealer.json
@@ -205,4 +205,9 @@ a. CDR encryption keys obtained from KMS are not sealed/saved
 b. Only one instance of KMS is supported, however multiple KMS
    instances (with a cluster configuration) required for high
    availability
-
+c. CDR records sent to SGX Dealer-in is buffered in SGX Dealer-in if ZMQ
+   Router-in is not available or does not accept any more messages.
+   Adjust ZMQ_SNDHWM value in SGX Dealer-in to control this behavior of buffering.
+d. The signatures play a very important role in establishing secure connection between
+   KMS and dealers. Any change in these signatures after connection establishment
+   between KMS and dealers will prevent access to previously protected data.

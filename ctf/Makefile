@@ -9,7 +9,7 @@ ifeq ($(SGX_CDR), 1)
 endif
 
 ifeq ($(SGX_CDR_LIVE), 1)
-   SGX_CDR_CFLAGS := -DSGX_SDR -DSGX_CDR_LIVE
+   SGX_CDR_CFLAGS := -DSGX_CDR -DSGX_CDR_LIVE
 endif
 
 
@@ -19,7 +19,7 @@ BINDIR := bin
 BUILDDIR := build
 TARGETDIR := bin
 TARGET := $(TARGETDIR)/ctf
- 
+
 SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
@@ -54,7 +54,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@echo " $(CC) $(CFLAGS) $(INCS) -MMD -c -o $@ $<"; $(CC) $(CFLAGS) $(INCS) -MMD -c -o $@ $<
 
 clean:
-	@echo " Cleaning..."; 
+	@echo " Cleaning...";
 	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
 
 -include $(DEPENDS)
