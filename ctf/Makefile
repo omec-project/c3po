@@ -27,22 +27,20 @@ DEPENDS := $(OBJECTS:%.o=%.d)
 CFLAGS := -g -pthread -std=c++0x $(SGX_CDR_CFLAGS)# -Wall
 LFLAGS := -g -pthread -lpthread
 LIBS := \
- ../util/lib/libc3po.a \
- /usr/local/lib/libpistache.a \
- /usr/local/lib/libcares.so \
- /usr/local/lib/libfdcore.so \
- /usr/local/lib/libfdproto.so \
+ $(ROOT)/util/lib/libc3po.a \
+ -l:libpistache.a \
+ -lcares \
+ -lcrypto \
+ -lfdcore \
+ -lfdproto \
  -lmemcached \
  -lrt \
- -lssl \
- -lcrypto
+ -lssl
 INCS := \
- -I./include \
- -I../util/include \
- -I../modules/rapidjson/include \
- -I /usr/local/include/freeDiameter \
- -I ../modules/spdlog/include \
- -I../modules/linux-sgx/common/inc
+ -I ./include \
+ -I $(ROOT)/modules/linux-sgx/common/inc \
+ -I $(ROOT)/modules/spdlog/include \
+ -I $(ROOT)/util/include
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."

@@ -17,8 +17,8 @@
 
 #include <sstream>
 
-#include <freeDiameter-host.h>
-#include <libfdproto.h>
+#include <freeDiameter/freeDiameter-host.h>
+#include <freeDiameter/libfdproto.h>
 #include <common_def.h>
 
 StatsCtf *StatsCtf::m_singleton = NULL;

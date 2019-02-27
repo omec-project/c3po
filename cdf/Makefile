@@ -13,16 +13,14 @@ CFLAGS := -g -pthread -std=c++0x # -Wall
 LFLAGS := -g -pthread -lpthread
 LIBS := \
  ../util/lib/libc3po.a \
- /usr/local/lib/libcares.so \
- /usr/local/lib/libfdcore.so \
- /usr/local/lib/libfdproto.so \
+ -lcares \
+ -lfdcore \
+ -lfdproto \
  -lmemcached \
  -lrt
 INCS := \
- -I./include \
- -I../util/include \
- -I../modules/rapidjson/include \
- -I /usr/local/include/freeDiameter
+ -I ./include \
+ -I $(ROOT)/util/include
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."
