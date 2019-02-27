@@ -248,8 +248,8 @@ format_time_into_specs(const char *time_format, const struct tm *t, char *dest,
 				else
 					dest = convert_date_time_format((t->tm_hour % 12), "%02d", dest, max_limit);
 
-					i++;
-					continue;
+				i++;
+				continue;
 
 			case HOUR_AS_24_SINGLE:
 				dest = convert_date_time_format(t->tm_hour, "%2d", dest, max_limit);
