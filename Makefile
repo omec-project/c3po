@@ -1,21 +1,13 @@
-SHELL := /bin/bash
-all:
-	$(MAKE) -C util
-	$(MAKE) -C cdf
-	$(MAKE) -C ctf
-	$(MAKE) -C hsssec
-	$(MAKE) -C hss
-	$(MAKE) -C hssgtw
-	$(MAKE) -C pcrf
+RECURSIVETARGETS := all clean
+SET1 := cdf ctf hsssec pcrf
+SET2 := hss hssgtw
 
-clean:
-	$(MAKE) -C util clean
-	$(MAKE) -C cdf clean
-	$(MAKE) -C ctf clean
-	$(MAKE) -C hsssec clean
-	$(MAKE) -C hss clean
-	$(MAKE) -C hssgtw clean
-	$(MAKE) -C pcrf clean
+$(RECURSIVETARGETS): util $(SET1) $(SET2)
+util:
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+$(SET1): util
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+$(SET2): util hsssec
+	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-#install:
-#	$(MAKE) -C c3poutil install
+.PHONY: $(RECURSIVETARGETS) $(SET1) $(SET2) util
