@@ -33,7 +33,7 @@ extern uint8_t                          op[16];
 
 uint8_t                                *
 sqn_ms_derive (
-  const uint8_t const opc[16],
+  const uint8_t opc[16],
   uint8_t * key,
   uint8_t * auts,
   uint8_t * rand_p)

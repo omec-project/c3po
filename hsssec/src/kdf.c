@@ -144,7 +144,7 @@ derive_kasme (
 
 int
 generate_vector (
-  const uint8_t const opc[16],
+  const uint8_t opc[16],
   uint64_t imsi,
   uint8_t key[16],
   uint8_t plmn[3],
