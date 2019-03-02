@@ -78,7 +78,7 @@ u8                                      Xtime[256] = {
   -----------------------------------------------------------------*/
 void
 RijndaelKeySchedule (
-  const u8 const key[16])
+  const u8 key[16])
 {
   u8                                      roundConst;
   int                                     i,
@@ -228,7 +228,7 @@ MixColumn (
   -----------------------------------------------------------------*/
 void
 RijndaelEncrypt (
-  const u8 const input[16],
+  const u8 input[16],
   u8 output[16])
 {
   u8                                      state[4][4];
