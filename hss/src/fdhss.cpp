@@ -153,7 +153,8 @@ bool FDHss::init(hss_config_t * hss_config_p){
       fd_peer_validate_register (s6a_peer_validate);
 
       //TODO get the list of peers from the database
-      FDPeer *peer = new FDPeer( (char*)"mme.localdomain" );
+      char *mme = std::getenv("MME_IDENTITY");
+      FDPeer *peer = new FDPeer( mme ? mme : (char*)"mme.localdomain" );
       m_mme_peers.push_back( peer );
 
       if(!m_diameter.start()){
