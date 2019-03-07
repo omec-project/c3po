@@ -31,7 +31,7 @@ size_t accumulate_function(void *ptr, size_t size, size_t nmemb, void *userdata)
     assert(s->data != NULL);
     memcpy(s->data + s->len, ptr, size * nmemb);
     s->len += size * nmemb;
-    
+
     return size * nmemb;
 }
 
@@ -52,7 +52,7 @@ void pem_to_base64_der(
     assert(strncmp((char*) pem, pem_marker_begin, strlen(pem_marker_begin)) == 0);
     assert(strncmp((char*) pem + pem_len - strlen(pem_marker_end),
                    pem_marker_end, strlen(pem_marker_end)) == 0);
-    
+
     uint32_t out_len = 0;
     const char* p = pem + strlen(pem_marker_begin);
     for (uint32_t i = 0;
@@ -96,7 +96,7 @@ void extract_certificates_from_response_header
                                          field_begin,
                                          field_len,
                                          &unescaped_len);
-    
+
     char* cert_begin = memmem(unescaped,
                               unescaped_len,
                               pem_marker_begin,
@@ -115,7 +115,7 @@ void extract_certificates_from_response_header
                       (char*) attn_report->ias_sign_cert,
                       &attn_report->ias_sign_cert_len,
                       sizeof(attn_report->ias_sign_cert));
-    
+
     cert_begin = memmem(cert_end,
                         unescaped_len - (cert_end - unescaped),
                         pem_marker_begin,
@@ -179,14 +179,14 @@ void obtain_attestation_verification_report
 {
     CURL *curl;
     CURLcode res;
-  
+
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
     curl = curl_easy_init();
     if(curl) {
         // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
         curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-        curl_easy_setopt(curl, CURLOPT_URL, "https://test-as.sgx.trustedservices.intel.com:443/attestation/sgx/v2/report");
+        curl_easy_setopt(curl, CURLOPT_URL, "https://test-as.sgx.trustedservices.intel.com:443/attestation/sgx/v3/report");
         curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
         //curl_easy_setopt(curl, CURLOPT_SSLCERT, "../certs/ias-client-cert.pem");
         //curl_easy_setopt(curl, CURLOPT_SSLKEY, "../certs/ias-client-key.pem");
@@ -194,7 +194,7 @@ void obtain_attestation_verification_report
         curl_easy_setopt(curl, CURLOPT_SSLKEY, "certs/ias-client-key.pem");
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    
+
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, "Content-Type: application/json");
 
@@ -207,13 +207,13 @@ void obtain_attestation_verification_report
         assert((size_t) ret + 1 <= sizeof(quote_base64));
 
         snprintf((char*) json, sizeof(json), json_template, quote_base64);
-    
+
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);
 
         struct buffer_and_size header = {(char*) malloc(1), 0};
         struct buffer_and_size body = {(char*) malloc(1), 0};
-    
+
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, accumulate_function);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, accumulate_function);
@@ -251,7 +251,7 @@ void obtain_attestation_verification_report
         extract_certificates_from_response_header(curl,
                                                   header.data, header.len,
                                                   attn_report);
-    
+
         /* Check for errors */
         if(res != CURLE_OK)
             fprintf(stderr, "curl_easy_perform() failed: %s\n",
