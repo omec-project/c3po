@@ -1,0 +1,94 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hssdb
+data:
+  cassandra-rackdc.properties: |
+    dc=DC1
+    rack=RAC1
+    prefer_local=true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: hssdb
+  name: hssdb
+spec:
+  clusterIP: None
+  ports:
+  - name: cql
+    port: 9042
+  selector:
+    app: hssdb
+---
+apiVersion: "apps/v1"
+kind: StatefulSet
+metadata:
+  name: hssdb
+  labels:
+     app: hssdb
+spec:
+  serviceName: hssdb
+  replicas: 1 # 3
+  selector:
+    matchLabels:
+      app: hssdb
+  template:
+    metadata:
+      labels:
+        app: hssdb
+    spec:
+      securityContext:
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+      - name: cassandra
+        image: krsna1729/c3po-hssdb
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9042
+          name: cql
+        resources:
+          limits:
+            cpu: "3"
+            memory: 4Gi
+        env:
+        - name: MAX_HEAP_SIZE
+          value: 512M
+        - name: HEAP_NEWSIZE
+          value: 100M
+        - name: CASSANDRA_SEEDS
+          value: "hssdb-0.hssdb.default.svc.cluster.local"
+        - name: CASSANDRA_CLUSTER_NAME
+          value: "HSS Cluster"
+        - name: CASSANDRA_RPC_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CASSANDRA_ENDPOINT_SNITCH
+          value: "GossipingPropertyFileSnitch"
+        readinessProbe:
+          exec:
+            command: ["/bin/bash", "-c", "nodetool status -r | awk -v h=$(hostname) '$2==h {exit ($1==\"UN\" ? 0 : -1)}'"]
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: hssdb-config
+          mountPath: /etc/cassandra/cassandra-rackdc.properties
+          subPath: cassandra-rackdc.properties
+        #- name: hssdb-data
+        #  mountPath: /var/lib/cassandra
+      volumes:
+      - name: hssdb-config
+        configMap:
+          name: hssdb
+#  volumeClaimTemplates:
+#  - metadata:
+#      name: hssdb-data
+#    spec:
+#      accessModes: [ "ReadWriteOnce" ]
+#      resources:
+#        requests:
+#          storage: 1Gi
