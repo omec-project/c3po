@@ -1,0 +1,17 @@
+{
+    "common": {
+        "maxconnections": "16",
+        "kmsserver": "10.5.4.100",
+        "kmsport": "8443",
+        "keynamespace": "dealer_namespace"
+    },
+
+    "dealer": {
+        "runmode": "IN",
+        "cdrhost": "10.5.4.100",
+        "cdrport": "6789",
+	"port": "443",
+	"cdrpath": "./cdr",
+	"cdrarchpath": "/tmp"
+    }
+}

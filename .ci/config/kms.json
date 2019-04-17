@@ -1,0 +1,10 @@
+{
+    "kms": {
+        "storepath": "./store",
+        "port": "8443",
+        "maxconnections": "16",
+        "mrenclave": "79d2efd06da712d71e7228570b3df433f564298f3dd28611738a01be68522959",
+        "mrsigner": "63ef969cbc34ee465f277cd3c27e9b3c681d743e455f899daced1b3cf85ceb8f"
+    }
+}
+
