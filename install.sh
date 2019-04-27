@@ -20,8 +20,9 @@ echo "--------------------------------------------------------------------------
 echo " C3PO_DIR exported as $C3PO_DIR"
 echo "------------------------------------------------------------------------------"
 
-OSDIST=`lsb_release -is`
-OSVER=`lsb_release -rs`
+source /etc/os-release
+OSDIST=$NAME
+OSVER=$VERSION_ID
 
 #
 # Sets QUIT variable so script will finish.
