@@ -1,2 +1,1 @@
-no
-/home/jenkins/sgx_test
+sgx/sgx-auto-install.txt
