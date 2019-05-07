@@ -87,7 +87,7 @@ Install each core C3PO module on a separate server/VM.
         {installation_root} directory.
 
         #cd {installation_root}
-        #git clone https://gerrit.opencord.org/c3po
+        #git clone https://github.com/omec-project/c3po.git
 
     (b) Install Java 8 and Cassandra on the Cassandra server
 
@@ -120,7 +120,7 @@ Install each core C3PO module on a separate server/VM.
     (a) Clone the c3po repository into your {installation_root} directory.
 
          #cd {installation_root}
-         #git clone https://gerrit.opencord.org/c3po
+         #git clone https://github.com/omec-project/c3po.git
 
     (b) Build and install all components by running install.sh and performing
         each step (invoking each option in the menu in sequence).
@@ -376,7 +376,7 @@ PROVISIONING
         following steps command be executed on HSS.
         On the HSS server run the following command:
 
-            #cd {installation_root}/mme
+            #cd {installation_root}/hss
             #./bin/hss -j conf/hss.json --onlyloadkey
     
 2. NG40 provisioning
