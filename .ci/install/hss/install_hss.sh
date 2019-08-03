@@ -64,4 +64,5 @@ cd "${INSTALL_CI_PATH}"/c3po/hss/conf && ../bin/make_certs.sh hss openair4G.eur 
 
 
 log_step "Make hss ..."
+cd "${INSTALL_CI_PATH}"/c3po
 make clean WHAT=hss && make WHAT=hss 1>"${HSS_STDOUT_LOG}" 2>"${HSS_STDERR_LOG}"

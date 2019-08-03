@@ -92,6 +92,7 @@ cd "${INSTALL_CI_PATH}"/c3po/sgxcdr/router && ./install.sh 1>"${ROUTER_INSTALL_S
 
 log_step "Make util/ctf ..."
 cp -f "${INSTALL_CI_PATH}"/c3po/.ci/config/ctf.json "${INSTALL_CI_PATH}"/c3po/ctf/conf/ctf.json
+cd "${INSTALL_CI_PATH}"/c3po
 make clean WHAT=util && make WHAT=util 1>"${UTIL_STDOUT_LOG}" 2>"${UTIL_STDERR_LOG}"
 mkdir -p "${INSTALL_CI_PATH}"/c3po/ctf/logs && make clean WHAT=ctf && make WHAT=ctf 1>"${CTF_STDOUT_LOG}" 2>"${CTF_STDERR_LOG}"
 
@@ -102,6 +103,7 @@ cd "${INSTALL_CI_PATH}"/c3po/ctf/conf && ../bin/make_certs.sh ctf test3gpp.net
 
 log_step "Make cdf ..."
 cp -f "${INSTALL_CI_PATH}"/c3po/.ci/config/cdf.conf "${INSTALL_CI_PATH}"/c3po/cdf/conf/cdf.conf
+cd "${INSTALL_CI_PATH}"/c3po
 make clean WHAT=cdf && make WHAT=cdf 1>"${CDF_STDOUT_LOG}" 2>"${CDF_STDERR_LOG}"
 
 
