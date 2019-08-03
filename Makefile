@@ -15,4 +15,22 @@ $(SET1): util
 $(SET2): util hsssec
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-.PHONY: $(RECURSIVETARGETS) $(WHAT)
+docker-%: ORG ?= omecproject
+docker-%: COMMIT = $(shell git rev-parse --short HEAD)
+docker-%: TAG_SUFFIX = $(shell (git status --porcelain | grep -q .) && echo '-dirty')
+docker-%: TAG ?= $(COMMIT)$(TAG_SUFFIX)
+docker-%: IMAGES ?= build $(SET1) $(SET2) pcef tdf tssf hssdb
+
+# https://docs.docker.com/engine/reference/commandline/build/#specifying-target-build-stage---target
+docker-build:
+	for img in $(IMAGES); do \
+		docker build --rm --progress=plain --target=$$img -t $(ORG)/c3po-$$img:$(TAG) $(DOCKER_BUILD_ARGS) . || exit 1; \
+	done;
+
+docker-push:
+	for img in $(IMAGES); do \
+		docker push $(ORG)/c3po-$$img:$(TAG) || exit 1; \
+	done;
+
+.PHONY: $(RECURSIVETARGETS) $(WHAT) docker-build docker-push
+.SILENT: docker-build docker-push
