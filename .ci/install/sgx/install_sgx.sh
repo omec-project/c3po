@@ -90,6 +90,10 @@ log_step "Install router ..."
 cd "${INSTALL_CI_PATH}"/c3po/sgxcdr/router && ./install.sh 1>"${ROUTER_INSTALL_STDOUT_LOG}" 2>"${ROUTER_INSTALL_STDERR_LOG}"
 
 
+log_step "Install c3po deps ..."
+cd "${INSTALL_CI_PATH}"/c3po && touch .agree && ./install.sh < "${INSTALL_CI_PATH}"/c3po/.ci/install/sgx/c3po-submodule-auto-install.txt 1>"${C3PO_DEPS_INSTALL_STDOUT_LOG}" 2>"${C3PO_DEPS_INSTALL_STDERR_LOG}"
+
+
 log_step "Make util/ctf ..."
 cp -f "${INSTALL_CI_PATH}"/c3po/.ci/config/ctf.json "${INSTALL_CI_PATH}"/c3po/ctf/conf/ctf.json
 cd "${INSTALL_CI_PATH}"/c3po
