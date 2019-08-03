@@ -48,11 +48,11 @@ cd "${INSTALL_CI_PATH}"/c3po && ./install.sh < "${INSTALL_CI_PATH}"/c3po/.ci/ins
 
 
 log_step "Make util ..."
-cd "${INSTALL_CI_PATH}"/c3po/util && make clean && make 1>"${HSSSEC_STDOUT_LOG}" 2>"${HSSSEC_STDERR_LOG}"
+make clean WHAT=util && make WHAT=util 1>"${HSSSEC_STDOUT_LOG}" 2>"${HSSSEC_STDERR_LOG}"
 
 
 log_step "Make hsssec ..."
-cd "${INSTALL_CI_PATH}"/c3po/hsssec && make clean && make 1>>"${HSSSEC_STDOUT_LOG}" 2>>"${HSSSEC_STDERR_LOG}"
+make clean WHAT=hsssec && make WHAT=hsssec 1>>"${HSSSEC_STDOUT_LOG}" 2>>"${HSSSEC_STDERR_LOG}"
 
 
 log_step "Copy config ..."
@@ -64,4 +64,5 @@ cd "${INSTALL_CI_PATH}"/c3po/hss/conf && ../bin/make_certs.sh hss openair4G.eur 
 
 
 log_step "Make hss ..."
-cd "${INSTALL_CI_PATH}"/c3po/hss && make clean && make 1>"${HSS_STDOUT_LOG}" 2>"${HSS_STDERR_LOG}"
+cd "${INSTALL_CI_PATH}"/c3po
+make clean WHAT=hss && make WHAT=hss 1>"${HSS_STDOUT_LOG}" 2>"${HSS_STDERR_LOG}"

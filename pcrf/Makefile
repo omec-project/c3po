@@ -13,22 +13,19 @@ CFLAGS := -g -pthread -std=c++11 # -Wall
 LFLAGS := -g -pthread -lpthread -Wl,-rpath,/usr/local/lib/x86_64-linux-gnu:/usr/local/lib
 
 LIBS := \
- ../util/lib/libc3po.a \
- /usr/local/lib/libcares.so \
- /usr/local/lib/libfdcore.so \
- /usr/local/lib/libfdproto.so \
- -L/usr/local/lib/x86_64-linux-gnu \
+ $(ROOT)/util/lib/libc3po.a \
+ -l:libpistache.a \
+ -lcares \
  -lcassandra \
+ -lfdcore \
+ -lfdproto \
  -lmemcached \
- -lrt \
- -l:libpistache.a
+ -lrt
  
 INCS := \
  -I ./include \
- -I ../util/include \
- -I ../modules/rapidjson/include \
- -I ../modules/spdlog/include \
- -I /usr/local/include/freeDiameter
+ -I $(ROOT)/util/include \
+ -I $(ROOT)/modules/spdlog/include
 
 all: $(TARGET)
 	$(MAKE) -C pcef
