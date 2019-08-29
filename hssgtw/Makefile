@@ -12,24 +12,20 @@ DEPENDS := $(OBJECTS:%.o=%.d)
 CFLAGS := -g -pthread -std=c++11 # -Wall
 LFLAGS := -g -pthread -lpthread -Wl,-rpath,/usr/local/lib/x86_64-linux-gnu:/usr/local/lib
 LIBS := \
- ../util/lib/libc3po.a \
- ../hsssec/lib/libhsssec.a \
- /usr/local/lib/libfdcore.so \
- /usr/local/lib/libfdproto.so \
- /usr/local/lib/libpistache.a \
- -L/usr/local/lib/x86_64-linux-gnu \
+ $(ROOT)/util/lib/libc3po.a \
+ $(ROOT)/hsssec/lib/libhsssec.a \
+ -l:libpistache.a \
  -lcassandra \
- -lrt \
+ -lfdcore \
+ -lfdproto \
+ -lgmp \
  -lnettle \
- -lgmp
+ -lrt
 
 INCS := \
  -I ./include \
- -I ../util/include \
- -I ../modules/rapidjson/include \
- -I /usr/local/include/freeDiameter \
- -I ../hsssec/include \
- -I /usr/local/include
+ -I $(ROOT)/util/include \
+ -I $(ROOT)/hsssec/include \
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."

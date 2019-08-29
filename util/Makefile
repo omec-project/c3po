@@ -18,15 +18,12 @@ DEPENDS := $(OBJECTS:%.o=%.d)
 CFLAGS := -std=c++11 -Wreturn-type -g -pthread -lrt $(SECURITY_FLAGS)# -Wall
 
 LIBS := \
- /usr/local/lib/libpistache.a
+ -l:libpistache.a
 
 
 INC := -I include \
- -I ../modules/rapidjson/include \
- -I ../modules/freeDiameter/include \
- -I ../modules/c-ares \
- -I /usr/local/include \
- -I ../modules/spdlog/include 
+ -I $(ROOT)/modules/c-ares \
+ -I $(ROOT)/modules/spdlog/include
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."

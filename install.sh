@@ -60,7 +60,7 @@ setup_env()
       ;;
     *) echo "ERROR: Unsupported operating system distribution: $OSDIST"; exit;;
   esac
-  
+
   echo
   echo "Checking network connectivity..."
   # b. Check for internet connections
@@ -100,7 +100,7 @@ step_2()
           TEXT[3]="Download and install libtool 2.4.6"
           FUNC[3]="install_libtool"
           CPLT[3]=$INSTALL_LIBTOOL_COMPLETE
-        
+
           TEXT[4]="Download packages"
           FUNC[4]="install_libs"
           CPLT[4]=$INSTALL_LIBS_COMPLETE
@@ -122,7 +122,7 @@ get_agreement_download()
   echo
   echo "List of packages needed for C3PO build and installation:"
   echo "-------------------------------------------------------"
-  
+
   case $OSDIST in
     Ubuntu)
       case $OSVER in
@@ -143,7 +143,7 @@ get_agreement_download()
       ;;
     *) echo "ERROR: Unsupported operating system distribution: $OSDIST"; exit;;
   esac
-  
+
   while true; do
     echo
     read -p "We need to download and install the above mentioned packages. Press (y/n) to continue? " yn
@@ -195,7 +195,7 @@ install_libtool()
   cd libtool-2.4.6
   ./configure && make && sudo make install
   popd
-  
+
   INSTALL_LIBTOOL_COMPLETE="- COMPLETE"
 }
 
@@ -261,9 +261,9 @@ init_submodules()
   build_c_ares
   build_cpp_driver
   build_pistache
-  
+  build_rapidjson
   sudo ldconfig
-    
+
   INIT_SUBMODULES_COMPLETE="- COMPLETE"
 }
 
@@ -278,7 +278,7 @@ build_freeDiameter()
   make
   sudo make install
   popd
-  
+
   BUILD_FREEDIAMETER_COMPLETE="- COMPLETE"
 }
 
@@ -290,7 +290,7 @@ build_c_ares()
   make
   sudo make install
   popd
-  
+
   BUILD_C_ARES_COMPLETE="- COMPLETE"
 }
 
@@ -304,7 +304,7 @@ build_cpp_driver()
   make
   sudo make install
   popd
-  
+
   BUILD_CPP_DRIVER_COMPLETE="- COMPLETE"
 }
 
@@ -318,8 +318,20 @@ build_pistache()
   make
   sudo make install
   popd
-  
+
   BUILD_PISTACHE_COMPLETE="- COMPLETE"
+}
+
+build_rapidjson() {
+	echo "Installing rapidjson"
+	pushd modules/rapidjson
+  rm -rf build
+	mkdir -p build
+  cd build
+	cmake ..
+	make
+	sudo make install
+  popd
 }
 
 ################################################################################
@@ -337,7 +349,7 @@ build_c3po()
 {
   make clean
   make
-  
+
   BUILD_C3PO_COMPLETE="- COMPLETE"
 }
 
@@ -373,7 +385,7 @@ while [ "$QUIT" == "0" ]; do
     echo "----------------------------------------------------------"
     echo " Step $s: ${TITLE}"
     echo "----------------------------------------------------------"
-  
+
     for i in $(seq ${#TEXT[@]}) ; do
       echo "[$OPTION_NUM] ${TEXT[i]} ${CPLT[i]}"
       OPTIONS[$OPTION_NUM]=${FUNC[i]}
@@ -387,15 +399,15 @@ while [ "$QUIT" == "0" ]; do
 
     echo ""
   done
-  
+
   echo "[$OPTION_NUM] Exit Script"
   OPTIONS[$OPTION_NUM]="quit"
   echo ""
   echo -n "Option: "
   read our_entry
-  
+
   ${OPTIONS[our_entry]} ${our_entry}
-  
+
   if [ "$QUIT" == "0" ] ; then
     echo
     echo -n "Press enter to continue ..."; read
