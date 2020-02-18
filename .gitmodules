@@ -10,12 +10,12 @@
 [submodule "modules/spdlog"]
 	path = modules/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "modules/freeDiameter"]
-	path = modules/freeDiameter
-	url = https://gerrit.opencord.org/freeDiameter-old
 [submodule "modules/pistache"]
 	path = modules/pistache
 	url = https://github.com/oktal/pistache.git
 [submodule "modules/linux-sgx"]
 	path = modules/linux-sgx
 	url = https://github.com/intel/linux-sgx
+[submodule "modules/freeDiameter"]
+	path = modules/freeDiameter
+	url = https://github.com/omec-project/freediameter.git
