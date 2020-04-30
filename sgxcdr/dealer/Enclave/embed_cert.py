@@ -1,3 +1,7 @@
+'''
+ Copyright 2019-present Open Networking Foundation
+ SPDX-License-Identifier: Apache-2.0
+'''
 """
 A script to generate c/c++ header file for certificate bundles.
 This will read one or more certificate files and embed them as 
