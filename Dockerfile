@@ -75,6 +75,10 @@ COPY --from=build /c3po/pcrf/tssf/bin /bin
 
 ## Stage hssdb
 FROM cassandra:2.1.20 as hssdb
+# We need the following workaround to ignore http://www.apache.org/dist/cassandra/debian
+# listed in /etc/apt/sources.list.d/cassandra.list which redirects to https. Once
+# apt-transport-https is installed we can continue with apt-get update and install
+RUN apt-get update -o Dir::Etc::SourceParts= && apt-get -y install apt-transport-https
 RUN apt-get update && apt-get -y install \
       dnsutils && \
     rm -rf /var/lib/apt/lists/*
