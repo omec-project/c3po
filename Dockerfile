@@ -74,7 +74,7 @@ RUN bash -c "source ./install_rundeps.sh && install_run_tssf_deps && cleanup_ima
 COPY --from=build /c3po/pcrf/tssf/bin /bin
 
 ## Stage hssdb
-FROM cassandra:2.1.20 as hssdb
+FROM cassandra:2.1 as hssdb
 # We need the following workaround to ignore http://www.apache.org/dist/cassandra/debian
 # listed in /etc/apt/sources.list.d/cassandra.list which redirects to https. Once
 # apt-transport-https is installed we can continue with apt-get update and install
