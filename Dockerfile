@@ -74,7 +74,7 @@ RUN bash -c "source ./install_rundeps.sh && install_run_tssf_deps && cleanup_ima
 COPY --from=build /c3po/pcrf/tssf/bin /bin
 
 ## Stage hssdb
-FROM cassandra:2.1.20 as hssdb
+FROM cassandra:2.1 as hssdb
 RUN apt-get update && apt-get -y install \
       dnsutils && \
     rm -rf /var/lib/apt/lists/*
