@@ -18,6 +18,7 @@
 #include "fdhss.h"
 #include "rapidjson/document.h"
 #include "statshss.h"
+#include "util.h"
 
 #include <iomanip>
 extern "C" {
@@ -2219,6 +2220,14 @@ void AIRProcessor::phase2()
 
         // save the new rand and sqn locally
         memcpy(m_sec.rand, m_vector[0].rand, sizeof(m_sec.rand));
+        /*increment sqn*/
+        SqnU64Union eu;
+
+        SQN_TO_U64(sqn, eu);
+
+        eu.u64 += 32;
+
+        U64_TO_SQN(eu,sqn);
         memcpy(m_sec.sqn, sqn, sizeof(m_sec.sqn));
 
         free (sqn);
