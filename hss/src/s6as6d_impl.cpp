@@ -1,17 +1,8 @@
 /*
+* Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
+* SPDX-License-Identifier: Apache-2.0
 */
 
 #include <string>
@@ -27,6 +18,7 @@
 #include "fdhss.h"
 #include "rapidjson/document.h"
 #include "statshss.h"
+#include "util.h"
 
 #include <iomanip>
 extern "C" {
@@ -2228,6 +2220,14 @@ void AIRProcessor::phase2()
 
         // save the new rand and sqn locally
         memcpy(m_sec.rand, m_vector[0].rand, sizeof(m_sec.rand));
+        /*increment sqn*/
+        SqnU64Union eu;
+
+        SQN_TO_U64(sqn, eu);
+
+        eu.u64 += 32;
+
+        U64_TO_SQN(eu,sqn);
         memcpy(m_sec.sqn, sqn, sizeof(m_sec.sqn));
 
         free (sqn);
