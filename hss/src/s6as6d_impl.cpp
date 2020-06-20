@@ -2088,7 +2088,7 @@ void AIRProcessor::phase1()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
-      m_nextphase = ULRSTATE_PHASEFINAL;
+      m_nextphase = AIRSTATE_PHASEFINAL;
       return;
    }
 
@@ -2104,7 +2104,7 @@ void AIRProcessor::phase1()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
-         m_nextphase = ULRSTATE_PHASEFINAL;
+         m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
    }
@@ -2125,7 +2125,7 @@ void AIRProcessor::phase1()
          m_ans.add(er);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_ERROR_RAT_NOT_ALLOWED);
-         m_nextphase = ULRSTATE_PHASEFINAL;
+         m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
 
@@ -2137,7 +2137,7 @@ void AIRProcessor::phase1()
          m_ans.add(er);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_ERROR_RAT_NOT_ALLOWED);
-         m_nextphase = ULRSTATE_PHASEFINAL;
+         m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
    }
@@ -2154,7 +2154,7 @@ void AIRProcessor::phase1()
             m_ans.add(er);
             m_ans.send();
             StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_ERROR_ROAMING_NOT_ALLOWED);
-            m_nextphase = ULRSTATE_PHASEFINAL;
+            m_nextphase = AIRSTATE_PHASEFINAL;
             return;
          }
       }
@@ -2163,7 +2163,7 @@ void AIRProcessor::phase1()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
-         m_nextphase = ULRSTATE_PHASEFINAL;
+         m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
    }
@@ -2172,7 +2172,7 @@ void AIRProcessor::phase1()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
-      m_nextphase = ULRSTATE_PHASEFINAL;
+      m_nextphase = AIRSTATE_PHASEFINAL;
       return;
    }
 

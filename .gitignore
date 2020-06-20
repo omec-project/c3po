@@ -5,3 +5,4 @@ modules/libmemcached-1.0.18/
 .settings/
 modules/.DS_Store
 .agree
+cscope.out
