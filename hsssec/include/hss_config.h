@@ -21,6 +21,7 @@
 
 #ifndef HSS_CONFIG_H_
 #define HSS_CONFIG_H_
+#include "stdbool.h"
 
 typedef struct hss_config_s {
   char *cassandra_server;
@@ -41,6 +42,7 @@ typedef struct hss_config_s {
 
   char *random;
   char  random_bool;
+  bool  verify_roaming;
 } hss_config_t;
 
 //int hss_config_init(int argc, char *argv[], hss_config_t *hss_config_p);

@@ -130,7 +130,7 @@ void fdJsonError( const char *err )
 }
 
 // Member functions that customize the individual application
-Application::Application( DataAccess &dbobj )
+Application::Application( DataAccess &dbobj, bool verify_roaming)
    : ApplicationBase()
    , m_cmd_uplr( *this )
    //, m_cmd_calr( *this )
@@ -141,6 +141,7 @@ Application::Application( DataAccess &dbobj )
    //, m_cmd_rer( *this )
    , m_dbobj( dbobj )
 {
+   verify_roaming_access = verify_roaming;
    registerHandlers();
 }
 
@@ -345,6 +346,7 @@ void AUIRreq::processAnswer( FDMessageAnswer &ans )
 
 int AUIRcmd::process( FDMessageRequest *req )
 {
+    // add something here in AIR Processor
    AIRProcessor *p = new AIRProcessor(*req, m_app, m_app.getDict());
    fdHss.getWorkerQueue().addProcessor(p);
    fdHss.getWorkerQueue().startProcessor();
@@ -2146,7 +2148,8 @@ void AIRProcessor::phase1()
    {
       if(m_plmn_len == 3 )
       {
-         if (apply_access_restriction ((char*)m_imsi.c_str(), m_plmn_id) != 0)
+         if ((m_app.roaming_access_control() == true) && 
+            apply_access_restriction ((char*)m_imsi.c_str(), m_plmn_id) != 0)
          {
             FDAvp er ( m_dict.avpExperimentalResult() );
             er.add( m_dict.avpVendorId(),  VENDOR_3GPP);

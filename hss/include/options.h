@@ -144,6 +144,7 @@ private:
    static std::string m_synchauts;
    static int         m_numworkers;
    static int         m_concurrent;
+   static bool        m_verify_roaming; 
 
 };
 

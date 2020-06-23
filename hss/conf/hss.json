@@ -32,6 +32,7 @@
     "statfreq": 2000,
     "numworkers": 4,
     "concurrent": 10,
-    "ossfile": "conf/oss.json"
+    "ossfile": "conf/oss.json",
+    "verifyroamingsubscribers": true
  }
 }
