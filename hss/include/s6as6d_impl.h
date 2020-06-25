@@ -39,7 +39,7 @@ class Application : public ApplicationBase
     friend RERreq;
 
 public:
-    Application( DataAccess &dbobj );
+    Application( DataAccess &dbobj, bool verify_roaming );
     ~Application();
 
     UPLRcmd &getUPLRcmd() { return m_cmd_uplr; }
@@ -50,6 +50,7 @@ public:
     PUURcmd &getPUURcmd() { return m_cmd_puur; }
     //RERcmd &getRERcmd() { return m_cmd_rer; }
 
+    bool roaming_access_control() { return verify_roaming_access; }
     // Parameters for sendXXXreq, if present below, may be changed
     // based upon processing needs
     bool sendUPLRreq(FDPeer &peer);
@@ -87,6 +88,7 @@ private:
     RERreq *createRERreq(FDPeer &peer);
 
     DataAccess &m_dbobj;
+    bool  verify_roaming_access;
 };
 
 class IDRRreq : public INSDRreq {

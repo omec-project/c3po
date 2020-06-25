@@ -132,7 +132,7 @@ bool FDHss::init(hss_config_t * hss_config_p){
       //init the casssandra object with the parsed object
 
       m_s6tapp = new s6t::Application(m_dbobj);
-      m_s6aapp = new s6as6d::Application(m_dbobj);
+      m_s6aapp = new s6as6d::Application(m_dbobj,hss_config_p->verify_roaming);
       m_s6capp = new s6c::Application(m_dbobj);
 
       // advertise support for the accounting application

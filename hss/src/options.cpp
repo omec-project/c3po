@@ -62,6 +62,7 @@ std::string Options::m_synchauts;
 int         Options::m_numworkers;
 int         Options::m_concurrent;
 uint32_t    Options::m_statsfrequency;
+bool        Options::m_verify_roaming;
 
 void Options::help()
 {
@@ -280,6 +281,12 @@ bool Options::parseJson(){
          m_ossfile = hssSection["ossfile"].GetString();
          options |= ossfile;
       }
+      m_verify_roaming = false; /* disable by default */
+      if(hssSection.HasMember("verifyroamingsubscribers")){
+         if(!hssSection["verifyroamingsubscribers"].IsBool()) { std::cout << "Error parsing json value: [verifyroamingsubscribers]" << std::endl; return false; }
+         m_verify_roaming = hssSection["verifyroamingsubscribers"].GetBool();
+      }
+ 
    }
 
    return true;
@@ -437,7 +444,8 @@ bool Options::parseInputOptions( int argc, char **argv )
    return result;
 }
 
-void Options::fillhssconfig(hss_config_t *hss_config_p){
+void Options::fillhssconfig(hss_config_t *hss_config_p) 
+{
 
    hss_config_p->cassandra_server      = strdup(m_cassserver.c_str());
    hss_config_p->cassandra_user        = strdup(m_cassuser.c_str());
@@ -472,5 +480,6 @@ void Options::fillhssconfig(hss_config_t *hss_config_p){
    else{
       hss_config_p->random = (char*)"false";
    }
+   hss_config_p->verify_roaming = m_verify_roaming;
 }
 
