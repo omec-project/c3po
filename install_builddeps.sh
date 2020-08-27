@@ -83,6 +83,20 @@ install_pistache() {
 	$SUDO make install
 }
 
+install_prometheus() {
+    set -xe 
+    $SUDO apt-get install -y curl libcurl4-openssl-dev wget
+    pushd /tmp
+    wget https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz 
+    tar -zxvf cmake-3.18.0-Linux-x86_64.tar.gz
+    pushd $DEPS_DIR/prometheus-cpp
+    mkdir -p _build && cd _build
+    /tmp/cmake-3.18.0-Linux-x86_64/bin/cmake .. -DBUILD_SHARED_LIBS=ON && make -j 4 && $SUDO make install && $SUDO make DESTDIR=`pwd`/deploy install
+    echo $PWD
+    popd
+    popd
+}
+
 install_build_deps() {
 	install_pkg_deps
 	install_freediameter
@@ -90,6 +104,7 @@ install_build_deps() {
 	install_cpp-driver
 	install_rapidjson
 	install_pistache
+    install_prometheus
 }
 
 (return 2>/dev/null) && echo "Sourced" && return

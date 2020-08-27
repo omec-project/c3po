@@ -145,6 +145,7 @@ private:
    static int         m_numworkers;
    static int         m_concurrent;
    static bool        m_verify_roaming; 
+   static short int   m_prom_port; // prometheus port 
 
 };
 

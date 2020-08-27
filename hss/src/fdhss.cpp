@@ -19,6 +19,8 @@
 #include "dataaccess.h"
 #include "common_def.h"
 #include "msg_event.h"
+#include "hssStatsPromClient.h"
+#include <thread>
 
 
 
@@ -131,6 +133,7 @@ bool FDHss::init(hss_config_t * hss_config_p){
       std::cout << "Connecting to cassandra host: " << hss_config_p->cassandra_server << std::endl;
       //init the casssandra object with the parsed object
 
+      // start s6a Application 
       m_s6tapp = new s6t::Application(m_dbobj);
       m_s6aapp = new s6as6d::Application(m_dbobj,hss_config_p->verify_roaming);
       m_s6capp = new s6c::Application(m_dbobj);
@@ -210,6 +213,8 @@ bool FDHss::init(hss_config_t * hss_config_p){
    //
    StatsHss::singleton().setInterval(Options::statsFrequency());
    StatsHss::singleton().init( NULL );
+   std::thread prom(hssStatsSetupPrometheusThread, hss_config_p->prom_port);
+   prom.detach();
 
    return true;
 }

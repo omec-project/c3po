@@ -30,6 +30,7 @@ LIBS := \
  -lfdproto \
  -lgmp \
  -lnettle \
+ -lprometheus-cpp-pull -lprometheus-cpp-core -lz \
  -lrt
 
 INCS := \

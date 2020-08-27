@@ -193,6 +193,7 @@ int main(int argc, char **argv)
    }
 #endif
 
+   // HSS app startin point  
    if ( fdHss.init(&hss_config) )
       shutdownEvent.wait();
 

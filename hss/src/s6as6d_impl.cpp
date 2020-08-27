@@ -19,6 +19,7 @@
 #include "rapidjson/document.h"
 #include "statshss.h"
 #include "util.h"
+#include "hssStatsPromClient.h"
 
 #include <iomanip>
 extern "C" {
@@ -794,6 +795,7 @@ int PUURcmd::process( FDMessageRequest *req )
    FDMessageAnswer ans( req );
    ans.addOrigin();
    s6as6d::PurgeUeRequestExtractor pur( *req, m_app.getDict() );
+   hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_PURGE_REQUEST);
 
    do {
 
@@ -849,10 +851,13 @@ int PUURcmd::process( FDMessageRequest *req )
       experimental_result.add( m_app.getDict().avpExperimentalResultCode(),  result_code);
       ans.add(experimental_result);
       StatsHss::singleton().registerStatResult(stat_hss_pur, VENDOR_3GPP, result_code);
+      std::stringstream ss; ss<<result_code;
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_PURGE_ANSWER_FAILURE, {{"result_code",ss.str()}});
    }
    else{
       ans.add( m_app.getDict().avpResultCode(), result_code);
       StatsHss::singleton().registerStatResult(stat_hss_pur, 0, result_code);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_PURGE_ANSWER_SUCCESS);
    }
 
    ans.send();
@@ -1150,6 +1155,7 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
          {
             case ULRSTATE_PHASE1:
             {
+               hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_UPDATE_LOCATION_REQUEST);
                pthis->phase1();
                break;
             }
@@ -1404,6 +1410,7 @@ void ULRProcessor::phase1()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","invalid_imsi"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1489,6 +1496,7 @@ void ULRProcessor::phase1()
       m_ans.add(er);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_USER_UNKNOWN);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","user_unknown1"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
    }
 }
@@ -1508,6 +1516,7 @@ void ULRProcessor::phase2()
       m_ans.add(er);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_USER_UNKNOWN);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","user_unknown2"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1521,6 +1530,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), DIAMETER_ERROR_RAT_NOT_ALLOWED);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_RAT_NOT_ALLOWED);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "rat_not_allowed"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1532,6 +1542,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","invalid_avp_1"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1540,6 +1551,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","invalid_avp_2"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1548,6 +1560,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","invalid_avp_3"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1568,6 +1581,7 @@ void ULRProcessor::phase2()
             m_ans.add(er);
             m_ans.send();
             StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_UNKNOWN_SERVING_NODE);
+            hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","not_init_unknown_mmehost"}});
             m_nextphase = ULRSTATE_PHASEFINAL;
             return;
          }
@@ -1579,6 +1593,7 @@ void ULRProcessor::phase2()
             m_ans.add(er);
             m_ans.send();
             StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_UNKNOWN_SERVING_NODE);
+            hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "not_init_unknown_mmerealm"}});
             m_nextphase = ULRSTATE_PHASEFINAL;
             return;
          }
@@ -1591,6 +1606,7 @@ void ULRProcessor::phase2()
          m_ans.add(er);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_UNKNOWN_SERVING_NODE);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","not_init_no_mmerealm_mmehost"}});
          m_nextphase = ULRSTATE_PHASEFINAL;
          return;
       }
@@ -1601,6 +1617,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "pad_invalid"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1612,6 +1629,7 @@ void ULRProcessor::phase2()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","plmn_invalid"}});
          m_nextphase = ULRSTATE_PHASEFINAL;
          return;
       }
@@ -1626,6 +1644,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "plmn_missing"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1637,6 +1656,7 @@ void ULRProcessor::phase2()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "bad_imei"}});
          m_nextphase = ULRSTATE_PHASEFINAL;
          return;
       }
@@ -1649,6 +1669,7 @@ void ULRProcessor::phase2()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "bad_imeisv"}});
          m_nextphase = ULRSTATE_PHASEFINAL;
          return;
       }
@@ -1659,6 +1680,7 @@ void ULRProcessor::phase2()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code", "bad_meid"}});
       m_nextphase = ULRSTATE_PHASEFINAL;
       return;
    }
@@ -1695,6 +1717,7 @@ void ULRProcessor::phase2()
          m_ans.add(er);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_UNKNOWN_EPS_SUBSCRIPTION);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","unknown_eps_subscription"}});
          printf("%s:%d - ULRProcessor::phase2() aborting\n", __FILE__, __LINE__);
          m_nextphase = ULRSTATE_PHASEFINAL;
          return;
@@ -1741,6 +1764,7 @@ void ULRProcessor::phase3()
    m_ans.send();
 
    StatsHss::singleton().registerStatResult(stat_hss_ulr, 0, ER_DIAMETER_SUCCESS);
+   hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_SUCCESS);
 
    ULR_TIMER_SET(ulr7, m_perf_timer);
 
@@ -2015,6 +2039,7 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
          {
             case AIRSTATE_PHASE1:
             {
+               hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_AUTH_INFO_REQUEST);
                pthis->phase1();
                break;
             }
@@ -2090,6 +2115,7 @@ void AIRProcessor::phase1()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","invalid_imsi"}});
       m_nextphase = AIRSTATE_PHASEFINAL;
       return;
    }
@@ -2106,6 +2132,7 @@ void AIRProcessor::phase1()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","invalid_max_eutran_vectors"}});
          m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
@@ -2127,6 +2154,7 @@ void AIRProcessor::phase1()
          m_ans.add(er);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_ERROR_RAT_NOT_ALLOWED);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","rat_not_allowed"}});
          m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
@@ -2139,6 +2167,7 @@ void AIRProcessor::phase1()
          m_ans.add(er);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_ERROR_RAT_NOT_ALLOWED);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","rat_not_allowed2"}});
          m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
@@ -2157,6 +2186,7 @@ void AIRProcessor::phase1()
             m_ans.add(er);
             m_ans.send();
             StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_ERROR_ROAMING_NOT_ALLOWED);
+            hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","roaming_not_allowed"}});
             m_nextphase = AIRSTATE_PHASEFINAL;
             return;
          }
@@ -2166,6 +2196,7 @@ void AIRProcessor::phase1()
          m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
          m_ans.send();
          StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+         hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","wrong_plmn_len"}});
          m_nextphase = AIRSTATE_PHASEFINAL;
          return;
       }
@@ -2175,6 +2206,7 @@ void AIRProcessor::phase1()
       m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_INVALID_AVP_VALUE);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_INVALID_AVP_VALUE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","plmn_not_found"}});
       m_nextphase = AIRSTATE_PHASEFINAL;
       return;
    }
@@ -2194,6 +2226,7 @@ void AIRProcessor::phase1()
       m_ans.add(er);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_AUTHENTICATION_DATA_UNAVAILABLE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","auth_data_not_available"}});
       m_nextphase = AIRSTATE_PHASEFINAL;
    }
 }
@@ -2208,6 +2241,7 @@ void AIRProcessor::phase2()
       m_ans.add(er);
       m_ans.send();
       StatsHss::singleton().registerStatResult(stat_hss_air, VENDOR_3GPP, DIAMETER_AUTHENTICATION_DATA_UNAVAILABLE);
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_FAILURE, {{"result_code","auth_data_not_available1"}});
       m_nextphase = AIRSTATE_PHASEFINAL;
       return;
    }
@@ -2260,6 +2294,7 @@ void AIRProcessor::phase2()
    m_ans.add( m_dict.avpResultCode(), ER_DIAMETER_SUCCESS);
    m_ans.send();
    StatsHss::singleton().registerStatResult(stat_hss_air, 0, ER_DIAMETER_SUCCESS);
+   hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_AUTH_INFO_ANSWER_SUCCESS);
 
    m_nextphase = AIRSTATE_PHASE3;
 
