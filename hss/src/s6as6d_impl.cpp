@@ -2140,6 +2140,7 @@ void AIRProcessor::phase1()
 
    if(m_air.requested_eutran_authentication_info.re_synchronization_info.get(m_auts, m_auts_len))
    {
+      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_AUTH_INFO_REQUEST_RESYNC);
       eutran_avp_found = true;
       m_auts_set = true;
    }
