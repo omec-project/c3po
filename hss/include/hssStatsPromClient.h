@@ -27,6 +27,7 @@ enum class hssStatsCounter {
 	MME_MSG_TX_S6A_PURGE_ANSWER_FAILURE,
 	MME_MSG_TX_S6A_CANCEL_LOCATION_REQUEST,
 	MME_MSG_RX_S6A_AUTH_INFO_REQUEST,
+	MME_MSG_RX_S6A_AUTH_INFO_REQUEST_RESYNC,
 	MME_MSG_RX_S6A_UPDATE_LOCATION_REQUEST,
 	MME_MSG_RX_S6A_PURGE_REQUEST
 };
@@ -209,6 +210,7 @@ class mme_msg_rx_counters {
 	~mme_msg_rx_counters();
 	Family<Counter> &mme_msg_rx_family;
 	Counter &mme_msg_rx_s6a_auth_info_request;
+	Counter &mme_msg_rx_s6a_auth_info_request_resync;
 	Counter &mme_msg_rx_s6a_update_location_request;
 	Counter &mme_msg_rx_s6a_purge_request;
 

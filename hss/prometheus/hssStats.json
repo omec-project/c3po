@@ -98,7 +98,8 @@
                 { "interface":"s6a"}
             ],
             "label_1": [
-                {"msg_type": "auth_info_request"}
+                {"msg_type": "auth_info_request"},
+                {"msg_type": "auth_info_request_resync"}
             ],
             "dynamic_label_0": [
                 {"mme_addr" : "mme identity of diameter connection "}

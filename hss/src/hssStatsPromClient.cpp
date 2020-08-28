@@ -64,6 +64,7 @@ mme_msg_tx_counters::~mme_msg_tx_counters()
 mme_msg_rx_counters::mme_msg_rx_counters():
 mme_msg_rx_family(BuildCounter().Name("number_of_messages_received").Help("Number of messages received by HSS ").Labels({{"direction","incoming"}}).Register(*registry)),
 mme_msg_rx_s6a_auth_info_request(mme_msg_rx_family.Add({{"interface","s6a"},{"msg_type","auth_info_request"}})),
+mme_msg_rx_s6a_auth_info_request_resync(mme_msg_rx_family.Add({{"interface","s6a"},{"msg_type","auth_info_request_resync"}})),
 mme_msg_rx_s6a_update_location_request(mme_msg_rx_family.Add({{"interface","s6a"},{"msg_type","update_location_request"}})),
 mme_msg_rx_s6a_purge_request(mme_msg_rx_family.Add({{"interface","s6a"},{"msg_type","purge_request"}}))
 {
@@ -481,6 +482,57 @@ void hssStats::increment(hssStatsCounter name,std::map<std::string,std::string> 
 		    obj->counter.Increment();
 		} else {
 		    mme_msg_rx_DynamicMetricObject3 *obj = mme_msg_rx_m->add_dynamic3("interface","s6a","msg_type","auth_info_request",it1->first, it1->second, it2->first, it2->second, it3->first, it3->second);
+		    auto p1 = std::make_pair(s1, obj);
+		    metrics_map.insert(p1);
+		    obj->counter.Increment();
+		}
+		}
+		break;
+	}
+	case hssStatsCounter::MME_MSG_RX_S6A_AUTH_INFO_REQUEST_RESYNC:
+	{
+		mme_msg_rx_m->mme_msg_rx_s6a_auth_info_request_resync.Increment();
+		if(labels.size() == 0) {
+		break;
+		}
+		if(labels.size() == 1) {
+		auto it = labels. begin();
+		struct Node s1 = {name, it->first, it->second};
+		auto it1 = metrics_map.find(s1);
+		if(it1 != metrics_map.end()) {
+		    mme_msg_rx_DynamicMetricObject1 *obj = static_cast<mme_msg_rx_DynamicMetricObject1 *>(it1->second);
+		    obj->counter.Increment();
+		} else {
+		    mme_msg_rx_DynamicMetricObject1 *obj = mme_msg_rx_m->add_dynamic1("interface","s6a","msg_type","auth_info_request_resync",it->first, it->second);
+		    auto p1 = std::make_pair(s1, obj);
+		    metrics_map.insert(p1);
+		    obj->counter.Increment();
+		}
+		} else if (labels.size() == 2) {
+		auto it1 = labels. begin();
+		auto it2 = it1++;
+		struct Node s1 = {name, it1->first+it2->first, it2->second+it2->second};
+		auto itf = metrics_map.find(s1);
+		if(itf != metrics_map.end()) {
+		    mme_msg_rx_DynamicMetricObject2 *obj = static_cast<mme_msg_rx_DynamicMetricObject2 *>(itf->second);
+		    obj->counter.Increment();
+		} else {
+		    mme_msg_rx_DynamicMetricObject2 *obj = mme_msg_rx_m->add_dynamic2("interface","s6a","msg_type","auth_info_request_resync",it1->first, it1->second, it2->first, it2->second);
+		    auto p1 = std::make_pair(s1, obj);
+		    metrics_map.insert(p1);
+		    obj->counter.Increment();
+		} 
+		} else if (labels.size() == 3) {
+		auto it1 = labels. begin();
+		auto it2 = it1++;
+		auto it3 = it2++;
+		struct Node s1 = {name, it1->first+it2->first+it3->first, it1->second+it2->second+it3->second};
+		auto itf = metrics_map.find(s1);
+		if(itf != metrics_map.end()) {
+		    mme_msg_rx_DynamicMetricObject3 *obj = static_cast<mme_msg_rx_DynamicMetricObject3 *>(itf->second);
+		    obj->counter.Increment();
+		} else {
+		    mme_msg_rx_DynamicMetricObject3 *obj = mme_msg_rx_m->add_dynamic3("interface","s6a","msg_type","auth_info_request_resync",it1->first, it1->second, it2->first, it2->second, it3->first, it3->second);
 		    auto p1 = std::make_pair(s1, obj);
 		    metrics_map.insert(p1);
 		    obj->counter.Increment();
