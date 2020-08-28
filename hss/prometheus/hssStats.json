@@ -1,0 +1,136 @@
+{
+
+    "mme_msg_tx": {
+        "name": "number_of_messages_sent",
+        "help": "Number of messages sent by HSS",
+        "type": "Counter",
+        "family_labels": [
+                {"direction": "outgoing"}
+        ],
+        "counters":[
+        { 
+            "name" : "s6a_authentication_information_answer",
+            "help" : "number of authentication answer sent by HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "auth_info_answer"}
+            ],
+            "label_2": [
+                {"result": "success"},
+                {"result": "failure"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ],
+             "dynamic_label_1": [
+                {"result_code" : "result_code_number"}
+            ]
+        },
+        { 
+            "name" : "s6a_update_location_answer",
+            "help" : "number of update location answer sent by HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "update_location_answer"}
+            ],
+            "label_2": [
+                {"result": "success"},
+                {"result": "failure"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ],
+             "dynamic_label_1": [
+                {"result_code" : "result_code_number"}
+            ]
+        },
+        { 
+            "name" : "s6a_purge_answer",
+            "help" : "number of purge answer received from HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "purge_answer"}
+            ],
+            "label_2": [
+                {"result": "success"},
+                {"result": "failure"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ],
+             "dynamic_label_1": [
+                {"result_code" : "result_code_number"}
+            ]
+        },
+        { 
+            "name" : "s6a_cancel_location_request",
+            "help" : "number of cancel location request sent by HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "cancel_location_request"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ]
+        }
+        ]
+    },
+    "mme_msg_rx": {
+        "name": "number_of_messages_received",
+        "help": "Number of messages received by HSS ",
+        "type": "Counter",
+        "family_labels": [
+                {"direction": "incoming"}
+        ],
+        "counters":[
+        { 
+            "name" : "s6a_authentication_info_request",
+            "help" : "number of authentication information request received by HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "auth_info_request"},
+                {"msg_type": "auth_info_request_resync"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ]
+        },
+        { 
+            "name" : "s6a_update_location_request",
+            "help" : "number of ULR request received by HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "update_location_request"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ]
+        },
+        { 
+            "name" : "s6a_purge_request",
+            "help" : "number of Purge request received by HSS",
+            "label_0": [
+                { "interface":"s6a"}
+            ],
+            "label_1": [
+                {"msg_type": "purge_request"}
+            ],
+            "dynamic_label_0": [
+                {"mme_addr" : "mme identity of diameter connection "}
+            ]
+        }
+        ]
+    }
+}

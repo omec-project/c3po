@@ -47,6 +47,7 @@ FROM $RUN_BASE as hss
 RUN bash -c "source ./install_rundeps.sh && install_run_hss_deps && cleanup_image"
 COPY --from=build /c3po/hss/bin /bin
 COPY --from=build /usr/local/lib/freeDiameter /usr/local/lib/freeDiameter
+COPY --from=build /c3po/modules/prometheus-cpp/_build/deploy/usr/local/lib /usr/local/lib
 
 ## Stage hssgtw
 FROM $RUN_BASE as hssgtw

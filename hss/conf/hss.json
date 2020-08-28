@@ -34,5 +34,6 @@
     "concurrent": 10,
     "ossfile": "conf/oss.json",
     "verifyroamingsubscribers": true
+    "prom_port": 9089
  }
 }

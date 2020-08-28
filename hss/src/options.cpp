@@ -63,6 +63,7 @@ int         Options::m_numworkers;
 int         Options::m_concurrent;
 uint32_t    Options::m_statsfrequency;
 bool        Options::m_verify_roaming;
+short int   Options::m_prom_port;
 
 void Options::help()
 {
@@ -286,6 +287,11 @@ bool Options::parseJson(){
          if(!hssSection["verifyroamingsubscribers"].IsBool()) { std::cout << "Error parsing json value: [verifyroamingsubscribers]" << std::endl; return false; }
          m_verify_roaming = hssSection["verifyroamingsubscribers"].GetBool();
       }
+      m_prom_port = 9089;
+      if(hssSection.HasMember("prom_port")){
+         if(!hssSection["prom_port"].IsInt()) { std::cout << "Error parsing json value: [prom_port]" << std::endl; return false; }
+         m_prom_port = hssSection["verifyroamingsubscribers"].GetInt();
+      }
  
    }
 
@@ -481,5 +487,6 @@ void Options::fillhssconfig(hss_config_t *hss_config_p)
       hss_config_p->random = (char*)"false";
    }
    hss_config_p->verify_roaming = m_verify_roaming;
+   hss_config_p->prom_port = m_prom_port;
 }
 
