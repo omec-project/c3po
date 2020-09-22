@@ -57,6 +57,7 @@ COPY --from=build /c3po/hssgtw/bin /bin
 ## Stage pcrf
 FROM $RUN_BASE as pcrf
 RUN bash -c "source ./install_rundeps.sh && install_run_pcrf_deps && cleanup_image"
+COPY --from=build /usr/local/lib/freeDiameter /usr/local/lib/freeDiameter
 COPY --from=build /c3po/pcrf/bin /bin
 
 ## Stage pcef
@@ -81,3 +82,10 @@ RUN apt-get update && apt-get -y install \
     rm -rf /var/lib/apt/lists/*
 COPY hss/db/oai_db.cql /opt/c3po/hssdb/oai_db.cql
 COPY db_docs/data_provisioning_users.sh db_docs/data_provisioning_mme.sh /bin/
+
+## Stage pcrfdb
+FROM cassandra:2.1 as pcrfdb
+RUN apt-get update && apt-get -y install \
+      dnsutils && \
+    rm -rf /var/lib/apt/lists/*
+COPY pcrf/pcrf_cassandra.cql /opt/c3po/pcrfdb/pcrf_cassandra.cql

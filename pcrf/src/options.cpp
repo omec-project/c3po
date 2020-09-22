@@ -72,12 +72,15 @@ bool Options::parse( int argc, char **argv ){
    bool ret = true;
 
    ret = singleton().parseInputOptions( argc, argv );
+   std::cout<<"parseInputOptions -  "<<ret<<std::endl;
 
    if(ret && !singleton().m_jsoncfg.empty()){
       ret &= singleton().parseJson();
+      std::cout<<"json config parse - "<<ret<<std::endl;
    }
 
    ret &= singleton().validateOptions();
+   std::cout<<"validate options - "<<ret<<std::endl;
 
    return ret;
 }
@@ -318,8 +321,7 @@ bool Options::parseJson()
 }
 
 bool Options::validateOptions(){
-   return
-         ( m_options & opt_jsoncfg )
+   return ( m_options & opt_jsoncfg )
       && ( m_options & opt_originhost )
       && ( m_options & opt_originrealm )
       && ( m_options & opt_fdcfg )
@@ -328,12 +330,12 @@ bool Options::validateOptions(){
       && ( m_options & opt_logmaxsize )
       && ( m_options & opt_lognbrfiles )
       && ( m_options & opt_logfilename )
-      && ( m_options & opt_selfredirect )
-      && ( m_options & opt_enableruletimers )
-      && ( m_options & opt_rulecallbackport )
-      && ( m_options & opt_rulecallbackthreads )
-      && ( m_options & opt_rulecallbackurl )
-      && ( m_options & opt_chronosapiurl )
+      //&& ( m_options & opt_selfredirect )
+      //&& ( m_options & opt_enableruletimers )
+      //&& ( m_options & opt_rulecallbackport )
+      //&& ( m_options & opt_rulecallbackthreads )
+      //&& ( m_options & opt_rulecallbackurl )
+      //&& ( m_options & opt_chronosapiurl )
       && ( m_options & opt_statlogfilename )
       && ( m_options & opt_statlognbrfiles )
       && ( m_options & opt_statlogmaxsize )

@@ -120,7 +120,8 @@ void HookEvent::md_hook_cb_ok(enum fd_hook_type type, struct msg * msg, struct p
             else if( (hdr->msg_code == m_gx->getDict().cmdREAA().getCommandCode()) && !isRequest){
                m_stat->registerStatAttemp(stat_pcrf_gx_rar, stat_attemp_received);
             }
-         }
+         } 
+#if 0
          else if ( hdr->msg_appl == m_sd->getDict().app().getId() ){
             if( (hdr->msg_code == m_sd->getDict().cmdTSR().getCommandCode()) && isRequest ){
                m_stat->registerStatAttemp(stat_pcrf_sd_tsr, stat_attemp_sent);
@@ -155,6 +156,7 @@ void HookEvent::md_hook_cb_ok(enum fd_hook_type type, struct msg * msg, struct p
                m_stat->registerStatAttemp(stat_pcrf_st_str, stat_attemp_received);
             }
          }
+#endif
       }
    }
 }
