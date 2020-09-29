@@ -28,7 +28,7 @@ DOCKER_LABEL_VCS_REF     ?= $(shell git diff-index --quiet HEAD -- && git rev-pa
 DOCKER_LABEL_COMMIT_DATE ?= $(shell git diff-index --quiet HEAD -- && git show -s --format=%cd --date=iso-strict HEAD || echo "unknown" )
 DOCKER_LABEL_BUILD_DATE  ?= $(shell date -u "+%Y-%m-%dT%H:%M:%SZ")
 # Complete set of targets are "build $(SET1) $(SET2) pcef tdf tssf hssdb"
-DOCKER_TARGETS           ?= hss hssdb
+DOCKER_TARGETS           ?= hss hssdb pcrf pcrfdb
 
 # https://docs.docker.com/engine/reference/commandline/build/#specifying-target-build-stage---target
 docker-build:

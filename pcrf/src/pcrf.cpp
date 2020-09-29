@@ -7,6 +7,9 @@
 
 #include <memory>
 #include <iostream>
+#include "freeDiameter/freeDiameter-host.h"
+#include "freeDiameter/libfdproto.h"
+#include "freeDiameter/libfdcore.h"
 
 #include <pistache/endpoint.h>
 #include <pistache/net.h>
@@ -27,6 +30,22 @@ PCRF::PCRF()
 
 PCRF::~PCRF()
 {
+}
+
+int gx_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (struct peer_info *)){
+
+    if (info == NULL) {
+      return EINVAL;
+    }
+
+    *auth = 1;
+    /*
+     * For now we don't use security
+     */
+    info->config.pic_flags.sec = PI_SEC_NONE;
+    info->config.pic_flags.persist = PI_PRST_NONE;
+    printf ( "Accepting %s peer\n", info->pi_diamid);
+    return 0;
 }
 
 bool PCRF::init()
@@ -126,6 +145,7 @@ bool PCRF::init()
       FDDictionaryEntryVendor vnd3gpp( m_gx->getDict().app() );
       m_diameter.advertiseSupport( m_gx->getDict().app(), vnd3gpp, 1, 0 );
       Logger::gx().startup( "%s:%d - interface initialized", __FILE__, __LINE__ );
+      fd_peer_validate_register (gx_peer_validate);
    }
    catch ( FDException &e )
    {
@@ -133,6 +153,7 @@ bool PCRF::init()
       return false;
    }
 
+#if 0
    //
    // initialize the Rx interface
    //
@@ -180,6 +201,7 @@ bool PCRF::init()
       Logger::st().startup( "%s:%d - FDException initializing interface - %s", __FILE__, __LINE__, e.what() );
       return false;
    }
+#endif
 
    try
    {
