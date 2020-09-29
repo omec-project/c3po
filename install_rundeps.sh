@@ -47,7 +47,8 @@ install_run_pcrf_deps() {
 		libidn11 \
 		libnettle6 \
 		libssl1.0.0 \
-		libuv1
+		libuv1 \
+		openssl
 }
 
 install_run_pcef_deps() {
