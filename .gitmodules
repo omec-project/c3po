@@ -19,6 +19,7 @@
 [submodule "modules/freeDiameter"]
 	path = modules/freeDiameter
 	url = https://github.com/omec-project/freediameter.git
+	branch = gx
 [submodule "modules/prometheus-cpp"]
 	path = modules/prometheus-cpp
 	url = https://github.com/jupp0r/prometheus-cpp
