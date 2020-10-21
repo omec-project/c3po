@@ -32,7 +32,8 @@ PCRF::~PCRF()
 {
 }
 
-int gx_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (struct peer_info *)){
+int gx_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (struct peer_info *)) 
+{
 
     if (info == NULL) {
       return EINVAL;
@@ -153,7 +154,6 @@ bool PCRF::init()
       return false;
    }
 
-#if 0
    //
    // initialize the Rx interface
    //
@@ -201,7 +201,6 @@ bool PCRF::init()
       Logger::st().startup( "%s:%d - FDException initializing interface - %s", __FILE__, __LINE__, e.what() );
       return false;
    }
-#endif
 
    try
    {

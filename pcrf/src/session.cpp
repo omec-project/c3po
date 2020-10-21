@@ -616,7 +616,7 @@ bool GxIpCan1::processPhase1()
    // a return value of false indicates that processing should be halted
    // the destruction sequence for the object should be initiated
    //
-   printf("%s %d \n",__FUNCTION__,__LINE__);
+   printf("GxIpCan1::processPhase1i %s %d \n",__FUNCTION__,__LINE__);
    SMutexLock l( m_mutex );
    bool result = true;
    std::string s;
