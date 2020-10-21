@@ -595,6 +595,47 @@ void GxIpCan1::release( GxIpCan1 *gxevent )
       delete gxevent;
 }
 
+void GxIpCan1::onInit()
+{
+   m_idleTimer.setInterval(20);
+   m_idleTimer.setOneShot(true);
+   initTimer( m_idleTimer);
+}
+
+void GxIpCan1::onQuit()
+{
+
+}
+
+void GxIpCan1::onTimer( SEventThread::Timer &t)
+{
+   if (t.getId() == m_idleTimer.getId())
+   {
+      postMessage( TIMEOUT );
+   }
+}
+
+void GxIpCan1::dispatch( SEventThreadMessage &msg)
+{
+   if ( msg.getId() == TIMEOUT)
+   {
+      Logger::gx().debug("SOHAN TIMEOUT Occured");
+      sendRAR();
+   }
+}
+
+void GxIpCan1::sendRAR()
+{
+   Logger::gx().debug("SOHAN SENDING RAR to PEER");
+   RulesList &irules( getRulesEvaluator().getGxInstallRules() );
+   RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
+   bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
+   if (result)
+   {
+      Logger::gx().debug("RAR sent successful"); 
+   }
+}
+
 void GxIpCan1::sendCCA()
 {
    Logger::gx().debug( "%s:%d - Sending CCA for imsi=[%s] apn=[%s]",
@@ -1252,7 +1293,12 @@ bool GxIpCan1::processPhase1()
             ABORT();
          }
       }
-
+	  if (getStatus() == esComplete)
+	  {
+	     // we have sent the successful CCA Initial, hence start the timer
+	     Logger::gx().debug("SOHAN STARTING THE TIMER AS CCA Initial is sent");
+		 m_idleTimer.start();
+	  }
       break;
    }
 
