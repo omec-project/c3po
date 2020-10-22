@@ -22,6 +22,9 @@
 #include "endpoint.h"
 #include "rule.h"
 #include "subscriber.h"
+#include "stimer.h"
+#include "sthread.h"
+#include "stime.h"
 
 class PCRF;
 class GxSession;
@@ -30,6 +33,7 @@ class StSession;
 class GxCreditControlRequest;
 
 class SdSessionMap;
+const uint16_t TIMEOUT     =    ETM_USER + 10;
 
 namespace sd
 {
@@ -575,7 +579,7 @@ private:
    GxSession *m_gx;
 };
 
-class GxIpCan1 : public SessionEvent
+class GxIpCan1 : public SessionEvent, public SEventThread
 {
 public:
    GxIpCan1( PCRF &pcrf, FDMessageRequest *req, gx::Dictionary &dict );
@@ -610,6 +614,14 @@ public:
    void decrementUsage() { SMutexLock l( m_mutex ); m_usagecnt--; }
    static void release( GxIpCan1 *gxevent );
 
+   // 
+   // SEventThread methods for initializing timer
+   void onInit();
+   void onQuit();
+   void onTimer( SEventThread::Timer &t);
+   void dispatch( SEventThreadMessage &msg); 
+   void sendRAR();
+
 private:
    GxIpCan1();
    ~GxIpCan1();
@@ -634,6 +646,7 @@ private:
    StIpCan1EstablishSession *m_stEstablishSession;
    SdIpCan1ProcessRules *m_sdProcessRules;
    StIpCan1ProcessRules *m_stProcessRules;
+   SEventThread::Timer m_idleTimer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

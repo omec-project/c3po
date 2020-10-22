@@ -142,6 +142,7 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
       if ( sdterminate )
       {
          SdTerminateSession *ts = new SdTerminateSession( gx );
+        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
          if ( !ts->processPhase1( src ) )
          {
             sdclosed = true;
@@ -157,6 +158,7 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
       if ( stterminate )
       {
          StTerminateSession *ts = new StTerminateSession( gx );
+        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
          if ( !ts->processPhase1( tc ) )
          {
             stclosed = true;
@@ -593,6 +595,47 @@ void GxIpCan1::release( GxIpCan1 *gxevent )
       delete gxevent;
 }
 
+void GxIpCan1::onInit()
+{
+   m_idleTimer.setInterval(20);
+   m_idleTimer.setOneShot(true);
+   initTimer( m_idleTimer);
+}
+
+void GxIpCan1::onQuit()
+{
+
+}
+
+void GxIpCan1::onTimer( SEventThread::Timer &t)
+{
+   if (t.getId() == m_idleTimer.getId())
+   {
+      postMessage( TIMEOUT );
+   }
+}
+
+void GxIpCan1::dispatch( SEventThreadMessage &msg)
+{
+   if ( msg.getId() == TIMEOUT)
+   {
+      Logger::gx().debug("SOHAN TIMEOUT Occured");
+      sendRAR();
+   }
+}
+
+void GxIpCan1::sendRAR()
+{
+   Logger::gx().debug("SOHAN SENDING RAR to PEER");
+   RulesList &irules( getRulesEvaluator().getGxInstallRules() );
+   RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
+   bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
+   if (result)
+   {
+      Logger::gx().debug("RAR sent successful"); 
+   }
+}
+
 void GxIpCan1::sendCCA()
 {
    Logger::gx().debug( "%s:%d - Sending CCA for imsi=[%s] apn=[%s]",
@@ -614,6 +657,7 @@ bool GxIpCan1::processPhase1()
    // a return value of false indicates that processing should be halted
    // the destruction sequence for the object should be initiated
    //
+   printf("%s %d \n",__FUNCTION__,__LINE__);
    SMutexLock l( m_mutex );
    bool result = true;
    std::string s;
@@ -853,293 +897,289 @@ bool GxIpCan1::processPhase1()
          getGxSession()->getRules().addGxSession( getGxSession() );
       }
 
+      //
+      // get the PCRF endpoint
+      //
       {
-         //
-         // get the PCRF endpoint
-         //
-         {
-            Endpoint *ep = NULL;
+          Endpoint *ep = NULL;
 
-            if ( !getPCRF().getEndpoint( Options::originHost(), ep ) )
-            {
-               ep = new Endpoint();
-               ep->setHost( Options::originHost() );
-               ep->setRealm( Options::originRealm() );
+          if ( !getPCRF().getEndpoint( Options::originHost(), ep ) )
+          {
+              ep = new Endpoint();
+              ep->setHost( Options::originHost() );
+              ep->setRealm( Options::originRealm() );
 
-               if ( getPCRF().dataaccess().addEndpoint( *ep ) )
-               {
+              if ( getPCRF().dataaccess().addEndpoint( *ep ) )
+              {
                   if ( !getPCRF().addEndpoint( ep ) )
                   {
-                     Logger::gx().error( "%s:%d - Unable to add PCRF endpoint [%s] to collection imsi=[%s] apn=[%s]",
-                           __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                     EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
-                     sendCCA();
-                     StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                     delete ep;
-                     ABORT();
+                      Logger::gx().error( "%s:%d - Unable to add PCRF endpoint [%s] to collection imsi=[%s] apn=[%s]",
+                              __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                      EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
+                      sendCCA();
+                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                      delete ep;
+                      ABORT();
                   }
-               }
-               else
-               {
+              }
+              else
+              {
                   Logger::gx().error( "%s:%d - Error adding PCRF endpoint [%s] to database, imsi=[%s] apn=[%s]",
-                        __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                          __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
                   EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                   delete ep;
                   ABORT();
-               }
-            }
+              }
+          }
 
-            getGxSession()->setPcrfEndpoint( ep );
-         }
+          getGxSession()->setPcrfEndpoint( ep );
+      }
 
-         {
-            uint8_t ipaddr[16];
-            size_t ipaddrlen = sizeof(ipaddr);
+      {
+          uint8_t ipaddr[16];
+          size_t ipaddrlen = sizeof(ipaddr);
 
-            if ( getCCR().framed_ip_address.get( ipaddr, ipaddrlen ) && ipaddrlen == 4 )
-            {
-               if ( ipaddrlen == 4 )
-               {
+          if ( getCCR().framed_ip_address.get( ipaddr, ipaddrlen ) && ipaddrlen == 4 )
+          {
+              if ( ipaddrlen == 4 )
+              {
                   struct in_addr ipv4;
                   ipv4.s_addr = *(uint32_t*)ipaddr;
                   getGxSession()->setIPv4( ipv4, sizeof(ipv4) );
-               }
-               else
-               {
+              }
+              else
+              {
                   Logger::gx().error( "%s:%d - Invalid length for Framed-IP-Address, expected 4 found %d",
-                        __FILE__, __LINE__, ipaddrlen );
+                          __FILE__, __LINE__, ipaddrlen );
                   EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().framed_ip_address );
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                   ABORT();
-               }
-            }
+              }
+          }
 
-            ipaddrlen = sizeof(ipaddr);
-            if ( getCCR().framed_ipv6_prefix.get( ipaddr, ipaddrlen ) )
-            {
-               getGxSession()->setIPv6( ipaddr, ipaddrlen );
-            }
+          ipaddrlen = sizeof(ipaddr);
+          if ( getCCR().framed_ipv6_prefix.get( ipaddr, ipaddrlen ) )
+          {
+              getGxSession()->setIPv6( ipaddr, ipaddrlen );
+          }
 
-            if ( getGxSession()->getIPv4Len() == 0 && getGxSession()->getIPv6Len() == 0 )
-            {
-               Logger::gx().error( "%s:%d - Either Framed-IP-Address or Framed-IPv6-Prefix must be specified",
-                     __FILE__, __LINE__ );
-               EXP_RESULTCODE_WITH_FAILEDAVP2( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
-               sendCCA();
-               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-               ABORT();
-            }
-         }
+          if ( getGxSession()->getIPv4Len() == 0 && getGxSession()->getIPv6Len() == 0 )
+          {
+              Logger::gx().error( "%s:%d - Either Framed-IP-Address or Framed-IPv6-Prefix must be specified",
+                      __FILE__, __LINE__ );
+              EXP_RESULTCODE_WITH_FAILEDAVP2( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
+              sendCCA();
+              StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+              ABORT();
+          }
+      }
 
-         //
-         // get the PCEF supported features
-         //
-         {
-            uint64_t supported_features = 0;
+      //
+      // get the PCEF supported features
+      //
+      {
+          uint64_t supported_features = 0;
 
-            for ( auto sfextractor : getCCR().supported_features.getList() )
-            {
-               uint32_t flid;
+          for ( auto sfextractor : getCCR().supported_features.getList() )
+          {
+              uint32_t flid;
 
-               if ( sfextractor->feature_list_id.get( flid ) )
-               {
+              if ( sfextractor->feature_list_id.get( flid ) )
+              {
                   if ( flid < 1 || flid > 2 )
                   {
-                     Logger::gx().error( "%s:%d - Invalid Feature-List-ID [%u] for imsi=[%s] apn=[%s]",
-                           __FILE__, __LINE__, flid, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                     RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-                     sendCCA();
-                     StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-                     ABORT();
+                      Logger::gx().error( "%s:%d - Invalid Feature-List-ID [%u] for imsi=[%s] apn=[%s]",
+                              __FILE__, __LINE__, flid, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                      RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+                      sendCCA();
+                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+                      ABORT();
                   }
 
                   uint32_t fl;
 
                   if ( sfextractor->feature_list.get( fl ) )
-                     supported_features |= ( flid == 1 ? (int64_t)fl : (int64_t)fl << 32 );
-               }
-            }
+                      supported_features |= ( flid == 1 ? (int64_t)fl : (int64_t)fl << 32 );
+              }
+          }
 
-            if ( !result )
-               break;
+          if ( !result )
+              break;
 
-            getGxSession()->setSupportedFeatures( supported_features );
-         }
+          getGxSession()->setSupportedFeatures( supported_features );
+      }
 
+#if 0
+      //
+      // get the PCEF endpoint
+      //
+      if ( getCCR().origin_host.get( s ) )
+      {
+          Endpoint *ep = NULL;
 
-         {
-            //
-            // get the PCEF endpoint
-            //
-            if ( getCCR().origin_host.get( s ) )
-            {
-               Endpoint *ep = NULL;
+          if ( !getPCRF().getEndpoint( s, ep ) )
+          {
+              ep = new Endpoint();
+              ep->setHost( Options::originHost() );
+              ep->setRealm( Options::originRealm() );
 
-               if ( !getPCRF().getEndpoint( s, ep ) )
-               {
-                  ep = new Endpoint();
-                  ep->setHost( Options::originHost() );
-                  ep->setRealm( Options::originRealm() );
+              if ( getPCRF().dataaccess().addEndpoint( *ep ) )
+              {
+                  if ( !getPCRF().addEndpoint( ep ) )
+                  {
+                      Logger::gx().error( "%s:%d - Unable to add PCEF endpoint [%s] to collection imsi=[%s] apn=[%s]",
+                              __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                      EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().origin_host );
+                      sendCCA();
+                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                      delete ep;
+                      ABORT();
+                  }
+              }
+              else
+              {
+                  Logger::gx().error( "%s:%d - Error adding PCEF endpoint [%s] to database, imsi=[%s] apn=[%s]",
+                          __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                  EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().origin_host );
+                  sendCCA();
+                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                  delete ep;
+                  ABORT();
+              }
+          }
 
+          getGxSession()->setPcefEndpoint( ep );
+      }
+      else
+      {
+          Logger::gx().error( "%s:%d - Origin-Host missing imsi=[%s] apn=[%s]",
+                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpOriginHost(), "" );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
+          ABORT();
+      }
+#endif
+
+      //
+      // get the TDF endpoint
+      //
+      if ( getCCR().tdf_information.tdf_destination_host.get( s ) )
+      {
+          Endpoint *ep = NULL;
+
+          //
+          // lookup the TDF endpoint in memory
+          //
+          if ( getPCRF().getEndpoint( s, ep ) )
+          {
+              getGxSession()->getTdfSession().setEndpoint( ep );
+          }
+          else
+          {
+              //
+              // initialize a new Endpoint object since it was not found
+              //
+              ep = new Endpoint();
+              ep->setHost( s );
+              if ( getCCR().tdf_information.tdf_destination_realm.get( s ) )
+                  ep->setRealm( s );
+              if ( getCCR().tdf_information.tdf_ip_address.get( s ) )
+                  ep->setIp( s );
+
+              try
+              {
                   if ( getPCRF().dataaccess().addEndpoint( *ep ) )
                   {
-                     if ( !getPCRF().addEndpoint( ep ) )
-                     {
-                        Logger::gx().error( "%s:%d - Unable to add PCEF endpoint [%s] to collection imsi=[%s] apn=[%s]",
-                              __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                        EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().origin_host );
-                        sendCCA();
-                        StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                        delete ep;
-                        ABORT();
-                     }
+                      if ( getPCRF().addEndpoint( ep ) )
+                      {
+                          getGxSession()->getTdfSession().setEndpoint( ep );
+                      }
+                      else
+                      {
+                          Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the internal collection",
+                                  __FILE__, __LINE__, ep->getHost().c_str() );
+                          EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().tdf_information.tdf_destination_host );
+                          sendCCA();
+                          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                          delete ep;
+                          ABORT();
+                      }
                   }
                   else
                   {
-                     Logger::gx().error( "%s:%d - Error adding PCEF endpoint [%s] to database, imsi=[%s] apn=[%s]",
-                           __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                     EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().origin_host );
-                     sendCCA();
-                     StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                     delete ep;
-                     ABORT();
-                  }
-               }
-
-               getGxSession()->setPcefEndpoint( ep );
-            }
-            else
-            {
-               Logger::gx().error( "%s:%d - Origin-Host missing imsi=[%s] apn=[%s]",
-                     __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-               RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpOriginHost(), "" );
-               sendCCA();
-               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-               ABORT();
-            }
-
-            //
-            // get the TDF endpoint
-            //
-            if ( getCCR().tdf_information.tdf_destination_host.get( s ) )
-            {
-               Endpoint *ep = NULL;
-
-               //
-               // lookup the TDF endpoint in memory
-               //
-               if ( getPCRF().getEndpoint( s, ep ) )
-               {
-                  getGxSession()->getTdfSession().setEndpoint( ep );
-               }
-               else
-               {
-                  //
-                  // initialize a new Endpoint object since it was not found
-                  //
-                  ep = new Endpoint();
-                  ep->setHost( s );
-                  if ( getCCR().tdf_information.tdf_destination_realm.get( s ) )
-                     ep->setRealm( s );
-                  if ( getCCR().tdf_information.tdf_ip_address.get( s ) )
-                     ep->setIp( s );
-
-                  try
-                  {
-                     if ( getPCRF().dataaccess().addEndpoint( *ep ) )
-                     {
-                        if ( getPCRF().addEndpoint( ep ) )
-                        {
-                           getGxSession()->getTdfSession().setEndpoint( ep );
-                        }
-                        else
-                        {
-                           Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the internal collection",
-                                 __FILE__, __LINE__, ep->getHost().c_str() );
-                           EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().tdf_information.tdf_destination_host );
-                           sendCCA();
-                           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                           delete ep;
-                           ABORT();
-                        }
-                     }
-                     else
-                     {
-                        Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the database",
+                      Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the database",
                               __FILE__, __LINE__, ep->getHost().c_str() );
-                        EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().tdf_information.tdf_destination_host );
-                        sendCCA();
-                        StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                        delete ep;
-                        ABORT();
-                     }
+                      EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().tdf_information.tdf_destination_host );
+                      sendCCA();
+                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                      delete ep;
+                      ABORT();
                   }
-                  catch ( DAException &ex )
-                  {
-                     Logger::gx().error( "%s:%d - Exception while adding TDF endpoint [%s] to the database - %s",
-                           __FILE__, __LINE__, ep->getHost().c_str(), ex.what() );
-                     EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().tdf_information.tdf_destination_host );
-                     sendCCA();
-                     StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                     delete ep;
-                     ABORT();
-                  }
-               }
-            }
-            else
-            {
-               //
-               // set the TDF endpoint from the PcrfEndpoint
-               //
-               if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTdf().empty() )
-               {
-                  Endpoint *ep = NULL;
+              }
+              catch ( DAException &ex )
+              {
+                  Logger::gx().error( "%s:%d - Exception while adding TDF endpoint [%s] to the database - %s",
+                          __FILE__, __LINE__, ep->getHost().c_str(), ex.what() );
+                  EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().tdf_information.tdf_destination_host );
+                  sendCCA();
+                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                  delete ep;
+                  ABORT();
+              }
+          }
+      }
+      else
+      {
+          //
+          // set the TDF endpoint from the PcrfEndpoint
+          //
+          if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTdf().empty() )
+          {
+              Endpoint *ep = NULL;
 
-                  if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTdf(), ep ) )
-                  {
-                     getGxSession()->getTdfSession().setEndpoint( ep );
-                  }
-                  else
-                  {
-                     Logger::gx().error( "%s:%d - TDF endpoint [%s] specified in PCEF [%s] endoint entry does not exist",
-                           __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
-                           getGxSession()->getPcefEndpoint()->getHost().c_str() );
-                     EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
-                     sendCCA();
-                     StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                     ABORT();
-                  }
-               }
-            }
-
-            //
-            // get the TSSF endpoint
-            //
-            if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTssf().empty() )
-            {
-               Endpoint *ep = NULL;
-
-               if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTssf(), ep ) )
-               {
-                  getGxSession()->getTssfSession().setEndpoint( ep );
-               }
-               else
-               {
-                  Logger::gx().error( "%s:%d - TSSF endpoint [%s] specified in PCEF [%s] endoint database entry does not exist",
-                        __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
-                        getGxSession()->getPcefEndpoint()->getHost().c_str() );
+              if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTdf(), ep ) )
+              {
+                  getGxSession()->getTdfSession().setEndpoint( ep );
+              }
+              else
+              {
+                  Logger::gx().error( "%s:%d - TDF endpoint [%s] specified in PCEF [%s] endoint entry does not exist",
+                          __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
+                          getGxSession()->getPcefEndpoint()->getHost().c_str() );
                   EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                   ABORT();
-               }
-            }
-         }
+              }
+          }
       }
 
+      //
+      // get the TSSF endpoint
+      //
+      if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTssf().empty() )
+      {
+          Endpoint *ep = NULL;
+
+          if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTssf(), ep ) )
+          {
+              getGxSession()->getTssfSession().setEndpoint( ep );
+          }
+          else
+          {
+              Logger::gx().error( "%s:%d - TSSF endpoint [%s] specified in PCEF [%s] endoint database entry does not exist",
+                      __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
+                      getGxSession()->getPcefEndpoint()->getHost().c_str() );
+              EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
+              sendCCA();
+              StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+              ABORT();
+          }
+      }
       //
       // setup Sy interface if needed
       //
@@ -1192,7 +1232,7 @@ bool GxIpCan1::processPhase1()
          ABORT();
       }
 
-      setDeleteGxSession( false );
+      setDeleteGxSession( false ); std::cout<<"Calling TDF functions now"<<std::endl;
 
       //
       // establish the TDF session if necessary
@@ -1209,8 +1249,10 @@ bool GxIpCan1::processPhase1()
             ABORT();
          }
 
+        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
          if ( !m_sdEstablishSession->processPhase1() )
          {
+            printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
             if ( getCCR().tdf_information.tdf_destination_host.exists() )
             {
                EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS,
@@ -1224,6 +1266,7 @@ bool GxIpCan1::processPhase1()
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
             ABORT();
          }
+         printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
       }
 
       //
@@ -1241,6 +1284,7 @@ bool GxIpCan1::processPhase1()
             ABORT();
          }
 
+        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
          if ( !m_stEstablishSession->processPhase1() )
          {
             EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
@@ -1249,7 +1293,12 @@ bool GxIpCan1::processPhase1()
             ABORT();
          }
       }
-
+	  if (getStatus() == esComplete)
+	  {
+	     // we have sent the successful CCA Initial, hence start the timer
+	     Logger::gx().debug("SOHAN STARTING THE TIMER AS CCA Initial is sent");
+		 m_idleTimer.start();
+	  }
       break;
    }
 
@@ -1262,6 +1311,7 @@ bool GxIpCan1::processPhase2( bool lockit )
 {
    SMutexLock l( m_mutex, lockit );
 
+   printf("%s %d \n",__FUNCTION__,__LINE__);
    Logger::gx().debug( "%s:%d - GxIpCan1::processPhase2 - start", __FILE__, __LINE__ );
 
    // evaluate rules and send if good
@@ -1308,7 +1358,9 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
+      printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
       result = m_sdProcessRules->processPhase1();
+      std::cout<<"phase 1 m_sdProcessRules  over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
       if ( !result )
       {
          setStatus( esFailed );
@@ -1329,6 +1381,7 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
+        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
       result = m_stProcessRules->processPhase1();
       if ( !result )
       {
@@ -1354,6 +1407,7 @@ bool GxIpCan1::processPhase2( bool lockit )
 
 bool GxIpCan1::processPhase3()
 {
+   printf("%s %d \n",__FUNCTION__,__LINE__);
    SMutexLock l( m_mutex );
 
    if ( getStatus() != esProcessing )
@@ -1383,6 +1437,10 @@ bool GxIpCan1::processPhase3()
    // add the DIAMETER_SUCCESS Result-Code AVP
    getCCA().add( getDict().avpResultCode(), DIAMETER_SUCCESS );
 
+   FDAvp defBearerQos(getDict().avpDefaultEpsBearerQos());
+   std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
+   defBearerQos.addJson(json_t);
+   getCCA().add(defBearerQos);
    // add the rules
    {
       RulesList &irules( getRulesEvaluator().getGxInstallRules() );
@@ -1444,11 +1502,12 @@ bool GxIpCan1::processPhase3()
          if ( crcnt > 0 )
             getCCA().add( crr );
          if ( pracnt > 0 )
-            getCCA().add( prar );
+             getCCA().add( prar );
       }
    }
 
    // send the cca
+   std::cout<<"Sending CCA-Initial \n"<<std::endl; 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
 
@@ -1458,7 +1517,7 @@ bool GxIpCan1::processPhase3()
    //
    // a return value of false will trigger the cleanup of the GxIpCan1 event object
    //
-   return false;
+   return true;// false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1488,7 +1547,9 @@ bool SdIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
+      printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
+      std::cout<<"Calling phase 2 from "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
       return result;
    }
 
@@ -1540,6 +1601,7 @@ bool SdIpCan1EstablishSession::processPhase2( bool success )
       tdf.setState( SdSession::sFailed );
    }
 
+         printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
    bool result = m_gxevent->processPhase2();
 
    return result;
@@ -1572,6 +1634,7 @@ bool StIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
+         printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
       return result;
    }
@@ -1621,6 +1684,7 @@ bool StIpCan1EstablishSession::processPhase2( bool success )
             __FILE__, __LINE__, getStatusDescription( esProcessing ), getStatusDescription(),
             gxsession->getImsi().c_str(), gxsession->getApn().c_str() );
       setStatus( esFailed );
+         printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
       tssf.setState( StSession::sFailed );
    }
 
@@ -1655,7 +1719,10 @@ bool SdIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         return m_gxevent->processPhase3();
+         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         bool result = m_gxevent->processPhase3();
+         std::cout<<"phase 3 over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
+         return result;
       }
       else
       {
@@ -1713,6 +1780,7 @@ bool SdIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
+         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
@@ -1742,6 +1810,7 @@ bool StIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
+         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
          return m_gxevent->processPhase3();
       }
       else
@@ -1800,6 +1869,7 @@ bool StIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
+         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
@@ -2036,14 +2106,17 @@ bool SdProcessRulesUpdate::processPhase1( RuleEvaluator &re )
    RulesList &irules( re.getSdInstallRules() );
    RulesList &rrules( re.getSdRemoveRules() );
 
+   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
    if ( rrules.empty() && irules.empty() )
    {
+   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
       setStatus( esComplete );
       return false; // false indicates that processing of event is to halt
    }
 
    if ( !tdf.required() )
    {
+   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
       Logger::sd().error( "%s:%d - SdProcessRulesUpdate - the TDF is flagged as not required but there are %u/%u install/remove rules to install at the TDF",
             __FILE__, __LINE__, irules.size(), rrules.size() );
       setStatus( esFailed );
@@ -2057,9 +2130,12 @@ bool SdProcessRulesUpdate::processPhase1( RuleEvaluator &re )
 
    bool result = getPCRF().sdApp().sendRARreq( tdf, irules, rrules, this );
 
-   if ( !result )
+   if ( !result ) {
       setStatus( esFailed );
+        std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+    }
 
+   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
    return result;
 }
 
