@@ -1724,6 +1724,12 @@ void ULRProcessor::phase2()
       }
    }
 
+   if((m_orig_info.supported_features.length() > 0) && 
+       fdJsonAddAvps(m_orig_info.supported_features.c_str(), m_ans.getMsg(), &s6as6d::display_error_message) != 0)
+   {
+        std::cout<<"Error in adding supported features\n";
+   }
+
    m_nextphase = ULRSTATE_PHASE3;
 }
 

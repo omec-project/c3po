@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS vhss.users_imsi (
     rfsp_index varint,
     sqn bigint,
     subscription_data text,
+    supported_features text,
     ue_reachability varint,
     urrp_mme varint,
     user_identifier text,

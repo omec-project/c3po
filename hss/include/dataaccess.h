@@ -115,6 +115,7 @@ struct DAImsiInfo {
 	std::string mmerealm;
 	std::string ms_ps_status;
 	std::string subscription_data;
+	std::string supported_features;
 	int64_t msisdn;
 	std::string str_msisdn;
 	std::string visited_plmnid;
