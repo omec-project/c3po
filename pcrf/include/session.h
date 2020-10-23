@@ -646,7 +646,7 @@ private:
    StIpCan1EstablishSession *m_stEstablishSession;
    SdIpCan1ProcessRules *m_sdProcessRules;
    StIpCan1ProcessRules *m_stProcessRules;
-   SEventThread::Timer m_idleTimer;
+   SEventThread::Timer *m_idleTimer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

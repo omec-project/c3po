@@ -597,9 +597,8 @@ void GxIpCan1::release( GxIpCan1 *gxevent )
 
 void GxIpCan1::onInit()
 {
-   m_idleTimer.setInterval(20);
-   m_idleTimer.setOneShot(true);
-   initTimer( m_idleTimer);
+	//m_idleTimer = new SEventThread::Timer(20, true);
+   //initTimer( *m_idleTimer);
 }
 
 void GxIpCan1::onQuit()
@@ -609,7 +608,7 @@ void GxIpCan1::onQuit()
 
 void GxIpCan1::onTimer( SEventThread::Timer &t)
 {
-   if (t.getId() == m_idleTimer.getId())
+   if (t.getId() == m_idleTimer->getId())
    {
       postMessage( TIMEOUT );
    }
@@ -629,11 +628,86 @@ void GxIpCan1::sendRAR()
    Logger::gx().debug("SOHAN SENDING RAR to PEER");
    RulesList &irules( getRulesEvaluator().getGxInstallRules() );
    RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
-   bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
-   if (result)
+
+   gx::GxRulesRARreq *req = new gx::GxRulesRARreq (((getGxSession()->getPCRF()).gxApp()), this);
+   req->add( getDict().avpSessionId(), getGxSession()->getSessionId() );
+   req->add( getDict().avpAuthApplicationId(), getDict().app().getId() );
+   req->addOrigin();
+   req->add( getDict().avpDestinationRealm(), getGxSession()->getPcefEndpoint()->getRealm() );
+   req->add( getDict().avpDestinationHost(), getGxSession()->getPcefEndpoint()->getHost() );
+   req->add( getDict().avpReAuthRequestType(), 0 );
+
+   if ( !irules.empty() )
    {
-      Logger::gx().debug("RAR sent successful"); 
-   }
+      int crcnt = 0;
+		int pracnt = 0;
+		FDAvp cri ( getDict().avpChargingRuleInstall() );
+		FDAvp prai ( getDict().avpPraInstall() );
+		
+		for (auto r : irules)
+		{
+			if (r->getType() == "CHARGING")
+			{
+				cri.addJson (r->getDefinition());
+				crcnt++;
+			}
+			else if (r->getType() == "PRA")
+			{
+				prai.addJson( r->getDefinition() );
+				pracnt++;
+			}
+		}
+		
+		if (crcnt > 0)
+		{
+			req->add(cri);
+		}
+		if (pracnt > 0)
+		{
+			req->add(prai);
+		}
+   }   
+	if ( !rrules.empty() )
+	{
+		int crcnt = 0;
+		int pracnt = 0;
+		FDAvp crr( getDict().avpChargingRuleRemove() );
+		FDAvp prar( getDict().avpPraRemove() );
+		
+		for (auto r : rrules)
+		{
+			if (r->getType() == "CHARGING")
+			{
+				crr.add( getDict().avpChargingRuleName(), r->getRuleName());
+				crcnt++;
+			}
+			else if ( r->getType() == "PRA")
+			{
+				prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+				pracnt++;
+			}
+		}
+
+		if (crcnt > 0)
+		{
+			req->add( crr );
+		}
+		if (pracnt > 0)
+		{
+			req->add( prar );
+		}
+	}
+	FDAvp defBearerQos (getDict().avpDefaultEpsBearerQos());
+	std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
+	defBearerQos.addJson(json_t);
+	req->add(defBearerQos);
+
+	req->send();
+   //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
+   //if (result)
+   //{
+   //   Logger::gx().debug("RAR sent successful"); 
+   //}
 }
 
 void GxIpCan1::sendCCA()
@@ -1296,8 +1370,11 @@ bool GxIpCan1::processPhase1()
 	  if (getStatus() == esComplete)
 	  {
 	     // we have sent the successful CCA Initial, hence start the timer
-	     Logger::gx().debug("SOHAN STARTING THE TIMER AS CCA Initial is sent");
-		 m_idleTimer.start();
+	    Logger::gx().debug("SOHAN STARTING THE TIMER AS CCA Initial is sent");
+		 m_idleTimer = new SEventThread::Timer(20, true);
+   	 initTimer( *m_idleTimer);
+	  	 init(NULL);
+		 m_idleTimer->start();
 	  }
       break;
    }
