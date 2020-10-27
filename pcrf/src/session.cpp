@@ -701,7 +701,7 @@ void GxIpCan1::sendRAR()
 	std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	defBearerQos.addJson(json_t);
 	req->add(defBearerQos);
-
+	req->dump();
 	req->send();
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
    //if (result)
@@ -735,6 +735,7 @@ bool GxIpCan1::processPhase1()
    SMutexLock l( m_mutex );
    bool result = true;
    std::string s;
+	std::string r;
 
    setStatus( esProcessing );
 
@@ -1086,7 +1087,6 @@ bool GxIpCan1::processPhase1()
           getGxSession()->setSupportedFeatures( supported_features );
       }
 
-#if 0
       //
       // get the PCEF endpoint
       //
@@ -1097,7 +1097,7 @@ bool GxIpCan1::processPhase1()
           if ( !getPCRF().getEndpoint( s, ep ) )
           {
               ep = new Endpoint();
-              ep->setHost( Options::originHost() );
+              ep->setHost( s );
               ep->setRealm( Options::originRealm() );
 
               if ( getPCRF().dataaccess().addEndpoint( *ep ) )
@@ -1136,7 +1136,6 @@ bool GxIpCan1::processPhase1()
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
           ABORT();
       }
-#endif
 
       //
       // get the TDF endpoint
