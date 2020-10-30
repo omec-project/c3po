@@ -40,6 +40,7 @@ public:
    bool getSyRequired() { return m_syrequired; }
    uint64_t getTimeMask() { return m_timemask; }
    uint64_t getFeatureMask() { return m_featuremask; }
+   bool getActiveNow() { return m_active_toggle; }
 
    const std::string &setRuleName( const char *v ) { m_rulename = v; return getRuleName(); }
    const std::string &setRuleName( const std::string &v ) { m_rulename = v; return getRuleName(); }
@@ -56,6 +57,7 @@ public:
    bool setSyRequired( bool v ) { m_syrequired = v; return getSyRequired(); }
    uint64_t setTimeMask( uint64_t v ) { m_timemask = v; return getTimeMask(); }
    uint64_t setFeatureMask( uint64_t v ) { m_featuremask = v; return getFeatureMask(); }
+   bool setActiveNow( bool v ) { m_active_toggle = v; return getActiveNow(); }
 
    bool getTimeSensitive() { return m_timemask != 0; }
 
@@ -145,6 +147,7 @@ public:
 
    void addGxInstallRule( Rule *rule )    { m_gxInstallRules.push_back( rule ); }
    void addGxRemoveRule( Rule *rule )     { m_gxRemoveRules.push_back( rule ); }
+   void addGxPendingRule( Rule *rule )     { m_gxPendingRules.push_back( rule ); }
 
    void addSdInstallRule( Rule *rule )    { m_sdInstallRules.push_back( rule ); }
    void addSdRemoveRule( Rule *rule )     { m_sdRemoveRules.push_back( rule ); }
@@ -154,6 +157,7 @@ public:
 
    RulesList &getGxInstallRules()         { return m_gxInstallRules; }
    RulesList &getGxRemoveRules()          { return m_gxRemoveRules; }
+   RulesList &getGxPendingRules()          { return m_gxPendingRules; }
 
    RulesList &getSdInstallRules()         { return m_sdInstallRules; }
    RulesList &getSdRemoveRules()          { return m_sdRemoveRules; }
@@ -170,6 +174,7 @@ private:
    RulesList m_gxRemoveRules;
    RulesList m_sdRemoveRules;
    RulesList m_stRemoveRules;
+   RulesList m_gxPendingRules;
 };
 
 class GxSession;

@@ -628,6 +628,7 @@ void GxIpCan1::sendRAR()
    Logger::gx().debug("SOHAN SENDING RAR to PEER");
    RulesList &irules( getRulesEvaluator().getGxInstallRules() );
    RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
+	RulesList &prules( getRulesEvaluator().getGxPendingRules() );
 
    gx::GxRulesRARreq *req = new gx::GxRulesRARreq (((getGxSession()->getPCRF()).gxApp()), this);
    req->add( getDict().avpSessionId(), getGxSession()->getSessionId() );
@@ -697,6 +698,44 @@ void GxIpCan1::sendRAR()
 			req->add( prar );
 		}
 	}
+  	if ( !prules.empty() )
+	{
+		int crcnt = 0;
+		int pracnt = 0;
+		FDAvp crr( getDict().avpChargingRuleRemove() );
+		FDAvp prar( getDict().avpPraRemove() );
+		
+		for (auto r : rrules)
+		{
+			if (r->getType() == "CHARGING")
+			{
+				crr.add( getDict().avpChargingRuleName(), r->getRuleName());
+				crcnt++;
+			}
+			else if ( r->getType() == "PRA")
+			{
+				prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+				pracnt++;
+			}
+		}
+
+		if (crcnt > 0)
+		{
+			req->add( crr );
+		}
+		if (pracnt > 0)
+		{
+			req->add( prar );
+		}
+		/*
+		FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
+		F
+		defBearerQos.add( getDict().avpQosInformation() );
+		*/
+		
+	}
+
+	
 	FDAvp defBearerQos (getDict().avpDefaultEpsBearerQos());
 	std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	defBearerQos.addJson(json_t);
@@ -972,6 +1011,8 @@ bool GxIpCan1::processPhase1()
          getGxSession()->getRules().addGxSession( getGxSession() );
       }
 
+#if 0
+
       //
       // get the PCRF endpoint
       //
@@ -1011,6 +1052,7 @@ bool GxIpCan1::processPhase1()
 
           getGxSession()->setPcrfEndpoint( ep );
       }
+#endif
 
       {
           uint8_t ipaddr[16];
@@ -1087,6 +1129,7 @@ bool GxIpCan1::processPhase1()
           getGxSession()->setSupportedFeatures( supported_features );
       }
 
+#if 1
       //
       // get the PCEF endpoint
       //
@@ -1098,7 +1141,15 @@ bool GxIpCan1::processPhase1()
           {
               ep = new Endpoint();
               ep->setHost( s );
-              ep->setRealm( Options::originRealm() );
+				  std::string pcef_realm;
+				  if ( getCCR().origin_realm.get( pcef_realm ) )
+				  {
+				     ep->setRealm( pcef_realm );
+				  }
+				  else
+				  {
+                 ep->setRealm( Options::originRealm() );
+				  }
 
               if ( getPCRF().dataaccess().addEndpoint( *ep ) )
               {
@@ -1136,6 +1187,7 @@ bool GxIpCan1::processPhase1()
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
           ABORT();
       }
+#endif
 
       //
       // get the TDF endpoint
@@ -1370,7 +1422,7 @@ bool GxIpCan1::processPhase1()
 	  {
 	     // we have sent the successful CCA Initial, hence start the timer
 	    Logger::gx().debug("SOHAN STARTING THE TIMER AS CCA Initial is sent");
-		 m_idleTimer = new SEventThread::Timer(20, true);
+		 m_idleTimer = new SEventThread::Timer(20000, true);
    	 initTimer( *m_idleTimer);
 	  	 init(NULL);
 		 m_idleTimer->start();

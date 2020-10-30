@@ -143,6 +143,7 @@ bool DataAccess::getRules( RulesMap &rules )
          GET_EVENT_DATA2( row, sy_required, b, r->setSyRequired );
          GET_EVENT_DATA2( row, timemask, i64, r->setTimeMask );
          GET_EVENT_DATA2( row, featuremask, i64, r->setFeatureMask );
+         GET_EVENT_DATA2( row, activenow, b, r->setActiveNow );
 
          rules.insert( std::pair<std::string,Rule*>( r->getRuleName(), r ) );
       }
