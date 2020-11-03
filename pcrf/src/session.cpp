@@ -12,6 +12,7 @@
 #include "pcrf.h"
 #include "session.h"
 #include "statpcrf.h"
+#include "rapidjson/document.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -702,31 +703,48 @@ void GxIpCan1::sendRAR()
 	{
 		int crcnt = 0;
 		int pracnt = 0;
-		FDAvp crr( getDict().avpChargingRuleRemove() );
-		FDAvp prar( getDict().avpPraRemove() );
+		FDAvp crp( getDict().avpChargingRuleInstall() );
+		FDAvp prap( getDict().avpPraInstall() );
+		FDAvp qos_info( getDict().avpQosInformation() ); 
+		/*
+   	FDAvp qci( getDict().avpQosClassIdentifier() );
+      FDAvp mrbul( getDict().avpMaxRequestedBandwidthUl() );
+		FDAvp mrbdl( getDict().avpMaxRequestedBandwidthDl() );
+		FDAvp gbul( getDict().avpGuaranteedBitrateUl() );
+		FDAvp gbdl( getDict().avpGuaranteedBitrateDl() );
+		FDAvp arp( getDict().avpAllocationRetentionPriority() );
+		FDAvp pl( getDict().avpPriorityLevel() );
+		FDAvp pec( getDict().avpPreEmptionCapability() );
+		FDAvp pev( getDict().avpPreEmptionVulnerability() );
+		FDAvp aambul( getDict().avpApnAggregateMaxBitrateUl() );
+		FDAvp aambdl( getDict().avpApnAggregateMaxBitrateDl() );
+		*/
 		
 		for (auto r : rrules)
 		{
 			if (r->getType() == "CHARGING")
 			{
-				crr.add( getDict().avpChargingRuleName(), r->getRuleName());
+				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
+				qos_info.addJson(  r->getDefinition() );
+				
 				crcnt++;
 			}
 			else if ( r->getType() == "PRA")
 			{
-				prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+				prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
 				pracnt++;
 			}
 		}
 
 		if (crcnt > 0)
 		{
-			req->add( crr );
+			req->add( crp );
 		}
 		if (pracnt > 0)
 		{
-			req->add( prar );
+			req->add( prap );
 		}
+		
 		/*
 		FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
 		F
