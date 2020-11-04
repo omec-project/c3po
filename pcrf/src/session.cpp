@@ -12,7 +12,11 @@
 #include "pcrf.h"
 #include "session.h"
 #include "statpcrf.h"
+#include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/prettywriter.h"
+#include "rapidjson/stringbuffer.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -619,14 +623,16 @@ void GxIpCan1::dispatch( SEventThreadMessage &msg)
 {
    if ( msg.getId() == TIMEOUT)
    {
-      Logger::gx().debug("SOHAN TIMEOUT Occured");
+      Logger::gx().debug("TIMEOUT Occured");
       sendRAR();
    }
 }
 
 void GxIpCan1::sendRAR()
 {
-   Logger::gx().debug("SOHAN SENDING RAR to PEER");
+   Logger::gx().debug("SENDING RAR to PEER");
+
+   RAPIDJSON_NAMESPACE::Document doc;
    RulesList &irules( getRulesEvaluator().getGxInstallRules() );
    RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
 	RulesList &prules( getRulesEvaluator().getGxPendingRules() );
@@ -703,22 +709,10 @@ void GxIpCan1::sendRAR()
 	{
 		int crcnt = 0;
 		int pracnt = 0;
+		int qci, pl, pec, pev;
 		FDAvp crp( getDict().avpChargingRuleInstall() );
 		FDAvp prap( getDict().avpPraInstall() );
 		FDAvp qos_info( getDict().avpQosInformation() ); 
-		/*
-   	FDAvp qci( getDict().avpQosClassIdentifier() );
-      FDAvp mrbul( getDict().avpMaxRequestedBandwidthUl() );
-		FDAvp mrbdl( getDict().avpMaxRequestedBandwidthDl() );
-		FDAvp gbul( getDict().avpGuaranteedBitrateUl() );
-		FDAvp gbdl( getDict().avpGuaranteedBitrateDl() );
-		FDAvp arp( getDict().avpAllocationRetentionPriority() );
-		FDAvp pl( getDict().avpPriorityLevel() );
-		FDAvp pec( getDict().avpPreEmptionCapability() );
-		FDAvp pev( getDict().avpPreEmptionVulnerability() );
-		FDAvp aambul( getDict().avpApnAggregateMaxBitrateUl() );
-		FDAvp aambdl( getDict().avpApnAggregateMaxBitrateDl() );
-		*/
 		
 		for (auto r : rrules)
 		{
@@ -726,7 +720,20 @@ void GxIpCan1::sendRAR()
 			{
 				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
 				qos_info.addJson(  r->getDefinition() );
-				
+				doc.Parse( r->getDefinition().c_str() );
+				qci = doc["QoS-Class-Identifier"].GetInt();
+				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
+				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = itemn.MemberBegin(); itr != itemn.MemberEnd(); ++itr)
+				{
+					RAPIDJSON_NAMESPACE::StringBuffer sb;
+					RAPIDJSON_NAMESPACE::Writer<RAPIDJSON_NAMESPACE::StringBuffer> writer( sb );
+					itr->value.Accept(writer);
+					//pl = (*itr)["Priority-Level"].GetInt();
+				  	//pl = sb["Priority-Level"].GetInt();
+					//pec = sb["Pre-emption-Capability"].GetInt();
+					//pev = sb["Pre-emption-Vulnerability"].GetInt(); 
+				}
+					
 				crcnt++;
 			}
 			else if ( r->getType() == "PRA")
@@ -739,6 +746,8 @@ void GxIpCan1::sendRAR()
 		if (crcnt > 0)
 		{
 			req->add( crp );
+			
+			req->add( qos_info );
 		}
 		if (pracnt > 0)
 		{
@@ -747,7 +756,6 @@ void GxIpCan1::sendRAR()
 		
 		/*
 		FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
-		F
 		defBearerQos.add( getDict().avpQosInformation() );
 		*/
 		
@@ -1439,7 +1447,7 @@ bool GxIpCan1::processPhase1()
 	  if (getStatus() == esComplete)
 	  {
 	     // we have sent the successful CCA Initial, hence start the timer
-	    Logger::gx().debug("SOHAN STARTING THE TIMER AS CCA Initial is sent");
+	    Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
 		 m_idleTimer = new SEventThread::Timer(20000, true);
    	 initTimer( *m_idleTimer);
 	  	 init(NULL);
