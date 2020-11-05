@@ -631,7 +631,7 @@ void GxIpCan1::dispatch( SEventThreadMessage &msg)
 void GxIpCan1::sendRAR()
 {
    Logger::gx().debug("SENDING RAR to PEER");
-
+	int qci, pl, pec, pev;
    RAPIDJSON_NAMESPACE::Document doc;
    RulesList &irules( getRulesEvaluator().getGxInstallRules() );
    RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
@@ -709,7 +709,6 @@ void GxIpCan1::sendRAR()
 	{
 		int crcnt = 0;
 		int pracnt = 0;
-		int qci, pl, pec, pev;
 		FDAvp crp( getDict().avpChargingRuleInstall() );
 		FDAvp prap( getDict().avpPraInstall() );
 		FDAvp qos_info( getDict().avpQosInformation() ); 
@@ -723,15 +722,34 @@ void GxIpCan1::sendRAR()
 				doc.Parse( r->getDefinition().c_str() );
 				qci = doc["QoS-Class-Identifier"].GetInt();
 				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
-				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = itemn.MemberBegin(); itr != itemn.MemberEnd(); ++itr)
+				if (itemn.IsObject())
 				{
-					RAPIDJSON_NAMESPACE::StringBuffer sb;
-					RAPIDJSON_NAMESPACE::Writer<RAPIDJSON_NAMESPACE::StringBuffer> writer( sb );
-					itr->value.Accept(writer);
-					//pl = (*itr)["Priority-Level"].GetInt();
-				  	//pl = sb["Priority-Level"].GetInt();
-					//pec = sb["Pre-emption-Capability"].GetInt();
-					//pev = sb["Pre-emption-Vulnerability"].GetInt(); 
+					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = itemn.MemberBegin(); itr != itemn.MemberEnd(); ++itr)
+					{
+						if ( itr->name.GetString() == "Priority-Level" )
+						{
+							if ( itr->value.IsNumber() )
+							{
+								pl = itr->value.GetInt();
+							}
+						}
+						else
+						if ( itr->value.GetString() == "Pre-emption-Capability" )
+						{
+							if ( itr->value.IsNumber() )
+							{
+								pec = itr->value.GetInt();
+							}
+						}
+						else
+						if ( itr->value.GetString() == "Pre-emption-Vulnerability" )
+						{
+							if ( itr->value.IsNumber() )
+							{
+								pev = itr->value.GetInt();
+							}
+						}
+					}
 				}
 					
 				crcnt++;
@@ -746,7 +764,6 @@ void GxIpCan1::sendRAR()
 		if (crcnt > 0)
 		{
 			req->add( crp );
-			
 			req->add( qos_info );
 		}
 		if (pracnt > 0)
@@ -761,10 +778,25 @@ void GxIpCan1::sendRAR()
 		
 	}
 
+
+	FDAvp avp_qci( getDict().avpQosClassIdentifier());
+	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
+
+	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
+	avp_arp.add( getDict().avpPriorityLevel(), pl );
+	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
+	avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
+
 	
-	FDAvp defBearerQos (getDict().avpDefaultEpsBearerQos());
-	std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
-	defBearerQos.addJson(json_t);
+	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
+	//defBearerQos.add( getDict().avpDefaultEpsBearerQos, avp_qci );
+	defBearerQos.add( avp_qci );
+	//defBearerQos.add( getDict().avpDefaultEpsBearerQos, avp_arp );
+	defBearerQos.add( avp_arp );
+	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
+	//defBearerQos.addJson(json_t);
+
+	
 	req->add(defBearerQos);
 	req->dump();
 	req->send();
