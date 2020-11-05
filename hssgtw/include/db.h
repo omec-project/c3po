@@ -108,6 +108,7 @@ public:
       rfsp_index = 0;
       sqn = 0;
       subscription_data = "";
+      supported_features = "";
       ue_reachability = 0;
       urrp_mme = 0;
       user_identifier = "";
@@ -165,6 +166,7 @@ public:
       PARSE_INT32(document, rfsp_index);
       PARSE_INT32(document, sqn);
       PARSE_STRING(document, subscription_data);
+      PARSE_STRING(document, supported_features);
       PARSE_INT32(document, ue_reachability);
       PARSE_INT32(document, urrp_mme);
       PARSE_STRING(document, user_identifier);
@@ -194,6 +196,7 @@ public:
    int32_t rfsp_index;                   bool rfsp_index_pres;
    int32_t sqn;                          bool sqn_pres;
    std::string subscription_data;        bool subscription_data_pres;
+   std::string supported_features;       bool supported_features_pres;
    int32_t ue_reachability;              bool ue_reachability_pres;
    int32_t urrp_mme;                     bool urrp_mme_pres;
    std::string user_identifier;          bool user_identifier_pres;

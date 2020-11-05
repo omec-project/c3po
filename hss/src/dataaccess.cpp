@@ -732,6 +732,7 @@ bool DataAccess::getImsiInfoData( SCassFuture &future, DAImsiInfo &info )
       GET_EVENT_DATA( row, mmerealm, info.mmerealm );
       GET_EVENT_DATA( row, ms_ps_status, info.ms_ps_status );
       GET_EVENT_DATA( row, subscription_data, info.subscription_data );
+      GET_EVENT_DATA( row, supported_features, info.supported_features);
       GET_EVENT_DATA( row, msisdn, info.msisdn );
       info.str_msisdn = std::to_string( info.msisdn );
       GET_EVENT_DATA( row, visited_plmnid, info.visited_plmnid );
@@ -747,7 +748,7 @@ bool DataAccess::getImsiInfo ( const char *imsi, DAImsiInfo &info, CassFutureCal
 {
    std::stringstream ss;
 
-   ss << "SELECT imsi, mmehost, mmerealm, ms_ps_status, subscription_data, msisdn, visited_plmnid, access_restriction, mmeidentity_idmmeidentity FROM users_imsi where imsi = '"
+   ss << "SELECT imsi, mmehost, mmerealm, ms_ps_status, subscription_data, supported_features, msisdn, visited_plmnid, access_restriction, mmeidentity_idmmeidentity FROM users_imsi where imsi = '"
       << imsi << "' ;" ;
 
    SCassStatement stmt( ss.str().c_str() );
