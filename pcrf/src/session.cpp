@@ -713,7 +713,7 @@ void GxIpCan1::sendRAR()
 		FDAvp prap( getDict().avpPraInstall() );
 		FDAvp qos_info( getDict().avpQosInformation() ); 
 		
-		for (auto r : rrules)
+		for (auto r : prules)
 		{
 			if (r->getType() == "CHARGING")
 			{
@@ -759,6 +759,10 @@ void GxIpCan1::sendRAR()
 				prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
 				pracnt++;
 			}
+
+			// Remove rule from pending list and it into the install rule
+			irules.push_back( r );
+			prules.erase( r );
 		}
 
 		if (crcnt > 0)

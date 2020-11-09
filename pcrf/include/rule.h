@@ -147,7 +147,7 @@ public:
 
    void addGxInstallRule( Rule *rule )    { m_gxInstallRules.push_back( rule ); }
    void addGxRemoveRule( Rule *rule )     { m_gxRemoveRules.push_back( rule ); }
-   void addGxPendingRule( Rule *rule )     { m_gxPendingRules.push_back( rule ); }
+   void addGxPendingRule( Rule *rule )    { m_gxPendingRules.push_back( rule ); }
 
    void addSdInstallRule( Rule *rule )    { m_sdInstallRules.push_back( rule ); }
    void addSdRemoveRule( Rule *rule )     { m_sdRemoveRules.push_back( rule ); }

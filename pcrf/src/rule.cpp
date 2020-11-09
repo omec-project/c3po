@@ -142,14 +142,15 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
       {
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
-            if ( !gxInstalled.exists( *ruleit ) )
-				{
-               addGxInstallRule( *ruleit );
-				}
-				else if ( (*ruleit)->activeNow() == false)
+				if ( (*ruleit)->activeNow() == false)
 				{
 					addGxPendingRule( *ruleit );
 				}
+            else if ( !gxInstalled.exists( *ruleit ) )
+				{
+               addGxInstallRule( *ruleit );
+				}
+				
          }
          else
          {
