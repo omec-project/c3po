@@ -705,6 +705,7 @@ void GxIpCan1::sendRAR()
 			req->add( prar );
 		}
 	}
+	/*
   	if ( !prules.empty() )
 	{
 		int crcnt = 0;
@@ -775,13 +776,13 @@ void GxIpCan1::sendRAR()
 			req->add( prap );
 		}
 		
-		/*
-		FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
-		defBearerQos.add( getDict().avpQosInformation() );
-		*/
+		//
+		//FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
+		//defBearerQos.add( getDict().avpQosInformation() );
+		//
 		
 	}
-
+   */
 
 	FDAvp avp_qci( getDict().avpQosClassIdentifier());
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
@@ -793,12 +794,10 @@ void GxIpCan1::sendRAR()
 
 	
 	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
-	//defBearerQos.add( getDict().avpDefaultEpsBearerQos, avp_qci );
-	defBearerQos.add( avp_qci );
-	//defBearerQos.add( getDict().avpDefaultEpsBearerQos, avp_arp );
-	defBearerQos.add( avp_arp );
-	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
-	//defBearerQos.addJson(json_t);
+	//defBearerQos.add( avp_qci );
+	//defBearerQos.add( avp_arp );
+	std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
+	defBearerQos.addJson(json_t);
 
 	
 	req->add(defBearerQos);
