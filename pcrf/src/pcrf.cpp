@@ -99,7 +99,10 @@ bool PCRF::init()
    // load the rules into memory
    //
    if ( !m_dataaccess.getRules( m_rules ) )
+	{
+		printf ("SOHAN GET RULES FROM DATABASE\n");
       return false;
+	}
 
    if ( Options::enableRuleTimers() )
    {

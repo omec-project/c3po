@@ -21,7 +21,7 @@ values ('retail.rule1','retail','CHARGING','{"Charging-Rule-Definition":{"Chargi
 '','',false,0,0,true);
 
 insert into vpcrf.rules (rulename,basename,type,definition_json,timeofday_json,usage_monitoring_info,sy_required,timemask,featuremask,activenow)
-values ('retail.rule2','retail','CHARGING','{"Charging-Rule-Definition":{"Charging-Rule-Name":"retail.rule2", "QoS-Information":{"QoS-Class-Identifier":5, "Max-Requested-Bandwidth-UL": 2345, "Max-Requested-Bandwidth-DL":3456, "Guaranteed-Bitrate-UL":1111, "Guaranteed-Bitrate-DL":2222, "Allocation-Retention-Priority": {"Priority-Level": 1, "Pre-emption-Capability": 1, "Pre-emption-Vulnerability": 1},"APN-Aggregate-Max-Bitrate-UL":4444, "APN-Aggregate-Max-Bitrate-DL": 5555}}}',
+values ('sohan.rule2','retail','CHARGING','{"Charging-Rule-Definition":{"Charging-Rule-Name":"retail.rule2", "QoS-Information":{"QoS-Class-Identifier":5, "Max-Requested-Bandwidth-UL": 2345, "Max-Requested-Bandwidth-DL":3456, "Guaranteed-Bitrate-UL":1111, "Guaranteed-Bitrate-DL":2222, "Allocation-Retention-Priority": {"Priority-Level": 1, "Pre-emption-Capability": 1, "Pre-emption-Vulnerability": 1},"APN-Aggregate-Max-Bitrate-UL":4444, "APN-Aggregate-Max-Bitrate-DL": 5555}}}',
 '','',false,0,0,false);
 
 

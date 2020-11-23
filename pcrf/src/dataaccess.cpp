@@ -129,6 +129,7 @@ bool DataAccess::getRules( RulesMap &rules )
          if ( (ruleit = rules.find(r->getRuleName())) != rules.end() )
          {
             // found the apn so must be a duplicate
+				printf ("SOHAN DUPLICATE RULE NAME");
             Logger::system().error( "DataAccess::%s:%d - duplicate Rule [%s] while loading",
                   __func__, __LINE__, s.c_str() );
             result = false;
@@ -167,6 +168,7 @@ bool DataAccess::getRules( RulesMap &rules )
       }
 		i++;
    }
+	printf ("SOHAN RULES SIZE = %d\n", rules.size()); 
 
    return result;
 }
