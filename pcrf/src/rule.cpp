@@ -134,14 +134,17 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
    bool tdfRequired = pcef.getTdfSession().required();
    bool tssfRequired = pcef.getTssfSession().required();
    auto ruleit = rules.begin();
+	printf ("SOHAN RULE EVALUATE FUNCTION ");
 
    while ( result && ruleit != rules.end() )
    {
       // check to see if the rule applies to the PCEF
       if ( ( (*ruleit)->getFeatureMask() & pcefFeatures ) == (*ruleit)->getFeatureMask() )
       {
+			printf ("SOHAN rule applies to pcef");
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
+				printf ("SOHAN activeNow true and !enabletimers true");
 				if ( (*ruleit)->getActiveNow() == false)
 				{
 					std::cout << "SOHAN ADDING IN PENDING RULE LIST " << std::endl;
