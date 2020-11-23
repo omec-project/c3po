@@ -144,7 +144,7 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
 			printf ("SOHAN rule applies to pcef");
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
-				printf ("\nSOHAN activeNow true and !enabletimers true active now = %d", (*ruleit)->getActiveNow());
+				printf ("\nSOHAN activeNow true and !enabletimers true active now = %d and Rule Name = %s", (*ruleit)->getActiveNow(), (*ruleit)->getRuleName().c_str());
 				if ( (*ruleit)->getActiveNow() == false)
 				{
 					printf ("\n\nSOHAN ADDING IN PENDING RULE LIST " );
