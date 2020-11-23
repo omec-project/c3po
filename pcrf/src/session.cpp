@@ -721,7 +721,7 @@ void GxIpCan1::sendRAR()
 				qos_info.addJson(  r->getDefinition() );
 				doc.Parse( r->getDefinition().c_str() );
 				qci = doc["QoS-Class-Identifier"].GetInt();
-				Logger::gx().debug("SOHAN QCI of for loop rule : %d", qci);
+				std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
 				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
 				if (itemn.IsObject())
 				{
@@ -732,7 +732,7 @@ void GxIpCan1::sendRAR()
 							if ( itr->value.IsNumber() )
 							{
 								pl = itr->value.GetInt();
-								Logger::gx().debug("SOHAN PL of for loop rule : %d", pl);
+								std::cout << "SOHAN PL of for loop rule : " << pl << std::endl;
 							}
 						}
 						else
@@ -741,7 +741,7 @@ void GxIpCan1::sendRAR()
 							if ( itr->value.IsNumber() )
 							{
 								pec = itr->value.GetInt();
-								Logger::gx().debug("SOHAN PEC of for loop rule : %d", pec);
+								std::cout << "SOHAN PEC of for loop rule : " << pec << std::endl;
 							}
 						}
 						else
@@ -750,7 +750,7 @@ void GxIpCan1::sendRAR()
 							if ( itr->value.IsNumber() )
 							{
 								pev = itr->value.GetInt();
-								Logger::gx().debug("SOHAN PEV of for loop rule : %d", pev);
+								std::cout << "SOHAN PEV of for loop rule : "<< pev << std::endl;
 							}
 						}
 					}
@@ -790,22 +790,22 @@ void GxIpCan1::sendRAR()
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
 
 	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
-	Logger::gx().debug("SOHAN PL2 of avp add : %d", pl);
+	std::cout << "SOHAN PL2 of avp add : " <<  pl << std::endl; 
 	avp_arp.add( getDict().avpPriorityLevel(), pl );
-	Logger::gx().debug("SOHAN PEC2 of avp add : %d", pec);
+	std::cout << "SOHAN PEC2 of avp add : " << pec << std::endl;
 	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
-	Logger::gx().debug("SOHAN PEV2 of avp add : %d", pev);
+	std::cout << "SOHAN PEV2 of avp add : " << pev << std::endl;
 	avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
 
 	
 	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
-	defBearerQos.add( avp_qci );
+	//defBearerQos.add( avp_qci );
 	//defBearerQos.add( avp_arp );
 	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	//defBearerQos.addJson(json_t);
 
 	
-	req->add(defBearerQos);
+	//req->add(defBearerQos);
 	req->dump();
 	req->send();
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
