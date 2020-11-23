@@ -709,6 +709,7 @@ void GxIpCan1::sendRAR()
 	{
 		int crcnt = 0;
 		int pracnt = 0;
+		std::string s_pl;
 		FDAvp crp( getDict().avpChargingRuleInstall() );
 		FDAvp prap( getDict().avpPraInstall() );
 		FDAvp qos_info( getDict().avpQosInformation() ); 
@@ -733,6 +734,12 @@ void GxIpCan1::sendRAR()
 							{
 								pl = itr->value.GetInt();
 								std::cout << "SOHAN PL of for loop rule : " << pl << std::endl;
+							}
+							else
+							if ( itr->value.IsString() )
+							{
+								s_pl = itr->value.GetString();
+								std::cout << "SOHAN PL of for loop rule : " << s_pl << std::endl;
 							}
 						}
 						else
