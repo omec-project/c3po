@@ -134,7 +134,7 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
    bool tdfRequired = pcef.getTdfSession().required();
    bool tssfRequired = pcef.getTssfSession().required();
    auto ruleit = rules.begin();
-	printf ("SOHAN RULE EVALUATE FUNCTION ");
+	printf ("SOHAN RULE EVALUATE FUNCTION SIZE OF LIST = %d\n", rules.size());
 
    while ( result && ruleit != rules.end() )
    {
