@@ -792,6 +792,11 @@ void GxIpCan1::sendRAR()
 		//
 		
 	} 
+	else
+	if ( prules.empty() )
+   {
+		std::cout<<"SOHAN PRULES EMPTY" << std::endl;
+	}
 
 	FDAvp avp_qci( getDict().avpQosClassIdentifier());
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );

@@ -144,6 +144,7 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
          {
 				if ( (*ruleit)->activeNow() == false)
 				{
+					std::cout << "SOHAN ADDING IN PENDING RULE LIST " << std::endl;
 					addGxPendingRule( *ruleit );
 				}
             else if ( !gxInstalled.exists( *ruleit ) )
