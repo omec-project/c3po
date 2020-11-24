@@ -113,6 +113,7 @@ void CRCRreq::processAnswer( FDMessageAnswer &ans )
 int CRCRcmd::process( FDMessageRequest *req )
 {
 
+	printf ("SOHAN CALLBACK CALLED AFTER RECEIVING CCR\n");
    int cc_request_type;
    CreditControlRequestExtractor ccr( *req, getDict() );
 

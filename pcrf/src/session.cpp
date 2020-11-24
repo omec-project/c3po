@@ -1085,6 +1085,8 @@ bool GxIpCan1::processPhase1()
          //
          // assign the rules associated with the APN to the process list
          //
+
+			printf ("SOHAN Assigning the rules list from computed list Size of Rule list : %d\n", getGxSession()->getRules().size());
          getGxSession()->getRules() = sa->getComputedRules();
          getGxSession()->getRules().addGxSession( getGxSession() );
       }
