@@ -721,7 +721,9 @@ void GxIpCan1::sendRAR()
 				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
 				qos_info.addJson(  r->getDefinition() );
 				doc.Parse( r->getDefinition().c_str() );
-				qci = doc["QoS-Class-Identifier"].GetInt();
+				const RAPIDJSON_NAMESPACE::Value& nu = doc["QoS-Class-Identifier"];
+				qci = nu.GetInt();
+				//qci = doc["QoS-Class-Identifier"].GetInt();
 				std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
 				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
 				if (itemn.IsObject())
