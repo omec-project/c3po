@@ -721,20 +721,25 @@ void GxIpCan1::sendRAR()
 				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
 				qos_info.addJson(  r->getDefinition() );
 				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
-
-				/*
-				RAPIDJSON_NAMESPACE::ParseResult ok = doc.Parse( r->getDefinition().c_str() );
-				if (!ok)
+				doc.Parse( r->getDefinition().c_str() );	
+				const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
+				if ( qiitem.IsObject() )
 				{
-					printf ("SOHAN PARSE ERROR \n");
-					break;
+					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
+					{
+						if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
+						{
+							if ( qiitr->value.IsNumber() )
+							{
+								qci = qiitr->value.GetInt();
+							}
+						}
+					}
 				}
-				if ( doc.IsObject() )
-				{
-				const RAPIDJSON_NAMESPACE::Value& nu = doc["QoS-Class-Identifier"];
-				qci = nu.GetInt();
-				qci = doc["QoS-Class-Identifier"].GetInt();
+				//qci = nu.GetInt();
+				//qci = doc["QoS-Class-Identifier"].GetInt();
 				std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
+				/*
 				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
 				if (itemn.IsObject())
 				{
@@ -773,7 +778,6 @@ void GxIpCan1::sendRAR()
 							}
 						}
 					}
-				}	
 				}
 				*/
 				crcnt++;
