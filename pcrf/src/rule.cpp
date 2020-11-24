@@ -145,7 +145,7 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
 				printf ("\nSOHAN activeNow true and !enabletimers true active now = %d and Rule Name = %s", (*ruleit)->getActiveNow(), (*ruleit)->getRuleName().c_str());
-				if ( (*ruleit)->getActiveNow() == false)
+				if ( (*ruleit)->getActiveNow() == false && !m_gxPendingRules.exists( *ruleit ))
 				{
 					printf ("\n\nSOHAN ADDING IN PENDING RULE LIST " );
 					addGxPendingRule( *ruleit );
