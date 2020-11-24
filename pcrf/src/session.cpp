@@ -728,8 +728,8 @@ void GxIpCan1::sendRAR()
 					break;
 				}
 				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
-				if ( crditem.IsObject() )
-				{
+				//if ( crditem->value.HasMember("QoS-Information") )
+				//{
 					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
 					{
 						/*if ( !crditr->value.HasMember("QoS-Information") )
@@ -739,7 +739,7 @@ void GxIpCan1::sendRAR()
 						}*/
 						if ( crditr->name.GetString() == "QoS-Information" )
 						{
-							if ( crditr->value.IsObject() )
+							if ( crditr->value.HasMember("QoS-Class-Identifier") )
 							{
 								const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
 								for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
@@ -757,7 +757,7 @@ void GxIpCan1::sendRAR()
 							}
 						}
 					}
-				}
+				//}
 				//qci = nu.GetInt();
 				//qci = doc["QoS-Class-Identifier"].GetInt();
 				std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
