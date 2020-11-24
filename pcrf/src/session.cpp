@@ -732,6 +732,11 @@ void GxIpCan1::sendRAR()
 				{
 					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
 					{
+						if ( !crditr.HasMember("QoS-Information") )
+						{
+							printf ("SOHAN CRD SOMETHING WRONG \n");
+							break;
+						}
 						if ( crditr->name.GetString() == "QoS-Information" )
 						{
 							if ( crditr->value.IsObject() )
@@ -807,7 +812,7 @@ void GxIpCan1::sendRAR()
 
 			// Remove rule from pending list and it into the install rule
 			irules.push_back( r );
-			prules.erase( r );
+			//prules.erase( r );
 		}
 
 		if (crcnt > 0)
