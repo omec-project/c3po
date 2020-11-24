@@ -721,6 +721,8 @@ void GxIpCan1::sendRAR()
 				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
 				qos_info.addJson(  r->getDefinition() );
 				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
+
+				/*
 				RAPIDJSON_NAMESPACE::ParseResult ok = doc.Parse( r->getDefinition().c_str() );
 				if (!ok)
 				{
@@ -773,6 +775,7 @@ void GxIpCan1::sendRAR()
 					}
 				}	
 				}
+				*/
 				crcnt++;
 			}
 			else if ( r->getType() == "PRA")
