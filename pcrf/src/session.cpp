@@ -742,7 +742,7 @@ void GxIpCan1::sendRAR()
 							printf ("SOHAN QOS Info not object found \n");
 							break;
 						}
-						const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value["QoS-Information"];
+						const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value;
 						for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
 						{
 							if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
