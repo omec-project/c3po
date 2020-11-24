@@ -644,6 +644,7 @@ void GxIpCan1::sendRAR()
    req->add( getDict().avpDestinationRealm(), getGxSession()->getPcefEndpoint()->getRealm() );
    req->add( getDict().avpDestinationHost(), getGxSession()->getPcefEndpoint()->getHost() );
    req->add( getDict().avpReAuthRequestType(), 0 );
+	/*
 
    if ( !irules.empty() )
    {
@@ -705,6 +706,7 @@ void GxIpCan1::sendRAR()
 			req->add( prar );
 		}
 	}
+	*/
 	printf ("SOHAN PENDING LIST Size : %d\n", prules.size());
   	if ( !prules.empty() )
 	{
@@ -738,24 +740,22 @@ void GxIpCan1::sendRAR()
 						}*/
 					if ( crditr->name.GetString() == "QoS-Information" )
 					{
-						if ( crditr->value.HasMember("QoS-Class-Identifier") )
+						printf ("SOHAN QOS INFO \n");
+						const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value["QoS-Information"];
+						for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
 						{
-							const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
-							for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
+							if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
 							{
-								if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
+								printf ("In QOS Class Identifier\n");
+								if ( qiitr->value.IsNumber() )
 								{
-									printf ("In QOS Class Identifier\n");
-									if ( qiitr->value.IsNumber() )
-									{
-										qci = qiitr->value.GetInt();
-										std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
-										//break;
-									}	
-								}
+									qci = qiitr->value.GetInt();
+									std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
+									//break;
+								}	
 							}
-							// reterive all the other values here
 						}
+						// reterive all the other values here
 					}
 				}
 				//qci = nu.GetInt();
