@@ -737,9 +737,9 @@ void GxIpCan1::sendRAR()
 					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
 					{
 						printf ("SOHAN QOS INFO \n");
-						if (!crditr->value.HasMember("QoS-Information") )
+						if (!crditr->value.IsObject() )
 						{
-							printf ("SOHAN QOS Info not found \n");
+							printf ("SOHAN QOS Info not object found \n");
 							break;
 						}
 						const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value["QoS-Information"];
