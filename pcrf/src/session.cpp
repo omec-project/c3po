@@ -722,9 +722,9 @@ void GxIpCan1::sendRAR()
 				qos_info.addJson(  r->getDefinition() );
 				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
 				doc.Parse( r->getDefinition().c_str() );
-				/*
-				const RAPIDJSON_NAMESPACE::Value& nu = doc["QoS-Class-Identifier"];
-				qci = nu.GetInt();
+				
+				//const RAPIDJSON_NAMESPACE::Value& nu = doc["QoS-Class-Identifier"];
+				//qci = nu.GetInt();
 				//qci = doc["QoS-Class-Identifier"].GetInt();
 				std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
 				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
@@ -765,9 +765,7 @@ void GxIpCan1::sendRAR()
 							}
 						}
 					}
-				}
-				*/
-					
+				}	
 				crcnt++;
 			}
 			else if ( r->getType() == "PRA")
