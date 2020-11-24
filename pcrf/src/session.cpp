@@ -733,8 +733,8 @@ void GxIpCan1::sendRAR()
 				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
 				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
 				{
-					printf ("\nSOHAN INSIDE CRD FOR LOOP %s : ", crditr->name.GetString());
-					if ( crditr->name.GetString() == "QoS-Information" )
+					printf ("\nSOHAN INSIDE CRD FOR LOOP %s", crditr->name.GetString());
+					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
 					{
 						printf ("SOHAN QOS INFO \n");
 						const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value["QoS-Information"];
