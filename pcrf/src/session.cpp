@@ -704,7 +704,8 @@ void GxIpCan1::sendRAR()
 		{
 			req->add( prar );
 		}
-	}	
+	}
+	printf ("SOHAN PENDING LIST Size : %d\n", prules.size());
   	if ( !prules.empty() )
 	{
 		int crcnt = 0;
@@ -728,39 +729,37 @@ void GxIpCan1::sendRAR()
 					break;
 				}
 				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
-				//if ( crditem->value.HasMember("QoS-Information") )
-				//{
-					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
-					{
+				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
+				{
 						/*if ( !crditr->value.HasMember("QoS-Information") )
 						{
 							printf ("SOHAN CRD SOMETHING WRONG \n");
 							break;
 						}*/
-						if ( crditr->name.GetString() == "QoS-Information" )
+					if ( crditr->name.GetString() == "QoS-Information" )
+					{
+						if ( crditr->value.HasMember("QoS-Class-Identifier") )
 						{
-							if ( crditr->value.HasMember("QoS-Class-Identifier") )
+							const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
+							for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
 							{
-								const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
-								for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
+								if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
 								{
-									if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
+									printf ("In QOS Class Identifier\n");
+									if ( qiitr->value.IsNumber() )
 									{
-										if ( qiitr->value.IsNumber() )
-										{
-											qci = qiitr->value.GetInt();
-											//break;
-										}	
-									}
+										qci = qiitr->value.GetInt();
+										std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
+										//break;
+									}	
 								}
-								// reterive all the other values here
 							}
+							// reterive all the other values here
 						}
 					}
-				//}
+				}
 				//qci = nu.GetInt();
 				//qci = doc["QoS-Class-Identifier"].GetInt();
-				std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
 				/*
 				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
 				if (itemn.IsObject())
@@ -831,11 +830,6 @@ void GxIpCan1::sendRAR()
 		//
 		
 	} 
-	else
-	if ( prules.empty() )
-   {
-		std::cout<<"SOHAN PRULES EMPTY" << std::endl;
-	}
 
 	FDAvp avp_qci( getDict().avpQosClassIdentifier());
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
