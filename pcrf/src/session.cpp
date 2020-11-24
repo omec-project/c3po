@@ -721,7 +721,12 @@ void GxIpCan1::sendRAR()
 				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
 				qos_info.addJson(  r->getDefinition() );
 				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
-				doc.Parse( r->getDefinition().c_str() );	
+				doc.Parse( r->getDefinition().c_str() );
+				if (!doc.HasMember("QoS-Information"))
+				{
+					printf ("SOHAN SOMETHING WRONG ..\n");
+					break;
+				}
 				const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
 				if ( qiitem.IsObject() )
 				{
