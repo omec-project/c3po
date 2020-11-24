@@ -732,11 +732,11 @@ void GxIpCan1::sendRAR()
 				{
 					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
 					{
-						if ( !crditr->value.HasMember("QoS-Information") )
+						/*if ( !crditr->value.HasMember("QoS-Information") )
 						{
 							printf ("SOHAN CRD SOMETHING WRONG \n");
 							break;
-						}
+						}*/
 						if ( crditr->name.GetString() == "QoS-Information" )
 						{
 							if ( crditr->value.IsObject() )
