@@ -722,21 +722,33 @@ void GxIpCan1::sendRAR()
 				qos_info.addJson(  r->getDefinition() );
 				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
 				doc.Parse( r->getDefinition().c_str() );
-				if (!doc.HasMember("QoS-Information"))
+				if (!doc.HasMember("Charging-Rule-Definition"))
 				{
 					printf ("SOHAN SOMETHING WRONG ..\n");
 					break;
 				}
-				const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
-				if ( qiitem.IsObject() )
+				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
+				if ( crditem.IsObject() )
 				{
-					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
+					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
 					{
-						if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
+						if ( crditr->name.GetString() == "QoS-Information" )
 						{
-							if ( qiitr->value.IsNumber() )
+							if ( crditr->value.IsObject() )
 							{
-								qci = qiitr->value.GetInt();
+								const RAPIDJSON_NAMESPACE::Value& qiitem = doc["QoS-Information"];
+								for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
+								{
+									if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
+									{
+										if ( qiitr->value.IsNumber() )
+										{
+											qci = qiitr->value.GetInt();
+											//break;
+										}	
+									}
+								}
+								// reterive all the other values here
 							}
 						}
 					}
