@@ -768,6 +768,7 @@ void GxIpCan1::sendRAR()
 
 	FDAvp avp_qci( getDict().avpQosClassIdentifier());
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
+	printf ("SOHAN QCI : %d\n", qci);
 
 	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
 	printf ("SOHAN PL : %d\n", pl);
@@ -779,13 +780,13 @@ void GxIpCan1::sendRAR()
 
 	
 	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
-	defBearerQos.add( avp_qci );
+	//defBearerQos.add( avp_qci );
 	//defBearerQos.add( avp_arp );
 	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	//defBearerQos.addJson(json_t);
 
 	
-	req->add(defBearerQos);
+	//req->add(defBearerQos);
 	req->dump();
 	req->send();
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
