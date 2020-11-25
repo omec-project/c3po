@@ -770,14 +770,17 @@ void GxIpCan1::sendRAR()
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
 
 	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
+	printf ("SOHAN PL : %d\n", pl);
 	avp_arp.add( getDict().avpPriorityLevel(), pl );
+	printf ("SOHAN PEC : %d\n", pec);
 	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
+	printf ("SOHAN PEV : %d\n", pev);
 	avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
 
 	
 	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
 	defBearerQos.add( avp_qci );
-	defBearerQos.add( avp_arp );
+	//defBearerQos.add( avp_arp );
 	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	//defBearerQos.addJson(json_t);
 

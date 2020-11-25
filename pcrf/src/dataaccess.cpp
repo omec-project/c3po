@@ -129,7 +129,6 @@ bool DataAccess::getRules( RulesMap &rules )
          if ( (ruleit = rules.find(r->getRuleName())) != rules.end() )
          {
             // found the apn so must be a duplicate
-				printf ("SOHAN DUPLICATE RULE NAME");
             Logger::system().error( "DataAccess::%s:%d - duplicate Rule [%s] while loading",
                   __func__, __LINE__, s.c_str() );
             result = false;
@@ -148,7 +147,6 @@ bool DataAccess::getRules( RulesMap &rules )
          GET_EVENT_DATA2( row, activenow, b, r->setActiveNow );
 
          rules.insert( std::pair<std::string,Rule*>( r->getRuleName(), r ) );
-			printf ("SOHAN INSERTING DAT BASE : %d", i);
       }
       catch ( DAException &ex )
       {
@@ -168,8 +166,6 @@ bool DataAccess::getRules( RulesMap &rules )
       }
 		i++;
    }
-	printf ("SOHAN RULES SIZE = %d\n", rules.size()); 
-
    return result;
 }
 
