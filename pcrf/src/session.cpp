@@ -737,11 +737,12 @@ void GxIpCan1::sendRAR()
 					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
 					{
 						printf ("SOHAN QOS INFO \n");
+						printf ("SOHAN QOS INFO STR : %s\n", crditr->value.GetString() );
 						/*if (!crditr->value.IsObject() )
 						{
 							printf ("SOHAN QOS Info not object found \n");
 							break;
-						}*/
+						}
 					   RAPIDJSON_NAMESPACE::Document qosInfoDoc;	
 						const RAPIDJSON_NAMESPACE::Value& qiitem = qosInfoDoc["QoS-Information"];
 						//const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value;
@@ -759,7 +760,7 @@ void GxIpCan1::sendRAR()
 								}	
 							}
 						}
-						
+						*/
 						// reterive all the other values here
 					}
 				}
