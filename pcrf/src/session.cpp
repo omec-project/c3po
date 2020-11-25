@@ -742,15 +742,8 @@ void GxIpCan1::sendRAR()
 				prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
 				pracnt++;
 			}
+			prules.erase( r );
 		}
-
-		printf ("SOHAN PRULES SIZE : %d\n", prules.size());
-	
-		for (std::list<Rule*>::iterator ruleit = prules.begin(); ruleit != prules.end(); ruleit++)
-      {
-			prules.erase( *ruleit );
-		}
-		
 
 		if (crcnt > 0)
 		{
