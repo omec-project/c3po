@@ -742,7 +742,6 @@ void GxIpCan1::sendRAR()
 				prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
 				pracnt++;
 			}
-			prules.erase( r );
 		}
 
 		if (crcnt > 0)
@@ -753,6 +752,16 @@ void GxIpCan1::sendRAR()
 		if (pracnt > 0)
 		{
 			req->add( prap );
+		}
+
+
+		for (std::list<Rule*>::iterator ruleit = prules.begin(); ruleit != prules.end(); ruleit++)
+      {
+			if (prules.erase( *ruleit ) == false)
+			{
+				printf ("SOHAN CANNOT DELETE\n");
+				break;
+			}
 		}
 		
 	} 
