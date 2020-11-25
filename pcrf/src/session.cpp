@@ -770,22 +770,19 @@ void GxIpCan1::sendRAR()
 	avp_qci.add( getDict().avpQosClassIdentifier(), qci );
 
 	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
-	std::cout << "SOHAN PL2 of avp add : " <<  pl << std::endl; 
 	avp_arp.add( getDict().avpPriorityLevel(), pl );
-	std::cout << "SOHAN PEC2 of avp add : " << pec << std::endl;
 	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
-	std::cout << "SOHAN PEV2 of avp add : " << pev << std::endl;
 	avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
 
 	
 	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
 	defBearerQos.add( avp_qci );
-	//defBearerQos.add( avp_arp );
+	defBearerQos.add( avp_arp );
 	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	//defBearerQos.addJson(json_t);
 
 	
-	//req->add(defBearerQos);
+	req->add(defBearerQos);
 	req->dump();
 	req->send();
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
