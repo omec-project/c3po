@@ -735,7 +735,7 @@ void GxIpCan1::sendRAR()
 							qci = crditr->value["QoS-Class-Identifier"].GetInt();
 						}
 						const RAPIDJSON_NAMESPACE::Value& arpitem = crditr->value["Allocation-Retention-Priority"];
-					   printf ("SOHAN LOOP PL : %d\n", arpitem->value["Priority-Level"];
+					   printf ("SOHAN LOOP PL : %d\n", arpitem["Priority-Level"].GetInt() );
 					}
 				}
 				//qci = nu.GetInt();
