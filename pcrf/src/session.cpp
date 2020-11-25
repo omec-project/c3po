@@ -725,43 +725,17 @@ void GxIpCan1::sendRAR()
 				qos_info.addJson(  r->getDefinition() );
 				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
 				doc.Parse( r->getDefinition().c_str() );
-				if (!doc.HasMember("Charging-Rule-Definition"))
-				{
-					printf ("SOHAN SOMETHING WRONG ..\n");
-					break;
-				}
 				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
 				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
 				{
-					printf ("\nSOHAN INSIDE CRD FOR LOOP %s", crditr->name.GetString());
 					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
 					{
-						printf ("SOHAN QOS INFO \n");
-						printf ("SOHAN QOS INFO STR : %d\n", crditr->value["QoS-Class-Identifier"].GetInt() );
-						/*if (!crditr->value.IsObject() )
+						if ( crditr->value["QoS-Class-Identifier"].IsNumber() )
 						{
-							printf ("SOHAN QOS Info not object found \n");
-							break;
+							qci = crditr->value["QoS-Class-Identifier"].GetInt();
 						}
-					   RAPIDJSON_NAMESPACE::Document qosInfoDoc;	
-						const RAPIDJSON_NAMESPACE::Value& qiitem = qosInfoDoc["QoS-Information"];
-						//const RAPIDJSON_NAMESPACE::Value& qiitem = crditr->value;
-						for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator qiitr = qiitem.MemberBegin(); qiitr != qiitem.MemberEnd(); ++qiitr)
-						{
-							printf ("\nSOHAN inside the inner for loop name = %s", qiitr->name.GetString());
-							if ( qiitr->name.GetString() == "QoS-Class-Identifier" )
-							{
-								printf ("In QOS Class Identifier\n");
-								if ( qiitr->value.IsNumber() )
-								{
-									qci = qiitr->value.GetInt();
-									std::cout << "SOHAN QCI of for loop rule : " << qci << std::endl;
-									//break;
-								}	
-							}
-						}
-						*/
-						// reterive all the other values here
+						const RAPIDJSON_NAMESPACE::Value& arpitem = crditr->value["Allocation-Retention-Priority"];
+					   printf ("SOHAN LOOP PL : %d\n", arpitem->value["Priority-Level"];
 					}
 				}
 				//qci = nu.GetInt();
