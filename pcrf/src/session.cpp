@@ -737,7 +737,7 @@ void GxIpCan1::sendRAR()
 					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
 					{
 						printf ("SOHAN QOS INFO \n");
-						printf ("SOHAN QOS INFO STR : %s\n", crditr->value.GetString() );
+						printf ("SOHAN QOS INFO STR : %d\n", crditr->value["QoS-Class-Identifier"].GetInt() );
 						/*if (!crditr->value.IsObject() )
 						{
 							printf ("SOHAN QOS Info not object found \n");
