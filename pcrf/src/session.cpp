@@ -743,10 +743,12 @@ void GxIpCan1::sendRAR()
 				pracnt++;
 			}
 		}
+
+		printf ("SOHAN PRULES SIZE : %d\n", prules.size());
 	
-		for (auto r : prules)
+		for (std::list<Rule*>::iterator ruleit = prules.begin(); ruleit != prules.end(); ruleit++)
       {
-			prules.erase( r );
+			prules.erase( *ruleit );
 		}
 		
 
