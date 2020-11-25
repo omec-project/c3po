@@ -760,9 +760,14 @@ void GxIpCan1::sendRAR()
 			if (prules.erase( *ruleit ) == false)
 			{
 				printf ("SOHAN CANNOT DELETE\n");
+				std::list<Rule*> l_rules = prules.getRules();
+				l_rules.pop_back();
 				break;
 			}
 		}
+
+		size_t var = prules.size();
+		printf ("SOHAN LIST SIZE : %d\n", var);
 		
 	} 
 
