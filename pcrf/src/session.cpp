@@ -754,24 +754,7 @@ void GxIpCan1::sendRAR()
 			req->add( prap );
 		}
 
-		/*
-		for (std::list<Rule*>::iterator ruleit = prules.begin(); ruleit != prules.end(); ruleit++)
-      {
-			if (prules.erase( *ruleit ) == false)
-			{
-				printf ("SOHAN CANNOT DELETE\n");
-				std::list<Rule*> l_rules = prules.getRules();
-				l_rules.pop_back();
-				break;
-			}
-		}
-
-		if (prules.empty())
-		{
-			printf ("SOHAN LIST SIZE : 0\n");
-		}
-		*/
-		
+		prules.clear();
 	} 
 
 	FDAvp avp_qci( getDict().avpQosClassIdentifier() );
