@@ -766,8 +766,10 @@ void GxIpCan1::sendRAR()
 			}
 		}
 
-		size_t var = prules.size();
-		printf ("SOHAN LIST SIZE : %d\n", var);
+		if (prules.empty())
+		{
+			printf ("SOHAN LIST SIZE : 0\n");
+		}
 		
 	} 
 
