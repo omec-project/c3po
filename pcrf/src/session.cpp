@@ -772,7 +772,7 @@ void GxIpCan1::sendRAR()
 
 	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
 	printf ("SOHAN PL : %d\n", pl);
-	avp_arp.add( getDict().avpPriorityLevel(), );
+	avp_arp.add( getDict().avpPriorityLevel(), pl );
 	printf ("SOHAN PEC : %d\n", pec);
 	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
 	printf ("SOHAN PEV : %d\n", pev);
