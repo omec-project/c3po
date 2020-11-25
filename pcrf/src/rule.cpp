@@ -134,24 +134,24 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
    bool tdfRequired = pcef.getTdfSession().required();
    bool tssfRequired = pcef.getTssfSession().required();
    auto ruleit = rules.begin();
-	printf ("SOHAN RULE EVALUATE FUNCTION SIZE OF LIST = %d\n", rules.size());
 
    while ( result && ruleit != rules.end() )
    {
       // check to see if the rule applies to the PCEF
       if ( ( (*ruleit)->getFeatureMask() & pcefFeatures ) == (*ruleit)->getFeatureMask() )
       {
-			printf ("SOHAN rule applies to pcef");
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
-				printf ("\nSOHAN activeNow true and !enabletimers true active now = %d and Rule Name = %s", (*ruleit)->getActiveNow(), (*ruleit)->getRuleName().c_str());
 				if ( (*ruleit)->getActiveNow() == false && !m_gxPendingRules.exists( *ruleit ))
 				{
-					printf ("\n\nSOHAN ADDING IN PENDING RULE LIST " );
 					addGxPendingRule( *ruleit );
 				}
             else if ( !gxInstalled.exists( *ruleit ) )
 				{
+					if ((*ruleit)->getActiveNow() == false)
+					{
+						printf ("SOHAN ADDING IN install list \n");
+					}
                addGxInstallRule( *ruleit );
 				}
 				

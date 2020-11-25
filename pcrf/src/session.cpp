@@ -707,7 +707,6 @@ void GxIpCan1::sendRAR()
 		}
 	}
 	*/
-	printf ("SOHAN PENDING LIST Size : %d\n", prules.size());
   	if ( !prules.empty() )
 	{
 		int crcnt = 0;
@@ -730,57 +729,13 @@ void GxIpCan1::sendRAR()
 				{
 					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
 					{
-						if ( crditr->value["QoS-Class-Identifier"].IsNumber() )
-						{
-							qci = crditr->value["QoS-Class-Identifier"].GetInt();
-						}
+						qci = crditr->value["QoS-Class-Identifier"].GetInt();
 						const RAPIDJSON_NAMESPACE::Value& arpitem = crditr->value["Allocation-Retention-Priority"];
-					   printf ("SOHAN LOOP PL : %d\n", arpitem["Priority-Level"].GetInt() );
+						pl = arpitem["Priority-Level"].GetInt();
+						pec = arpitem["Pre-emption-Capability"].GetInt();
+						pev = arpitem["Pre-emption-Vulnerability"].GetInt();
 					}
 				}
-				//qci = nu.GetInt();
-				//qci = doc["QoS-Class-Identifier"].GetInt();
-				/*
-				const RAPIDJSON_NAMESPACE::Value& itemn = doc["Allocation-Retention-Priority"];
-				if (itemn.IsObject())
-				{
-					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = itemn.MemberBegin(); itr != itemn.MemberEnd(); ++itr)
-					{
-						if ( itr->name.GetString() == "Priority-Level" )
-						{
-							if ( itr->value.IsNumber() )
-							{
-								pl = itr->value.GetInt();
-								std::cout << "SOHAN PL of for loop rule : " << pl << std::endl;
-							}
-							else
-							if ( itr->value.IsString() )
-							{
-								s_pl = itr->value.GetString();
-								std::cout << "SOHAN PL of for loop rule : " << s_pl << std::endl;
-							}
-						}
-						else
-						if ( itr->value.GetString() == "Pre-emption-Capability" )
-						{
-							if ( itr->value.IsNumber() )
-							{
-								pec = itr->value.GetInt();
-								std::cout << "SOHAN PEC of for loop rule : " << pec << std::endl;
-							}
-						}
-						else
-						if ( itr->value.GetString() == "Pre-emption-Vulnerability" )
-						{
-							if ( itr->value.IsNumber() )
-							{
-								pev = itr->value.GetInt();
-								std::cout << "SOHAN PEV of for loop rule : "<< pev << std::endl;
-							}
-						}
-					}
-				}
-				*/
 				crcnt++;
 			}
 			else if ( r->getType() == "PRA")
@@ -790,7 +745,7 @@ void GxIpCan1::sendRAR()
 			}
 
 			// Remove rule from pending list and it into the install rule
-			irules.push_back( r );
+			//irules.push_back( r );
 			//prules.erase( r );
 		}
 
@@ -824,7 +779,7 @@ void GxIpCan1::sendRAR()
 
 	
 	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
-	//defBearerQos.add( avp_qci );
+	defBearerQos.add( avp_qci );
 	//defBearerQos.add( avp_arp );
 	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	//defBearerQos.addJson(json_t);
