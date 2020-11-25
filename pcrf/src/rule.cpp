@@ -148,10 +148,6 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
 				}
             else if ( !gxInstalled.exists( *ruleit ) )
 				{
-					if ((*ruleit)->getActiveNow() == false)
-					{
-						printf ("SOHAN ADDING IN install list \n");
-					}
                addGxInstallRule( *ruleit );
 				}
 				

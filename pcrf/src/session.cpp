@@ -722,7 +722,6 @@ void GxIpCan1::sendRAR()
 			{
 				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
 				qos_info.addJson(  r->getDefinition() );
-				printf ("SOHAN JSON STR : %s\n", r->getDefinition().c_str());
 				doc.Parse( r->getDefinition().c_str() );
 				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
 				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
@@ -743,11 +742,13 @@ void GxIpCan1::sendRAR()
 				prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
 				pracnt++;
 			}
-
-			// Remove rule from pending list and it into the install rule
-			//irules.push_back( r );
-			//prules.erase( r );
 		}
+	
+		for (auto r : prules)
+      {
+			prules.erase( r );
+		}
+		
 
 		if (crcnt > 0)
 		{
@@ -759,23 +760,14 @@ void GxIpCan1::sendRAR()
 			req->add( prap );
 		}
 		
-		//
-		//FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
-		//defBearerQos.add( getDict().avpQosInformation() );
-		//
-		
 	} 
 
 	FDAvp avp_qci( getDict().avpQosClassIdentifier() );
 	avp_qci.set( qci );
-	printf ("SOHAN QCI : %d\n", qci);
 
 	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
-	printf ("SOHAN PL : %d\n", pl);
 	avp_arp.add( getDict().avpPriorityLevel(), pl );
-	printf ("SOHAN PEC : %d\n", pec);
 	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
-	printf ("SOHAN PEV : %d\n", pev);
 	avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
 
 	
