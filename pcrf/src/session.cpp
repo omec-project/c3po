@@ -754,7 +754,7 @@ void GxIpCan1::sendRAR()
 			req->add( prap );
 		}
 
-
+		/*
 		for (std::list<Rule*>::iterator ruleit = prules.begin(); ruleit != prules.end(); ruleit++)
       {
 			if (prules.erase( *ruleit ) == false)
@@ -770,6 +770,7 @@ void GxIpCan1::sendRAR()
 		{
 			printf ("SOHAN LIST SIZE : 0\n");
 		}
+		*/
 		
 	} 
 
