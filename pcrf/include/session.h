@@ -33,7 +33,8 @@ class StSession;
 class GxCreditControlRequest;
 
 class SdSessionMap;
-const uint16_t TIMEOUT     =    ETM_USER + 10;
+const uint16_t RARTIMEOUT     =    ETM_USER + 10;
+const uint16_t RAATIMEOUT     =    ETM_USER + 11;
 
 namespace sd
 {
@@ -327,6 +328,8 @@ public:
    RulesList &getRules() { return m_rules; }
    RulesList &getInstalledRules() { return m_installed; }
 
+	RulesReportList &getRulesReport() { return m_rulesreport; }
+
    Subscriber &getSubscriber() { return m_subscriber; }
 
    SMutex &getMutex() { return m_mutex; }
@@ -358,6 +361,7 @@ private:
    StSession m_tssf;
    RulesList m_rules;
    RulesList m_installed;
+	RulesReportList m_rulesreport;
    Subscriber m_subscriber;
 };
 
@@ -620,7 +624,8 @@ public:
    void onQuit();
    void onTimer( SEventThread::Timer &t);
    void dispatch( SEventThreadMessage &msg); 
-   void sendRAR();
+   void sendRAR(bool pending);
+	void rcvdRAA(FDMessageAnswer &ans);
 
 private:
    GxIpCan1();
@@ -646,7 +651,8 @@ private:
    StIpCan1EstablishSession *m_stEstablishSession;
    SdIpCan1ProcessRules *m_sdProcessRules;
    StIpCan1ProcessRules *m_stProcessRules;
-   SEventThread::Timer *m_idleTimer;
+   SEventThread::Timer *m_rarTimer;
+   SEventThread::Timer *m_raaTimer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

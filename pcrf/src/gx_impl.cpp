@@ -394,6 +394,7 @@ GxRulesRARreq::~GxRulesRARreq()
 
 void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
 {
+	printf ("SOHAN : %s:%d CALLBACK CALLED AFTER RAA\n", __FILE__, __LINE__);
    ans.dump();
 
    bool result = true;
@@ -408,6 +409,11 @@ void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
          gx = ((GxProcessRulesUpdate*)m_event)->getGxSession();
          break;
       }
+		case SessionEvent::etIpCan1:
+		{
+			gx = ((GxIpCan1*)m_event)->getGxSession();
+			break;
+		}
       default:
       {
          std::string s;
@@ -462,6 +468,13 @@ void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
          delete m_event;
          break;
       }
+		case SessionEvent::etIpCan1:
+		{
+			printf ("SOHAN CALLING RCVD RAA\n");
+			((GxIpCan1*)m_event)->rcvdRAA( ans );
+			delete m_event;
+			break;
+		}
    }
 }
 

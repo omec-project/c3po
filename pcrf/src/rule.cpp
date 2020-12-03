@@ -113,6 +113,72 @@ void RulesList::removeGxSession( GxSession *gx )
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+
+RulesReportList::RulesReportList( bool free_on_destroy )
+   : m_free_on_destroy( free_on_destroy )
+{
+}
+
+RulesReportList::~RulesReportList()
+{
+   if ( m_free_on_destroy )
+   {
+      std::list<GxChargingRuleReport*>::iterator it;
+
+      while ( (it = m_rules.begin()) != m_rules.end() )
+      {
+         delete *it;
+         m_rules.erase( it );
+      }
+   }
+}
+
+void RulesReportList::push_back( GxChargingRuleReport *r )
+{
+   m_rules.push_back( r );
+}
+
+bool RulesReportList::exists( GxChargingRuleReport *r )
+{
+   return find( r ) != m_rules.end();
+}
+
+bool RulesReportList::erase( GxChargingRuleReport *r )
+{
+   std::list<GxChargingRuleReport*>::iterator it = find( r );
+   if ( it != m_rules.end() )
+   {
+      m_rules.erase( it );
+      return true;
+   }
+
+   return false;
+}
+
+std::list<GxChargingRuleReport*>::iterator RulesReportList::erase( std::list<GxChargingRuleReport*>::iterator &it )
+{
+   return m_rules.erase( it );
+}
+
+/*
+void RulesReportList::addGxSession( GxSession *gx )
+{
+   for ( auto r : m_rules )
+      if ( r->getRuleTimer() )
+         r->getRuleTimer()->addSession( gx );
+}
+
+void RulesReportList::removeGxSession( GxSession *gx )
+{
+   for ( auto r : m_rules )
+      if ( r->getRuleTimer() )
+         r->getRuleTimer()->removeSession( gx );
+}
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 RuleEvaluator::RuleEvaluator()
 {
 }
@@ -138,17 +204,21 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
    while ( result && ruleit != rules.end() )
    {
       // check to see if the rule applies to the PCEF
+		printf ("SOHAN : %s:%d RULE NAME : %s\n", __FILE__, __LINE__, (*ruleit)->getRuleName().c_str());
       if ( ( (*ruleit)->getFeatureMask() & pcefFeatures ) == (*ruleit)->getFeatureMask() )
       {
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
-				if ( (*ruleit)->getActiveNow() == false && !m_gxPendingRules.exists( *ruleit ))
+				if ( (*ruleit)->getDefaultFlag() == false && !m_gxPendingRules.exists( *ruleit ))
 				{
 					addGxPendingRule( *ruleit );
+					printf ("SOHAN : ADD IN PENDING LIST : %s\n", (*ruleit)->getRuleName().c_str() );
 				}
-            else if ( !gxInstalled.exists( *ruleit ) )
+            else
+				if ( !gxInstalled.exists( *ruleit ) )
 				{
                addGxInstallRule( *ruleit );
+					printf ("SOHAN : ADD IN INSTALL LIST : %s\n", (*ruleit)->getRuleName().c_str() );
 				}
 				
          }

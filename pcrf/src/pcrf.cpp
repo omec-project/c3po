@@ -100,8 +100,12 @@ bool PCRF::init()
    //
    if ( !m_dataaccess.getRules( m_rules ) )
 	{
-		printf ("SOHAN GET RULES FROM DATABASE\n");
       return false;
+	}
+
+	for ( auto r : m_rules )
+	{
+		printf ("SOHAN : RULES NAME : %s\n", (r.second)->getRuleName().c_str());	
 	}
 
    if ( Options::enableRuleTimers() )
