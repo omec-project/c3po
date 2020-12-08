@@ -113,7 +113,6 @@ void CRCRreq::processAnswer( FDMessageAnswer &ans )
 int CRCRcmd::process( FDMessageRequest *req )
 {
 
-	printf ("SOHAN CALLBACK CALLED AFTER RECEIVING CCR\n");
    int cc_request_type;
    CreditControlRequestExtractor ccr( *req, getDict() );
 
@@ -394,7 +393,6 @@ GxRulesRARreq::~GxRulesRARreq()
 
 void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
 {
-	printf ("SOHAN : %s:%d CALLBACK CALLED AFTER RAA\n", __FILE__, __LINE__);
    ans.dump();
 
    bool result = true;
@@ -470,8 +468,11 @@ void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
       }
 		case SessionEvent::etIpCan1:
 		{
-			printf ("SOHAN CALLING RCVD RAA\n");
-			((GxIpCan1*)m_event)->rcvdRAA( ans );
+			GxIpCan1* gxIpCan1 = dynamic_cast<GxIpCan1*>(m_event);
+			if (gxIpCan1 != NULL)
+			{
+				gxIpCan1->rcvdRAA( ans );
+			}
 			delete m_event;
 			break;
 		}

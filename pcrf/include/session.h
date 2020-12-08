@@ -583,7 +583,24 @@ private:
    GxSession *m_gx;
 };
 
-class GxIpCan1 : public SessionEvent, public SEventThread
+
+class TriggerTimer : public SEventThread
+{
+public:
+	TriggerTimer( GxIpCan1* gxIpCan1, bool flag );
+	~TriggerTimer();
+	void onInit();
+   void onQuit();
+   void onTimer( SEventThread::Timer &t);
+   void dispatch( SEventThreadMessage &msg);
+private :
+	GxIpCan1* m_gxipcan1;
+	bool m_flag;
+	SEventThread::Timer *m_reqTimer;
+	
+};
+
+class GxIpCan1 : public SessionEvent
 {
 public:
    GxIpCan1( PCRF &pcrf, FDMessageRequest *req, gx::Dictionary &dict );
@@ -618,12 +635,6 @@ public:
    void decrementUsage() { SMutexLock l( m_mutex ); m_usagecnt--; }
    static void release( GxIpCan1 *gxevent );
 
-   // 
-   // SEventThread methods for initializing timer
-   void onInit();
-   void onQuit();
-   void onTimer( SEventThread::Timer &t);
-   void dispatch( SEventThreadMessage &msg); 
    void sendRAR(bool pending);
 	void rcvdRAA(FDMessageAnswer &ans);
 
@@ -651,8 +662,9 @@ private:
    StIpCan1EstablishSession *m_stEstablishSession;
    SdIpCan1ProcessRules *m_sdProcessRules;
    StIpCan1ProcessRules *m_stProcessRules;
-   SEventThread::Timer *m_rarTimer;
-   SEventThread::Timer *m_raaTimer;
+   //SEventThread::Timer *m_rarTimer;
+	TriggerTimer *m_triggertimer;
+   //SEventThread::Timer *m_raaTimer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
