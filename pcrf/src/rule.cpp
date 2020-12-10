@@ -79,6 +79,19 @@ bool RulesList::exists( Rule *r )
    return find( r ) != m_rules.end();
 }
 
+Rule* RulesList::getRule( std::string& rulename )
+{
+	std::list<Rule*>::iterator it;
+	for ( it = m_rules.begin(); it != m_rules.end(); it++ )
+	{
+		if ( rulename == (*it)->getRuleName() )
+		{
+			return (*it);
+		}
+	}
+	return NULL;
+}
+
 bool RulesList::erase( Rule *r )
 {
    std::list<Rule*>::iterator it = find( r );

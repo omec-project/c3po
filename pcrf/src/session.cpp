@@ -671,9 +671,12 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 	// reterive the session id and check it if is valid and it is same as sent in RAR request.
 
 	GxSession *session = NULL;
+	Rule *rule;
+	RulesList &irules( getRulesEvaluator().getGxInstallRules() );
 	std::string session_id;
 	std::string rule_name;
 	int pcc_status;
+	bool returnflag;
 	std::list<gx::ChargingRuleReportExtractor*> l_fd_extractor_list;
 	std::list<FDExtractorAvp*> l_rule_name_list;
 	setStatus( esComplete );
@@ -694,6 +697,17 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
     	{
         (*iterAvp)->get( rule_name );
 			printf ("SOHAN : RuleName : %s\n", rule_name.c_str() );
+			// add the logic to identify the RAA whether this for initiating the remove rules or when the default rule is deleted.
+			// in case where the default rule is also deleted then we donot need to send the rar again for removal of rules.
+			rule = irules.getRule( rule_name );
+			if ( rule != NULL )
+			{
+				if ( rule->getDefaultFlag() != false )
+				{
+					returnflag = true;
+				}	
+			}
+			
     	}
    	//(*iter)->charging_rule_name.get( rule_name );
 		rule_report->setRuleName( rule_name );
@@ -702,6 +716,11 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 		rule_report->setPccStatus( pcc_status );	
 		getGxSession()->getRulesReport().push_back( rule_report );
    }
+
+	if ( returnflag == true )
+	{
+		return;
+	}
 
 	RulesReportList& rlist( getGxSession()->getRulesReport() );
 	bool status = true;
@@ -769,109 +788,115 @@ void GxIpCan1::sendRAR(bool pending)
 		{
 			req->add(prai);
 		}
-   }   
-	if ( !rrules.empty() )
-	{
-		int crcnt = 0;
-		int pracnt = 0;
-		FDAvp crr( getDict().avpChargingRuleRemove() );
-		FDAvp prar( getDict().avpPraRemove() );
-		
-		for (auto r : rrules)
-		{
-			if (r->getType() == "CHARGING")
-			{
-				crr.add( getDict().avpChargingRuleName(), r->getRuleName());
-				crcnt++;
-			}
-			else if ( r->getType() == "PRA")
-			{
-				prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
-				pracnt++;
-			}
-		}
-
-		if (crcnt > 0)
-		{
-			req->add( crr );
-		}
-		if (pracnt > 0)
-		{
-			req->add( prar );
-		}
-	}
+   }
 	*/
-	if ( pending == true)
-	{
-  	if ( !prules.empty() )
-	{
-		int crcnt = 0;
-		int pracnt = 0;
-		std::string s_pl;
-		FDAvp crp( getDict().avpChargingRuleInstall() );
-		FDAvp prap( getDict().avpPraInstall() );
-		FDAvp qos_info( getDict().avpQosInformation() ); 
-		
-		for (auto r : prules)
+	if ( pending == false )
+	{ 
+		// add the pending rule in remove list from install list
+		RulesList &arules( getGxSession()->getRules() );
+		if ( !arules.empty() )
 		{
-			if (r->getType() == "CHARGING")
+			int crcnt = 0;
+			int pracnt = 0;
+			FDAvp crr( getDict().avpChargingRuleRemove() );
+			FDAvp prar( getDict().avpPraRemove() );
+			
+			for (auto r : arules)
 			{
-				crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
-				qos_info.addJson(  r->getDefinition() );
-				doc.Parse( r->getDefinition().c_str() );
-				const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
-				for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
+				if ( r->getType() == "CHARGING" && r->getDefaultFlag() == false )
 				{
-					if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
-					{
-						qci = crditr->value["QoS-Class-Identifier"].GetInt();
-						const RAPIDJSON_NAMESPACE::Value& arpitem = crditr->value["Allocation-Retention-Priority"];
-						pl = arpitem["Priority-Level"].GetInt();
-						pec = arpitem["Pre-emption-Capability"].GetInt();
-						pev = arpitem["Pre-emption-Vulnerability"].GetInt();
-					}
+					crr.add( getDict().avpChargingRuleName(), r->getRuleName());
+					crcnt++;
 				}
-				crcnt++;
+				else if ( r->getType() == "PRA" && r->getDefaultFlag() == false)
+				{
+					prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+					pracnt++;
+				}
 			}
-			else if ( r->getType() == "PRA")
+
+			if (crcnt > 0)
 			{
-				prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
-				pracnt++;
+				req->add( crr );
+			}
+			if (pracnt > 0)
+			{
+				req->add( prar );
 			}
 		}
-
-		if (crcnt > 0)
-		{
-			req->add( crp );
-			req->add( qos_info );
-		}
-		if (pracnt > 0)
-		{
-			req->add( prap );
-		}
-
-		prules.clear();
 	}
+	else
+	{
+		if ( !prules.empty() )
+		{
+			int crcnt = 0;
+			int pracnt = 0;
+			std::string s_pl;
+			FDAvp crp( getDict().avpChargingRuleInstall() );
+			FDAvp prap( getDict().avpPraInstall() );
+			FDAvp qos_info( getDict().avpQosInformation() ); 
+			
+			for (auto r : prules)
+			{
+				if (r->getType() == "CHARGING")
+				{
+					crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					qos_info.addJson(  r->getDefinition() );
+					doc.Parse( r->getDefinition().c_str() );
+					const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
+					for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator crditr = crditem.MemberBegin(); crditr != crditem.MemberEnd(); ++crditr)
+					{
+						if ( strcmp(crditr->name.GetString(), "QoS-Information") == 0)
+						{
+							qci = crditr->value["QoS-Class-Identifier"].GetInt();
+							const RAPIDJSON_NAMESPACE::Value& arpitem = crditr->value["Allocation-Retention-Priority"];
+							pl = arpitem["Priority-Level"].GetInt();
+							pec = arpitem["Pre-emption-Capability"].GetInt();
+							pev = arpitem["Pre-emption-Vulnerability"].GetInt();
+						}
+					}
+					crcnt++;
+				}
+				else if ( r->getType() == "PRA")
+				{
+					prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+					pracnt++;
+				}
+			}
+
+			if (crcnt > 0)
+			{
+				req->add( crp );
+				req->add( qos_info );
+			}
+			if (pracnt > 0)
+			{
+				req->add( prap );
+			}
+
+			prules.clear();
+		}
+		FDAvp avp_qci( getDict().avpQosClassIdentifier() );
+		avp_qci.set( qci );
+
+		FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
+		avp_arp.add( getDict().avpPriorityLevel(), pl );
+		avp_arp.add( getDict().avpPreEmptionCapability(), pec );
+		avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
+
+		
+		FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
+		defBearerQos.add( avp_qci );
+		defBearerQos.add( avp_arp );
+		req->add(defBearerQos);
 	}
-
-	FDAvp avp_qci( getDict().avpQosClassIdentifier() );
-	avp_qci.set( qci );
-
-	FDAvp avp_arp( getDict().avpAllocationRetentionPriority() );
-	avp_arp.add( getDict().avpPriorityLevel(), pl );
-	avp_arp.add( getDict().avpPreEmptionCapability(), pec );
-	avp_arp.add( getDict().avpPreEmptionVulnerability(), pev );
 
 	
-	FDAvp defBearerQos ( getDict().avpDefaultEpsBearerQos());
-	defBearerQos.add( avp_qci );
-	defBearerQos.add( avp_arp );
 	//std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 2, \"Pre-emption-Vulnerability\": 20}}");
 	//defBearerQos.addJson(json_t);
 	setStatus( esProcessing );
 	m_triggertimer = NULL;
 	
-	req->add(defBearerQos);
 	req->dump();
 	req->send();
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);

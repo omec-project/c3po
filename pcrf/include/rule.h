@@ -134,6 +134,7 @@ public:
 
    void push_back( Rule *r );
    bool exists( Rule *r );
+	Rule* getRule( std::string& rulename );
    bool erase( Rule *r );
    std::list<Rule*>::iterator erase( std::list<Rule*>::iterator &it );
 
