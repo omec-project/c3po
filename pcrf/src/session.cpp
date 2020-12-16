@@ -21,7 +21,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-GxSession::GxSession( PCRF &pcrf )
+GxSession::GxSession( PCRF &pcrf, SessionEvent* current_event )
    : m_state( sIdle ),
      m_pcrf( pcrf ),
      m_pcrf_endpoint( NULL ),
@@ -34,6 +34,9 @@ GxSession::GxSession( PCRF &pcrf )
 {
    memset( &m_ipv4, 0, sizeof( m_ipv4 ) );
    memset( &m_ipv6, 0, sizeof( m_ipv6 ) );
+
+	mp_currentstate = new GxSessionPendingState( pcrf, current_event );
+   mp_currentproc = NULL;
 }
 
 GxSession::~GxSession()
@@ -181,6 +184,197 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
 //         __FILE__, __LINE__, source, gx->getSessionId().c_str(), gx->getImsi().c_str(), gx->getApn().c_str() );
 
    GxSessionMap::getInstance().deleteSession( gx, false );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+GxSessionState::GxSessionState( PCRF& pcrf, SessionEvent* current_event) : m_pcrf( pcrf ), mp_sessionevent( current_event )
+{
+	Logger::gx().debug("GxSessionState");
+}
+
+GxSessionState::~GxSessionState()
+{
+	mp_sessionevent = NULL;
+}
+
+void GxSessionState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	Logger::gx().debug("GxSessionState rcvdRAA");
+}
+
+void GxSessionState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+{
+	Logger::gx().debug("GxSessionState validateReq");
+}
+
+void GxSessionState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	Logger::gx().debug("GxSessionState visit install function");
+}
+
+void GxSessionState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	Logger::gx().debug("GxSessionState visit remove function ");
+}
+
+void GxSessionState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+{
+	Logger::gx().debug("GxSessionState visit validate function ");
+}
+
+
+GxSessionPendingState::GxSessionPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionPendingState  ");
+}
+
+GxSessionPendingState::~GxSessionPendingState()
+{
+}
+
+void GxSessionPendingState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+{
+	Logger::gx().debug("GxSessionPendingState validateReq ");
+	printf ("SOHAN : %s:%d Validate the CCR Req received \n", __FILE__, __LINE__);
+}
+
+void GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+{
+	Logger::gx().debug("GxSessionPendingState visit validate function  ");
+	printf ("SOHAN : %s:%d Changing state Pending State ---> ActiveState \n", __FILE__, __LINE__);
+}
+/*
+void GxSessionPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	Logger::gx().debug("GxSessionPendingState visit remove function  ");
+}
+*/
+
+
+GxSessionActiveState::GxSessionActiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionActiveState  ");
+}
+
+GxSessionActiveState::~GxSessionActiveState()
+{
+	Logger::gx().debug("~GxSessionActiveState  ");
+}
+
+GxSessionInactiveState::GxSessionInactiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionInactiveState  ");
+}
+
+GxSessionInactiveState::~GxSessionInactiveState()
+{
+	Logger::gx().debug("~GxSessionInactiveState  ");
+}
+
+GxSessionModifyPendingState::GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionModifyPendingState  ");
+}
+
+GxSessionModifyPendingState::~GxSessionModifyPendingState()
+{
+	Logger::gx().debug("~GxSessionModifyPendingState  ");
+}
+
+void GxSessionModifyPendingState::rcvdRAA( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	Logger::gx().debug("GxSessionModifyPendingState::rcvdRAA  ");
+	current_proc->accept( this, raa );
+}
+
+void GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	printf("SOHAN %s:%d visit install raa\n", __FILE__, __LINE__);
+
+	// extraction of avps logic here.
+	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__,__LINE__);
+}
+
+void GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+{
+	printf ("SOHAN %s:%d visiti remove raa\n", __FILE__, __LINE__);
+	// extraction of avps for remove raa here
+	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__, __LINE__ );
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+GxSessionProc::GxSessionProc( PCRF& pcrf, SessionEvent* current_event ) : m_pcrf( pcrf ), mp_sessionevent( current_event )
+{
+	Logger::gx().debug("GxSessionProc function ");
+}
+
+GxSessionProc::~GxSessionProc()
+{
+	mp_sessionevent = NULL;
+}
+
+void GxSessionProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+{
+	Logger::gx().debug("GxSessionProc accept raa ");
+}
+
+void GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
+{
+	Logger::gx().debug("GxSessionProc accept  ccr");
+}
+
+GxSessionInstallProc::GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionInstallProc ");
+}
+
+GxSessionInstallProc::~GxSessionInstallProc()
+{
+	Logger::gx().debug("GxSessionInstallProc destructor ");
+}
+
+void GxSessionInstallProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+{
+	printf ("SOHAN : %s:%d Install Accept ", __FILE__, __LINE__);
+	current_state->visit( this, raa );
+}
+
+GxSessionRemoveProc::GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionRemoveProc ");
+}
+
+GxSessionRemoveProc::~GxSessionRemoveProc()
+{
+	Logger::gx().debug("~GxSessionRemoveProc ");
+}
+
+void GxSessionRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+{
+	printf ("SOHAN : %s:%d Remove Accept\n", __FILE__, __LINE__);
+	current_state->visit( this, raa );
+}
+
+GxSessionValidateProc::GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
+{
+	Logger::gx().debug("GxSessionValidateProc ");
+}
+
+GxSessionValidateProc::~GxSessionValidateProc()
+{
+	Logger::gx().debug("~GxSessionValidateProc ");
+}
+
+void GxSessionValidateProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
+{
+	printf ("SOHAN : %s:%d Validate accept\n ", __FILE__, __LINE__ );
+	current_state->visit( this, ccr );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -744,6 +938,7 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 
 void GxIpCan1::sendRAR(bool pending)
 {
+	printf ("SOHAN : %s:%d Sending RAR\n", __FILE__, __LINE__);
    Logger::gx().debug("SENDING RAR to PEER");
 	int qci, pl, pec, pev;
    RAPIDJSON_NAMESPACE::Document doc;
@@ -937,7 +1132,7 @@ bool GxIpCan1::processPhase1()
 
    while ( result )
    {
-      setGxSession( new GxSession( getPCRF() ) );
+      setGxSession( new GxSession( getPCRF(), this ) );
 		size_t session_list_size = getGxSession()->getRules().size();
 
       //
@@ -1582,7 +1777,6 @@ bool GxIpCan1::processPhase1()
 	  }
       break;
    }
-
    return result;
 }
 
