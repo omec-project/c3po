@@ -261,7 +261,7 @@ public:
 	GxSessionProc( PCRF& pcrf, SessionEvent* current_event );
 	virtual ~GxSessionProc();
 	virtual void accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
-	virtual void accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
+	virtual bool accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
 private:
 	PCRF& m_pcrf;
 	SessionEvent* mp_sessionevent;
@@ -288,7 +288,7 @@ class GxSessionValidateProc : public GxSessionProc
 public:
 	GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event );
 	~GxSessionValidateProc();
-	void accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
+	bool accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
 };
 
 class GxSessionState
@@ -299,11 +299,11 @@ public:
 	SessionEvent* getCurrentEvent() { return mp_sessionevent; }
 	// events function
 	virtual void rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
-	virtual void validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
+	virtual bool validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
 	// visitor functions
 	virtual void visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
 	virtual void visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
-	virtual void visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
+	virtual bool visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
 
 private:
 	PCRF& m_pcrf;
@@ -315,8 +315,8 @@ class GxSessionPendingState : public GxSessionState
 public:
 	GxSessionPendingState( PCRF& pcrf, SessionEvent* current_session );
 	~GxSessionPendingState();
-	void validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
-	void visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+	bool validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+	bool visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
 };
 
 class GxSessionActiveState : public GxSessionState
@@ -729,6 +729,7 @@ public:
                            // a CCA error and start the teardown process
 
    void sendCCA();
+   bool validate();
 
 	GxSessionState* getCurrentState() { getGxSession()->getCurrentState(); }
 	void setCurrentState( GxSessionState* current_state) { getGxSession()->setCurrentState( current_state ); }

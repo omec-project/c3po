@@ -35,8 +35,8 @@ GxSession::GxSession( PCRF &pcrf, SessionEvent* current_event )
    memset( &m_ipv4, 0, sizeof( m_ipv4 ) );
    memset( &m_ipv6, 0, sizeof( m_ipv6 ) );
 
-	mp_currentstate = new GxSessionPendingState( pcrf, current_event );
-   mp_currentproc = NULL;
+   mp_currentstate = new GxSessionPendingState( pcrf, current_event );
+   mp_currentproc = new GxSessionValidateProc( pcrf, current_event );
 }
 
 GxSession::~GxSession()
@@ -205,7 +205,7 @@ void GxSessionState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtra
 	Logger::gx().debug("GxSessionState rcvdRAA");
 }
 
-void GxSessionState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+bool GxSessionState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionState validateReq");
 }
@@ -220,7 +220,7 @@ void GxSessionState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerE
 	Logger::gx().debug("GxSessionState visit remove function ");
 }
 
-void GxSessionState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+bool GxSessionState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionState visit validate function ");
 }
@@ -235,16 +235,31 @@ GxSessionPendingState::~GxSessionPendingState()
 {
 }
 
-void GxSessionPendingState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+bool GxSessionPendingState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionPendingState validateReq ");
 	printf ("SOHAN : %s:%d Validate the CCR Req received \n", __FILE__, __LINE__);
+    bool ret;
+    ret = current_proc->accept( this, ccr );
+    return ret;
 }
 
-void GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+bool GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionPendingState visit validate function  ");
 	printf ("SOHAN : %s:%d Changing state Pending State ---> ActiveState \n", __FILE__, __LINE__);
+    SessionEvent* event = getCurrentEvent();
+    GxIpCan1* ipcan1 = NULL;
+    ipcan1 = dynamic_cast<GxIpCan1*> ( event );
+    if ( ipcan1 )
+    {
+       if ( !ipcan1->validate() )
+       {
+          return false;
+       }
+       return true;
+    }
+    
 }
 /*
 void GxSessionPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
@@ -300,7 +315,7 @@ void GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx:
 
 void GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
-	printf ("SOHAN %s:%d visiti remove raa\n", __FILE__, __LINE__);
+	printf ("SOHAN %s:%d visit remove raa\n", __FILE__, __LINE__);
 	// extraction of avps for remove raa here
 	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__, __LINE__ );
 }
@@ -324,7 +339,7 @@ void GxSessionProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtra
 	Logger::gx().debug("GxSessionProc accept raa ");
 }
 
-void GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
+bool GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionProc accept  ccr");
 }
@@ -371,10 +386,12 @@ GxSessionValidateProc::~GxSessionValidateProc()
 	Logger::gx().debug("~GxSessionValidateProc ");
 }
 
-void GxSessionValidateProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
+bool GxSessionValidateProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
 {
 	printf ("SOHAN : %s:%d Validate accept\n ", __FILE__, __LINE__ );
-	current_state->visit( this, ccr );
+    bool ret;
+	ret = current_state->visit( this, ccr );
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -785,6 +802,7 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 	if ( msg.getId() == RARTIMEOUT )
    {
       Logger::gx().debug("RAR TIMEOUT Occured");
+      printf ("SOHAN : %s:%d RAR timeout occured\n", __FILE__, __LINE__);
       m_reqTimer->stop();
       m_gxipcan1->sendRAR( true );
    }
@@ -861,6 +879,8 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 	Logger::gx().debug("RCVD RAA FROM PEER");
 	gx::ReAuthAnswerExtractor raa( ans, getDict() );
 	ans.dump();
+    getCurrentState()->rcvdRAA( getCurrentProc(), raa ); 
+    
 	
 	// reterive the session id and check it if is valid and it is same as sent in RAR request.
 
@@ -878,7 +898,7 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
    if ( !GxSessionMap::getInstance().findSession( getGxSession()->getSessionId(), session ) )
    {
 		return;
-	}
+   }
 	printf ("SOHAN RCVD session id : %s\n", session_id.c_str());
 	
 	l_fd_extractor_list = raa.charging_rule_report.getList();
@@ -1019,6 +1039,11 @@ void GxIpCan1::sendRAR(bool pending)
 				req->add( prar );
 			}
 		}
+        if ( getCurrentProc() != NULL )
+        {
+            delete( getCurrentProc() );
+        }
+        setCurrentProc( new GxSessionRemoveProc( getPCRF(), this ) );
 	}
 	else
 	{
@@ -1084,6 +1109,12 @@ void GxIpCan1::sendRAR(bool pending)
 		defBearerQos.add( avp_qci );
 		defBearerQos.add( avp_arp );
 		req->add(defBearerQos);
+        
+        if ( getCurrentProc() != NULL )
+        {
+            delete( getCurrentProc() );
+        }
+        setCurrentProc( new GxSessionInstallProc( getPCRF(), this ) );
 	}
 
 	
@@ -1094,6 +1125,12 @@ void GxIpCan1::sendRAR(bool pending)
 	
 	req->dump();
 	req->send();
+    if ( getCurrentState() != NULL )
+    {
+        delete( getCurrentState() );
+    }
+    setCurrentState( new GxSessionModifyPendingState(getPCRF(), this ) );
+    
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
    //if (result)
    //{
@@ -1115,26 +1152,16 @@ void GxIpCan1::sendCCA()
    setStatus( esFailed ); \
    result = false; \
    break;
-
-bool GxIpCan1::processPhase1()
+   
+   
+bool GxIpCan1::validate()
 {
-   //
-   // a return value of false indicates that processing should be halted
-   // the destruction sequence for the object should be initiated
-   //
-   printf("%s %d \n",__FUNCTION__,__LINE__);
-   SMutexLock l( m_mutex );
-   bool result = true;
+    printf("%s %d \n",__FUNCTION__,__LINE__);
    std::string s;
 	std::string r;
-
-   setStatus( esProcessing );
-
-   while ( result )
-   {
-      setGxSession( new GxSession( getPCRF(), this ) );
-		size_t session_list_size = getGxSession()->getRules().size();
-
+    bool result = true;
+    
+      size_t session_list_size = getGxSession()->getRules().size();
       //
       // find the IMSI
       //
@@ -1152,7 +1179,7 @@ bool GxIpCan1::processPhase1()
                RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_MISSING_AVP, *(*subidit) );
                sendCCA();
                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-               ABORT();
+               return false;
             }
 
             getGxSession()->setImsi( s );
@@ -1166,15 +1193,16 @@ bool GxIpCan1::processPhase1()
                RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_INVALID_AVP_VALUE, (*subidit)->subscription_id_data );
                sendCCA();
                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_INVALID_AVP_VALUE);
-               ABORT();
+               return false;
             }
-
             break;
          }
       }
 
       if ( !result )
-         break;
+      {
+          return false;
+      }
 
       //
       // return if IMSI not found or invalid
@@ -1185,7 +1213,7 @@ bool GxIpCan1::processPhase1()
          RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpSubscriptionIdType(), 1 );
          sendCCA();
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-         ABORT();
+         return false;
       }
 
       //
@@ -1197,7 +1225,7 @@ bool GxIpCan1::processPhase1()
          RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpCalledStationId(), "" );
          sendCCA();
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-         ABORT();
+         return false;
       }
 
       getGxSession()->setApn( s );
@@ -1211,7 +1239,7 @@ bool GxIpCan1::processPhase1()
          EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
          sendCCA();
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-         ABORT();
+         return false;
       }
 
 
@@ -1226,7 +1254,7 @@ bool GxIpCan1::processPhase1()
             EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            ABORT();
+            return false;
          }
 
          getGxSession()->setApnEntry( apn );
@@ -1251,7 +1279,7 @@ bool GxIpCan1::processPhase1()
             RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            ABORT();
+            return false;
          }
       }
 
@@ -1267,7 +1295,7 @@ bool GxIpCan1::processPhase1()
             RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            ABORT();
+            return false;
          }
       }
 
@@ -1282,7 +1310,7 @@ bool GxIpCan1::processPhase1()
             RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_UNABLE_TO_COMPLY, getCCR().cc_request_type );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            ABORT();
+            return false;
          }
 
          Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]",
@@ -1290,7 +1318,7 @@ bool GxIpCan1::processPhase1()
          RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_UNABLE_TO_COMPLY, getCCR().cc_request_type );
          sendCCA();
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-         ABORT();
+         return false;
       }
 
       //
@@ -1318,7 +1346,7 @@ bool GxIpCan1::processPhase1()
                RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
                sendCCA();
                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-               ABORT();
+               return false;
             }
          }
          else
@@ -1328,7 +1356,7 @@ bool GxIpCan1::processPhase1()
             EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            ABORT();
+            return false;
          }
       }
 
@@ -1354,7 +1382,7 @@ bool GxIpCan1::processPhase1()
                EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
                sendCCA();
                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-               ABORT();
+               return false;
             }
          }
 
@@ -1426,7 +1454,7 @@ bool GxIpCan1::processPhase1()
                   EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().framed_ip_address );
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  ABORT();
+                  return false;
               }
           }
 
@@ -1443,7 +1471,7 @@ bool GxIpCan1::processPhase1()
               EXP_RESULTCODE_WITH_FAILEDAVP2( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
               sendCCA();
               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-              ABORT();
+              return false;
           }
       }
       //
@@ -1465,7 +1493,7 @@ bool GxIpCan1::processPhase1()
                       RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
                       sendCCA();
                       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-                      ABORT();
+                      return false;
                   }
 
                   uint32_t fl;
@@ -1476,7 +1504,9 @@ bool GxIpCan1::processPhase1()
           }
 
           if ( !result )
-              break;
+          {
+              return false;
+          }
 
           getGxSession()->setSupportedFeatures( supported_features );
       }
@@ -1492,15 +1522,15 @@ bool GxIpCan1::processPhase1()
           {
               ep = new Endpoint();
               ep->setHost( s );
-				  std::string pcef_realm;
-				  if ( getCCR().origin_realm.get( pcef_realm ) )
-				  {
-				     ep->setRealm( pcef_realm );
-				  }
-				  else
-				  {
+              std::string pcef_realm;
+              if ( getCCR().origin_realm.get( pcef_realm ) )
+              {
+                 ep->setRealm( pcef_realm );
+              }
+              else
+              {
                  ep->setRealm( Options::originRealm() );
-				  }
+              }
 
               if ( getPCRF().dataaccess().addEndpoint( *ep ) )
               {
@@ -1512,7 +1542,7 @@ bool GxIpCan1::processPhase1()
                       sendCCA();
                       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                       delete ep;
-                      ABORT();
+                      return false;
                   }
               }
               else
@@ -1523,7 +1553,7 @@ bool GxIpCan1::processPhase1()
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                   delete ep;
-                  ABORT();
+                  return false;
               }
           }
 
@@ -1536,7 +1566,7 @@ bool GxIpCan1::processPhase1()
           RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpOriginHost(), "" );
           sendCCA();
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-          ABORT();
+          return false;
       }
 #endif
       //
@@ -1581,7 +1611,7 @@ bool GxIpCan1::processPhase1()
                           sendCCA();
                           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                           delete ep;
-                          ABORT();
+                          return false;
                       }
                   }
                   else
@@ -1592,7 +1622,7 @@ bool GxIpCan1::processPhase1()
                       sendCCA();
                       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                       delete ep;
-                      ABORT();
+                      return false;
                   }
               }
               catch ( DAException &ex )
@@ -1603,7 +1633,7 @@ bool GxIpCan1::processPhase1()
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
                   delete ep;
-                  ABORT();
+                  return false;
               }
           }
       }
@@ -1629,7 +1659,7 @@ bool GxIpCan1::processPhase1()
                   EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
                   sendCCA();
                   StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  ABORT();
+                  return false;
               }
           }
       }
@@ -1653,7 +1683,7 @@ bool GxIpCan1::processPhase1()
               EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
               sendCCA();
               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-              ABORT();
+              return false;
           }
       }
       //
@@ -1667,7 +1697,9 @@ bool GxIpCan1::processPhase1()
             for ( auto rule : getGxSession()->getRules() )
             {
                if ( ( syRequired = rule->getSyRequired() ) )
+               {
                   break;
+               }
             }
          }
 
@@ -1678,7 +1710,7 @@ bool GxIpCan1::processPhase1()
             RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            ABORT();
+            return false;
          }
       }
 
@@ -1692,7 +1724,7 @@ bool GxIpCan1::processPhase1()
          RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
          sendCCA();
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-         ABORT();
+         return false;
       }
 
       //
@@ -1705,7 +1737,7 @@ bool GxIpCan1::processPhase1()
          RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
          sendCCA();
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-         ABORT();
+         return false;
       }
 
       setDeleteGxSession( false ); std::cout<<"Calling TDF functions now"<<std::endl;
@@ -1722,7 +1754,7 @@ bool GxIpCan1::processPhase1()
             RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            ABORT();
+            return false;
          }
 
         printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
@@ -1740,7 +1772,7 @@ bool GxIpCan1::processPhase1()
             }
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            ABORT();
+            return false;
          }
          printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
       }
@@ -1757,7 +1789,7 @@ bool GxIpCan1::processPhase1()
             RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            ABORT();
+            return false;
          }
 
         printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
@@ -1766,17 +1798,60 @@ bool GxIpCan1::processPhase1()
             EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            ABORT();
+            return false;
          }
       }
-	  if (getStatus() == esComplete)
+      return true;
+}
+
+bool GxIpCan1::processPhase1()
+{
+   //
+   // a return value of false indicates that processing should be halted
+   // the destruction sequence for the object should be initiated
+   //
+   SMutexLock l( m_mutex );
+   bool result = true;
+
+   setStatus( esProcessing );
+   
+   setGxSession( new GxSession( getPCRF(), this ) );
+   
+   result = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
+   
+   if ( result == true )
+   {
+      printf ("SOHAN : %s:%d Setting State to Active\n", __FILE__, __LINE__);
+      if ( getCurrentState() != NULL )
+      {
+          delete( getCurrentState() );
+      }
+      setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
+      
+      if ( getStatus() == esComplete )
 	  {
-	     // we have sent the successful CCA Initial, hence start the timer
-	    Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-		 m_triggertimer = new TriggerTimer( this, true );
+          printf ("SOHAN : %s:%d Starting timer \n", __FILE__, __LINE__);
+	      // we have sent the successful CCA Initial, hence start the timer
+          Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
+		  m_triggertimer = new TriggerTimer( this, true );
 	  }
-      break;
    }
+   else
+   {
+      if ( getCurrentState() != NULL )
+      {
+          delete( getCurrentState() );
+      }
+      setCurrentState( NULL );
+      
+   }
+   printf ("SOHAN : %s:%d Setting Proc to NULL \n", __FILE__, __LINE__);
+   if ( getCurrentProc() != NULL )
+   {
+      delete( getCurrentProc() );
+   }
+  setCurrentProc( NULL );
+   
    return result;
 }
 
@@ -1986,6 +2061,18 @@ bool GxIpCan1::processPhase3()
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
+   
+   
+   if ( getCurrentProc() != NULL )
+   {
+       delete( getCurrentProc() );
+   }
+   setCurrentProc( NULL );
+   if ( getCurrentState() != NULL )
+   {
+       delete( getCurrentState() );
+   }
+   setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
 
    // flag this event as complete
    setStatus( esComplete );
