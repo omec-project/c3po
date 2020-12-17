@@ -260,7 +260,7 @@ class GxSessionProc
 public:
 	GxSessionProc( PCRF& pcrf, SessionEvent* current_event );
 	virtual ~GxSessionProc();
-	virtual void accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
+	virtual bool accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
 	virtual bool accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
 private:
 	PCRF& m_pcrf;
@@ -272,7 +272,7 @@ class GxSessionInstallProc : public GxSessionProc
 public:
 	GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event );
 	~GxSessionInstallProc();
-	void accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	bool accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSessionRemoveProc : public GxSessionProc
@@ -280,7 +280,7 @@ class GxSessionRemoveProc : public GxSessionProc
 public:
 	GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event );
 	~GxSessionRemoveProc();
-	void accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	bool accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSessionValidateProc : public GxSessionProc
@@ -298,11 +298,11 @@ public:
 	virtual ~GxSessionState();
 	SessionEvent* getCurrentEvent() { return mp_sessionevent; }
 	// events function
-	virtual void rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
+	virtual bool rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
 	virtual bool validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
 	// visitor functions
-	virtual void visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
-	virtual void visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
+	virtual bool visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
+	virtual bool visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
 	virtual bool visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
 
 private:
@@ -339,9 +339,9 @@ class GxSessionModifyPendingState : public GxSessionState
 public:
 	GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_session );
 	~GxSessionModifyPendingState();
-	void rcvdRAA( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	void visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	void visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	bool rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	bool visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	bool visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSession
@@ -743,6 +743,8 @@ public:
 
    void sendRAR(bool pending);
 	void rcvdRAA(FDMessageAnswer &ans);
+    bool rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa );
+    bool rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa );
 
 private:
    GxIpCan1();

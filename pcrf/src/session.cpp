@@ -200,7 +200,7 @@ GxSessionState::~GxSessionState()
 	mp_sessionevent = NULL;
 }
 
-void GxSessionState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionState rcvdRAA");
 }
@@ -210,12 +210,12 @@ bool GxSessionState::validateReq( GxSessionProc* current_proc, gx::CreditControl
 	Logger::gx().debug("GxSessionState validateReq");
 }
 
-void GxSessionState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionState visit install function");
 }
 
-void GxSessionState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionState visit remove function ");
 }
@@ -224,7 +224,8 @@ bool GxSessionState::visit( GxSessionValidateProc* current_proc, gx::CreditContr
 {
 	Logger::gx().debug("GxSessionState visit validate function ");
 }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GxSessionPendingState::GxSessionPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
@@ -248,6 +249,11 @@ bool GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::Cred
 {
 	Logger::gx().debug("GxSessionPendingState visit validate function  ");
 	printf ("SOHAN : %s:%d Changing state Pending State ---> ActiveState \n", __FILE__, __LINE__);
+    /*
+     * SessionEvent class should have the called function virtual
+     * and all the Event should override these virtual methods
+     * Remove the dynamic cast when this code will be changed
+     */
     SessionEvent* event = getCurrentEvent();
     GxIpCan1* ipcan1 = NULL;
     ipcan1 = dynamic_cast<GxIpCan1*> ( event );
@@ -261,13 +267,9 @@ bool GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::Cred
     }
     
 }
-/*
-void GxSessionPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
-	Logger::gx().debug("GxSessionPendingState visit remove function  ");
-}
-*/
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GxSessionActiveState::GxSessionActiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
@@ -289,6 +291,9 @@ GxSessionInactiveState::~GxSessionInactiveState()
 	Logger::gx().debug("~GxSessionInactiveState  ");
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 GxSessionModifyPendingState::GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
 	Logger::gx().debug("GxSessionModifyPendingState  ");
@@ -299,27 +304,49 @@ GxSessionModifyPendingState::~GxSessionModifyPendingState()
 	Logger::gx().debug("~GxSessionModifyPendingState  ");
 }
 
-void GxSessionModifyPendingState::rcvdRAA( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionModifyPendingState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionModifyPendingState::rcvdRAA  ");
-	current_proc->accept( this, raa );
+    bool result;
+	result = current_proc->accept( this, raa );
+    return result;
 }
 
-void GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	printf("SOHAN %s:%d visit install raa\n", __FILE__, __LINE__);
-
-	// extraction of avps logic here.
+    bool result = false;
+    /*
+     * SessionEvent class should have the called function virtual
+     * and all the Event should override these virtual methods
+     * Remove the dynamic cast when this code will be changed
+     */
+    GxIpCan1* ipcan1 = NULL;
+    SessionEvent* event = getCurrentEvent();
+    ipcan1 = dynamic_cast<GxIpCan1*>( event );
+    if (ipcan1 != NULL )
+    {
+        result = ipcan1->rcvdInstallRAA( raa );
+    }
 	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__,__LINE__);
+    return result;
 }
 
-void GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	printf ("SOHAN %s:%d visit remove raa\n", __FILE__, __LINE__);
+    bool result;
+    GxIpCan1* ipcan1 = NULL;
+    SessionEvent* event = getCurrentEvent();
+    ipcan1 = dynamic_cast<GxIpCan1*>( event );
+    if ( ipcan1 != NULL )
+    {
+        result = ipcan1->rcvdRemoveRAA( raa );
+    }
 	// extraction of avps for remove raa here
 	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__, __LINE__ );
+    return result;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -334,7 +361,7 @@ GxSessionProc::~GxSessionProc()
 	mp_sessionevent = NULL;
 }
 
-void GxSessionProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionProc accept raa ");
 }
@@ -343,6 +370,9 @@ bool GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlRequ
 {
 	Logger::gx().debug("GxSessionProc accept  ccr");
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GxSessionInstallProc::GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
@@ -354,11 +384,16 @@ GxSessionInstallProc::~GxSessionInstallProc()
 	Logger::gx().debug("GxSessionInstallProc destructor ");
 }
 
-void GxSessionInstallProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionInstallProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
 {
 	printf ("SOHAN : %s:%d Install Accept ", __FILE__, __LINE__);
-	current_state->visit( this, raa );
+    bool result;
+	result = current_state->visit( this, raa );
+    return result;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GxSessionRemoveProc::GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
@@ -370,11 +405,16 @@ GxSessionRemoveProc::~GxSessionRemoveProc()
 	Logger::gx().debug("~GxSessionRemoveProc ");
 }
 
-void GxSessionRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+bool GxSessionRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
 {
 	printf ("SOHAN : %s:%d Remove Accept\n", __FILE__, __LINE__);
-	current_state->visit( this, raa );
+    bool result;
+	result = current_state->visit( this, raa );
+    return result;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GxSessionValidateProc::GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
@@ -874,34 +914,27 @@ void GxIpCan1::release( GxIpCan1 *gxevent )
       delete gxevent;
 }
 
-void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
+bool GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 {
-	Logger::gx().debug("RCVD RAA FROM PEER");
-	gx::ReAuthAnswerExtractor raa( ans, getDict() );
-	ans.dump();
-    getCurrentState()->rcvdRAA( getCurrentProc(), raa ); 
-    
-	
-	// reterive the session id and check it if is valid and it is same as sent in RAR request.
-
-	GxSession *session = NULL;
+    printf ("SOHAN : %s:%d rcvdRemoveRAA \n", __FILE__, __LINE__);
+    GxSession *session = NULL;
 	Rule *rule;
 	RulesList &irules( getRulesEvaluator().getGxInstallRules() );
+	RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
 	std::string session_id;
 	std::string rule_name;
 	int pcc_status;
-	bool returnflag;
+    bool result = true;
 	std::list<gx::ChargingRuleReportExtractor*> l_fd_extractor_list;
 	std::list<FDExtractorAvp*> l_rule_name_list;
 	setStatus( esComplete );
-	raa.session_id.get( session_id );	
+	raa.session_id.get( session_id );
+    printf ("SOHAN RCVD session id : %s\n", session_id.c_str());
    if ( !GxSessionMap::getInstance().findSession( getGxSession()->getSessionId(), session ) )
    {
-		return;
+		return false;
    }
-	printf ("SOHAN RCVD session id : %s\n", session_id.c_str());
-	
-	l_fd_extractor_list = raa.charging_rule_report.getList();
+   l_fd_extractor_list = raa.charging_rule_report.getList();
 
    for(std::list<gx::ChargingRuleReportExtractor*>::iterator iter= l_fd_extractor_list . begin(); iter != l_fd_extractor_list . end(); iter++)
    {
@@ -909,34 +942,22 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 		l_rule_name_list = (*iter)->charging_rule_name.getList();
 		for(std::list<FDExtractorAvp *>::iterator iterAvp= l_rule_name_list.begin(); iterAvp != l_rule_name_list.end(); iterAvp++)
     	{
-        (*iterAvp)->get( rule_name );
+            (*iterAvp)->get( rule_name );
 			printf ("SOHAN : RuleName : %s\n", rule_name.c_str() );
-			// add the logic to identify the RAA whether this for initiating the remove rules or when the default rule is deleted.
-			// in case where the default rule is also deleted then we donot need to send the rar again for removal of rules.
 			rule = irules.getRule( rule_name );
-			if ( rule != NULL )
-			{
-				if ( rule->getDefaultFlag() != false )
-				{
-					returnflag = true;
-				}	
-			}
-			
+            if ( irules.erase( rule ) == false )
+            {
+                irules.clear();
+            }
+            rrules.push_back( rule );
     	}
-   	//(*iter)->charging_rule_name.get( rule_name );
-		rule_report->setRuleName( rule_name );
+		rule_report->setRuleName( rule_name ); // this will be the list of rule names
 		(*iter)->pcc_rule_status.get( pcc_status );
 		printf ("SOHAN : Status : %d\n", pcc_status );
 		rule_report->setPccStatus( pcc_status );	
 		getGxSession()->getRulesReport().push_back( rule_report );
    }
-
-	if ( returnflag == true )
-	{
-		return;
-	}
-
-	RulesReportList& rlist( getGxSession()->getRulesReport() );
+   RulesReportList& rlist( getGxSession()->getRulesReport() );
 	bool status = true;
 	if (!rlist.empty())
 	{
@@ -948,12 +969,113 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 			}
 		}
 	}
-
-	if ( status == true )
+    if ( status == false )
 	{
+        // removal of rules failed that's why send rar remove again after 20 sec
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
 		m_triggertimer = new TriggerTimer( this, false );
-	}	
+	}
+    if ( status == true )
+    {
+        // remove the rules from the remove list as we donot need to send rar remove again.
+        rrules.clear();
+    }
+	return result;
+}
+
+bool GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
+{
+    printf ("SOHAN : %s:%d rcvdInstallRAA \n", __FILE__, __LINE__);
+    GxSession *session = NULL;
+	Rule *rule;
+	RulesList &irules( getRulesEvaluator().getGxInstallRules() );
+	RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
+	std::string session_id;
+	std::string rule_name;
+	int pcc_status;
+    bool result = true;
+	std::list<gx::ChargingRuleReportExtractor*> l_fd_extractor_list;
+	std::list<FDExtractorAvp*> l_rule_name_list;
+	setStatus( esComplete );
+	raa.session_id.get( session_id );	
+   if ( !GxSessionMap::getInstance().findSession( getGxSession()->getSessionId(), session ) )
+   {
+		return false;
+   }
+	printf ("SOHAN RCVD session id : %s\n", session_id.c_str());
+	
+	l_fd_extractor_list = raa.charging_rule_report.getList();
+
+   for(std::list<gx::ChargingRuleReportExtractor*>::iterator iter= l_fd_extractor_list . begin(); iter != l_fd_extractor_list . end(); iter++)
+   {
+		GxChargingRuleReport* rule_report = new GxChargingRuleReport();
+		l_rule_name_list = (*iter)->charging_rule_name.getList();
+		for(std::list<FDExtractorAvp *>::iterator iterAvp= l_rule_name_list.begin(); iterAvp != l_rule_name_list.end(); iterAvp++)
+    	{
+            (*iterAvp)->get( rule_name );
+			printf ("SOHAN : RuleName : %s\n", rule_name.c_str() );
+			// add the logic to identify the RAA whether this for initiating the remove rules or when the default rule is deleted.
+			// in case where the default rule is also deleted then we donot need to send the rar again for removal of rules.
+			rule = irules.getRule( rule_name );
+            if ( irules.erase(rule) == false )
+            {
+                irules.clear();
+            }
+            rrules.push_back( rule );
+    	}
+		rule_report->setRuleName( rule_name );
+		(*iter)->pcc_rule_status.get( pcc_status );
+		printf ("SOHAN : Status : %d\n", pcc_status );
+		rule_report->setPccStatus( pcc_status );	
+		getGxSession()->getRulesReport().push_back( rule_report );
+   }
+   RulesReportList& rlist( getGxSession()->getRulesReport() );
+	bool status = true;
+	if (!rlist.empty())
+	{
+		for (auto r : rlist)
+		{
+			if ( r->getPccStatus() != 0)
+			{
+				status = false;
+			}
+		}
+	}
+	if ( status == true )
+	{
+        // if the pending rules are installed successfully at pcef, sendrar after 20 sec to remove the rules
+		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
+		m_triggertimer = new TriggerTimer( this, false );
+	}
+    else
+    {
+        // again send the rar to install the pending rule, because the pending were not installed successfully at pcef
+        Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
+        m_triggertimer = new TriggerTimer( this, true );
+    }
+    return result;
+}
+
+void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
+{
+    bool result;
+	Logger::gx().debug("RCVD RAA FROM PEER");
+	gx::ReAuthAnswerExtractor raa( ans, getDict() );
+	ans.dump();
+    result = getCurrentState()->rcvdRAA( getCurrentProc(), raa ); 
+    if ( result == true )
+    {
+        if ( getCurrentState() != NULL )
+        {
+            delete( getCurrentState() );
+        }
+        setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
+    }
+    if ( getCurrentProc() != NULL )
+    {
+        delete( getCurrentProc() );
+    }
+    setCurrentProc( NULL );
 }
 
 void GxIpCan1::sendRAR(bool pending)
