@@ -103,11 +103,6 @@ bool PCRF::init()
       return false;
 	}
 
-	for ( auto r : m_rules )
-	{
-		printf ("SOHAN : RULES NAME : %s\n", (r.second)->getRuleName().c_str());	
-	}
-
    if ( Options::enableRuleTimers() )
    {
       for ( auto r : m_rules )

@@ -239,7 +239,6 @@ GxSessionPendingState::~GxSessionPendingState()
 bool GxSessionPendingState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionPendingState validateReq ");
-	printf ("SOHAN : %s:%d Validate the CCR Req received \n", __FILE__, __LINE__);
     bool ret;
     ret = current_proc->accept( this, ccr );
     return ret;
@@ -248,7 +247,6 @@ bool GxSessionPendingState::validateReq( GxSessionProc* current_proc, gx::Credit
 bool GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionPendingState visit validate function  ");
-	printf ("SOHAN : %s:%d Changing state Pending State ---> ActiveState \n", __FILE__, __LINE__);
     /*
      * SessionEvent class should have the called function virtual
      * and all the Event should override these virtual methods
@@ -314,7 +312,6 @@ bool GxSessionModifyPendingState::rcvdRAA( GxSessionProc* current_proc, gx::ReAu
 
 bool GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
-	printf("SOHAN %s:%d visit install raa\n", __FILE__, __LINE__);
     bool result = false;
     /*
      * SessionEvent class should have the called function virtual
@@ -328,13 +325,11 @@ bool GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx:
     {
         result = ipcan1->rcvdInstallRAA( raa );
     }
-	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__,__LINE__);
     return result;
 }
 
 bool GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
-	printf ("SOHAN %s:%d visit remove raa\n", __FILE__, __LINE__);
     bool result;
     GxIpCan1* ipcan1 = NULL;
     SessionEvent* event = getCurrentEvent();
@@ -344,7 +339,6 @@ bool GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::
         result = ipcan1->rcvdRemoveRAA( raa );
     }
 	// extraction of avps for remove raa here
-	printf ("SOHAN %s:%d changing state ModifyPending ---> ActiveState\n", __FILE__, __LINE__ );
     return result;
 }
 
@@ -386,7 +380,6 @@ GxSessionInstallProc::~GxSessionInstallProc()
 
 bool GxSessionInstallProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
 {
-	printf ("SOHAN : %s:%d Install Accept ", __FILE__, __LINE__);
     bool result;
 	result = current_state->visit( this, raa );
     return result;
@@ -407,7 +400,6 @@ GxSessionRemoveProc::~GxSessionRemoveProc()
 
 bool GxSessionRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
 {
-	printf ("SOHAN : %s:%d Remove Accept\n", __FILE__, __LINE__);
     bool result;
 	result = current_state->visit( this, raa );
     return result;
@@ -428,7 +420,6 @@ GxSessionValidateProc::~GxSessionValidateProc()
 
 bool GxSessionValidateProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
 {
-	printf ("SOHAN : %s:%d Validate accept\n ", __FILE__, __LINE__ );
     bool ret;
 	ret = current_state->visit( this, ccr );
     return ret;
@@ -842,7 +833,6 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 	if ( msg.getId() == RARTIMEOUT )
    {
       Logger::gx().debug("RAR TIMEOUT Occured");
-      printf ("SOHAN : %s:%d RAR timeout occured\n", __FILE__, __LINE__);
       m_reqTimer->stop();
       m_gxipcan1->sendRAR( true );
    }
@@ -916,7 +906,6 @@ void GxIpCan1::release( GxIpCan1 *gxevent )
 
 bool GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 {
-    printf ("SOHAN : %s:%d rcvdRemoveRAA \n", __FILE__, __LINE__);
     GxSession *session = NULL;
 	Rule *rule;
 	RulesList &irules( getRulesEvaluator().getGxInstallRules() );
@@ -929,7 +918,6 @@ bool GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 	std::list<FDExtractorAvp*> l_rule_name_list;
 	setStatus( esComplete );
 	raa.session_id.get( session_id );
-    printf ("SOHAN RCVD session id : %s\n", session_id.c_str());
    if ( !GxSessionMap::getInstance().findSession( getGxSession()->getSessionId(), session ) )
    {
 		return false;
@@ -943,7 +931,6 @@ bool GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 		for(std::list<FDExtractorAvp *>::iterator iterAvp= l_rule_name_list.begin(); iterAvp != l_rule_name_list.end(); iterAvp++)
     	{
             (*iterAvp)->get( rule_name );
-			printf ("SOHAN : RuleName : %s\n", rule_name.c_str() );
 			rule = irules.getRule( rule_name );
             if ( irules.erase( rule ) == false )
             {
@@ -953,7 +940,6 @@ bool GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
     	}
 		rule_report->setRuleName( rule_name ); // this will be the list of rule names
 		(*iter)->pcc_rule_status.get( pcc_status );
-		printf ("SOHAN : Status : %d\n", pcc_status );
 		rule_report->setPccStatus( pcc_status );	
 		getGxSession()->getRulesReport().push_back( rule_report );
    }
@@ -985,7 +971,6 @@ bool GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 
 bool GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 {
-    printf ("SOHAN : %s:%d rcvdInstallRAA \n", __FILE__, __LINE__);
     GxSession *session = NULL;
 	Rule *rule;
 	RulesList &irules( getRulesEvaluator().getGxInstallRules() );
@@ -1002,7 +987,6 @@ bool GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
    {
 		return false;
    }
-	printf ("SOHAN RCVD session id : %s\n", session_id.c_str());
 	
 	l_fd_extractor_list = raa.charging_rule_report.getList();
 
@@ -1013,7 +997,6 @@ bool GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 		for(std::list<FDExtractorAvp *>::iterator iterAvp= l_rule_name_list.begin(); iterAvp != l_rule_name_list.end(); iterAvp++)
     	{
             (*iterAvp)->get( rule_name );
-			printf ("SOHAN : RuleName : %s\n", rule_name.c_str() );
 			// add the logic to identify the RAA whether this for initiating the remove rules or when the default rule is deleted.
 			// in case where the default rule is also deleted then we donot need to send the rar again for removal of rules.
 			rule = irules.getRule( rule_name );
@@ -1025,7 +1008,6 @@ bool GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
     	}
 		rule_report->setRuleName( rule_name );
 		(*iter)->pcc_rule_status.get( pcc_status );
-		printf ("SOHAN : Status : %d\n", pcc_status );
 		rule_report->setPccStatus( pcc_status );	
 		getGxSession()->getRulesReport().push_back( rule_report );
    }
@@ -1080,7 +1062,6 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 
 void GxIpCan1::sendRAR(bool pending)
 {
-	printf ("SOHAN : %s:%d Sending RAR\n", __FILE__, __LINE__);
    Logger::gx().debug("SENDING RAR to PEER");
 	int qci, pl, pec, pev;
    RAPIDJSON_NAMESPACE::Document doc;
@@ -1943,7 +1924,6 @@ bool GxIpCan1::processPhase1()
    
    if ( result == true )
    {
-      printf ("SOHAN : %s:%d Setting State to Active\n", __FILE__, __LINE__);
       if ( getCurrentState() != NULL )
       {
           delete( getCurrentState() );
@@ -1952,7 +1932,6 @@ bool GxIpCan1::processPhase1()
       
       if ( getStatus() == esComplete )
 	  {
-          printf ("SOHAN : %s:%d Starting timer \n", __FILE__, __LINE__);
 	      // we have sent the successful CCA Initial, hence start the timer
           Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
 		  m_triggertimer = new TriggerTimer( this, true );
@@ -1967,7 +1946,6 @@ bool GxIpCan1::processPhase1()
       setCurrentState( NULL );
       
    }
-   printf ("SOHAN : %s:%d Setting Proc to NULL \n", __FILE__, __LINE__);
    if ( getCurrentProc() != NULL )
    {
       delete( getCurrentProc() );

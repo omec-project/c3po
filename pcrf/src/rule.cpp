@@ -217,7 +217,6 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
    while ( result && ruleit != rules.end() )
    {
       // check to see if the rule applies to the PCEF
-		printf ("SOHAN : %s:%d RULE NAME : %s\n", __FILE__, __LINE__, (*ruleit)->getRuleName().c_str());
       if ( ( (*ruleit)->getFeatureMask() & pcefFeatures ) == (*ruleit)->getFeatureMask() )
       {
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
@@ -225,13 +224,11 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
 				if ( (*ruleit)->getDefaultFlag() == false && !m_gxPendingRules.exists( *ruleit ))
 				{
 					addGxPendingRule( *ruleit );
-					printf ("SOHAN : ADD IN PENDING LIST : %s\n", (*ruleit)->getRuleName().c_str() );
 				}
             else
 				if ( !gxInstalled.exists( *ruleit ) )
 				{
                addGxInstallRule( *ruleit );
-					printf ("SOHAN : ADD IN INSTALL LIST : %s\n", (*ruleit)->getRuleName().c_str() );
 				}
 				
          }
