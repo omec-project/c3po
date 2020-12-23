@@ -36,6 +36,40 @@ class SdSessionMap;
 const uint16_t RARTIMEOUT     =    ETM_USER + 10;
 const uint16_t RAATIMEOUT     =    ETM_USER + 11;
 
+enum ValidateErrorCode
+{
+    success = 0,
+    failure,
+    subscriptionIdMissing,
+    imsiInvalid,
+    imsiEmpty,
+    calledStationIdMissing,
+    calledStationIdEmpty,
+    apnMissing,
+    contextExists,
+    unableToAddNewSubscriber,
+    apnNotConfigured,
+    unableToAssociateApnWithSubscriber,
+    invalidIPForFrammedIPAddress,
+    ipv4OrIpv6Missing,
+    invalidFeatureListId,
+    unableToAddPcef,
+    unableToAddPcefInDatabase,
+    originHostMissing,
+    unableToAddTdfEndpoint,
+    unableToAddTdfEndpointToDatabase,
+    exceptionWhileAddingTdfEndpoint,
+    tdfEndpointEntryInvalid,
+    tssfEndpointEntryInvalid,
+    syInterfaceNotSuported,
+    unableToAddSessionToDatabase,
+    unableToAddSessionInSessionMap,
+    unableToAllocateSdIpCan1Object,
+    sdEstablishSessionFailed,
+    unableToAllocateStIpCan1EstablishSessionObject,
+    stEstablishSessionFailed
+};
+
 namespace sd
 {
    class SdTSRreq;
@@ -260,8 +294,8 @@ class GxSessionProc
 public:
 	GxSessionProc( PCRF& pcrf, SessionEvent* current_event );
 	virtual ~GxSessionProc();
-	virtual bool accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
-	virtual bool accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
+	virtual int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
+	virtual int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
 private:
 	PCRF& m_pcrf;
 	SessionEvent* mp_sessionevent;
@@ -272,7 +306,7 @@ class GxSessionInstallProc : public GxSessionProc
 public:
 	GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event );
 	~GxSessionInstallProc();
-	bool accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSessionRemoveProc : public GxSessionProc
@@ -280,7 +314,7 @@ class GxSessionRemoveProc : public GxSessionProc
 public:
 	GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event );
 	~GxSessionRemoveProc();
-	bool accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSessionValidateProc : public GxSessionProc
@@ -288,7 +322,7 @@ class GxSessionValidateProc : public GxSessionProc
 public:
 	GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event );
 	~GxSessionValidateProc();
-	bool accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
+	int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
 };
 
 class GxSessionState
@@ -298,12 +332,12 @@ public:
 	virtual ~GxSessionState();
 	SessionEvent* getCurrentEvent() { return mp_sessionevent; }
 	// events function
-	virtual bool rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
-	virtual bool validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
+	virtual int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
+	virtual int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
 	// visitor functions
-	virtual bool visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
-	virtual bool visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
-	virtual bool visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
+	virtual int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
+	virtual int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
+	virtual int visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
 
 private:
 	PCRF& m_pcrf;
@@ -315,8 +349,17 @@ class GxSessionPendingState : public GxSessionState
 public:
 	GxSessionPendingState( PCRF& pcrf, SessionEvent* current_session );
 	~GxSessionPendingState();
-	bool validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
-	bool visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+	int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+	int visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+};
+
+class GxSessionActivePendingState : public GxSessionState
+{
+public:
+    GxSessionActivePendingState( PCRF& pcrf, SessionEvent* current_session );
+    ~GxSessionActivePendingState();
+    int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+    int visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
 };
 
 class GxSessionActiveState : public GxSessionState
@@ -339,9 +382,9 @@ class GxSessionModifyPendingState : public GxSessionState
 public:
 	GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_session );
 	~GxSessionModifyPendingState();
-	bool rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	bool visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	bool visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSession
@@ -475,7 +518,7 @@ public:
    bool exists( GxSession *gx, bool lock = true );
    bool exists( const std::string &sessionid, bool lock = true );
    bool addSession( GxSession *gx, bool lock = true );
-   //void eraseSession( const std::string &imsi, const std::string &apn, bool lock = true );
+   bool eraseSession( const std::string &imsi, const std::string &apn, bool lock = true );
    bool findSession( const std::string &imsi, const std::string &apn, GxSession* &gx, bool lock = true );
    bool findSession( const std::string &sessionid, GxSession* &gx, bool lock = true );
 
@@ -729,7 +772,8 @@ public:
                            // a CCA error and start the teardown process
 
    void sendCCA();
-   bool validate();
+   int validate();
+   int cleanupSession();
 
 	GxSessionState* getCurrentState() { getGxSession()->getCurrentState(); }
 	void setCurrentState( GxSessionState* current_state) { getGxSession()->setCurrentState( current_state ); }
@@ -743,8 +787,8 @@ public:
 
    void sendRAR(bool pending);
 	void rcvdRAA(FDMessageAnswer &ans);
-    bool rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa );
-    bool rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa );
+    int rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa );
+    int rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa );
 
 private:
    GxIpCan1();
