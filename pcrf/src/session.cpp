@@ -868,10 +868,11 @@ SessionEvent::~SessionEvent()
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-TriggerTimer::TriggerTimer( GxIpCan1* gxIpCan1, bool flag )
+TriggerTimer::TriggerTimer( GxIpCan1* gxIpCan1, int triggerRARValue, int timer )
 {
 	m_gxipcan1 = gxIpCan1;
-	m_flag = flag;
+	m_triggerRARValue = triggerRARValue;
+	m_timer = timer;
 	init( NULL );
 }
 
@@ -882,7 +883,7 @@ TriggerTimer::~TriggerTimer()
 
 void TriggerTimer::onInit()
 {
-   m_reqTimer = new SEventThread::Timer(20000, true);
+   m_reqTimer = new SEventThread::Timer(m_timer, true);
    initTimer( *m_reqTimer );
 	m_reqTimer->start();
 }
@@ -896,30 +897,36 @@ void TriggerTimer::onTimer( SEventThread::Timer &t)
 {
 	if ( t.getId() == m_reqTimer->getId() )
    {
-		if ( m_flag == true )
+		switch ( m_triggerRARValue )
 		{
-      	postMessage( RARTIMEOUT );
-		}
-		else
-		{
-			postMessage( RAATIMEOUT );
+			case RARTrigger::triggerRARPending :
+			{
+				postMessage( RARPendingRuleInstallTimeout );
+				break;
+			}
+			case RARTrigger::triggerRARRemove :
+			{
+			   postMessage( RARPendingRuleRemoveTimeout );
+				break;
+			}
 		}
    }
 }
 
 void TriggerTimer::dispatch( SEventThreadMessage& msg )
 {
-	if ( msg.getId() == RARTIMEOUT )
+	if ( msg.getId() == RARPendingRuleInstallTimeout )
    {
       Logger::gx().debug("RAR TIMEOUT Occured");
       m_reqTimer->stop();
-      m_gxipcan1->sendRAR( true );
+      //m_gxipcan1->sendRAR( true );
+      m_gxipcan1->sendRAR( RARTrigger::triggerRARPending );
    }
 	else
-	if ( msg.getId() == RAATIMEOUT )
+	if ( msg.getId() == RARPendingRuleRemoveTimeout )
 	{
 		m_reqTimer->stop();
-		m_gxipcan1->sendRAR( false );
+		m_gxipcan1->sendRAR( RARTrigger::triggerRARRemove );
 	}
 	join();
 	quit();
@@ -1038,7 +1045,7 @@ int GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 	{
         // removal of rules failed that's why send rar remove again after 20 sec
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-		m_triggertimer = new TriggerTimer( this, false );
+		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
 	}
     if ( status == true )
     {
@@ -1106,13 +1113,13 @@ int GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 	{
         // if the pending rules are installed successfully at pcef, sendrar after 20 sec to remove the rules
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-		m_triggertimer = new TriggerTimer( this, false );
+		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
 	}
     else
     {
         // again send the rar to install the pending rule, because the pending were not installed successfully at pcef
         Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-        m_triggertimer = new TriggerTimer( this, true );
+        m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
     }
     return result;
 }
@@ -2078,7 +2085,7 @@ bool GxIpCan1::processPhase1()
 	      {
 	         // we have sent the successful CCA Initial, hence start the timer
              Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-		     m_triggertimer = new TriggerTimer( this, true );
+		     m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
 	      }
           result = true;
           break;

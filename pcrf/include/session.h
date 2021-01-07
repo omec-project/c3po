@@ -34,8 +34,8 @@ class StSession;
 class GxCreditControlRequest;
 
 class SdSessionMap;
-const uint16_t RARTIMEOUT     =    ETM_USER + 10;
-const uint16_t RAATIMEOUT     =    ETM_USER + 11;
+const uint16_t RARPendingRuleInstallTimeout     =    ETM_USER + 10;
+const uint16_t RARPendingRuleRemoveTimeout     =    ETM_USER + 11;
 
 enum ValidateErrorCode
 {
@@ -69,6 +69,13 @@ enum ValidateErrorCode
     sdEstablishSessionFailed,
     unableToAllocateStIpCan1EstablishSessionObject,
     stEstablishSessionFailed
+};
+
+enum RARTrigger
+{
+	triggerRARInstall = 0,
+	triggerRARRemove,
+	triggerRARPending
 };
 
 namespace sd
@@ -730,7 +737,7 @@ private:
 class TriggerTimer : public SEventThread
 {
 public:
-	TriggerTimer( GxIpCan1* gxIpCan1, bool flag );
+	TriggerTimer( GxIpCan1* gxIpCan1, int triggerRARValue, int timer );
 	~TriggerTimer();
 	void onInit();
    void onQuit();
@@ -738,7 +745,8 @@ public:
    void dispatch( SEventThreadMessage &msg);
 private :
 	GxIpCan1* m_gxipcan1;
-	bool m_flag;
+	int m_timer;
+	int m_triggerRARValue;
 	SEventThread::Timer *m_reqTimer;
 	
 };
