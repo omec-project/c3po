@@ -34,8 +34,9 @@ class StSession;
 class GxCreditControlRequest;
 
 class SdSessionMap;
-const uint16_t RARPendingRuleInstallTimeout     =    ETM_USER + 10;
+const uint16_t RARPendingRuleInstallTimeout    =    ETM_USER + 10;
 const uint16_t RARPendingRuleRemoveTimeout     =    ETM_USER + 11;
+const uint16_t RARDefaultRuleRemoveTimeout     =    ETM_USER + 12;
 
 enum ValidateErrorCode
 {
@@ -333,6 +334,14 @@ public:
 	int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
 };
 
+class GxSessionDefaultRemoveProc : public GxSessionProc
+{
+public:
+	GxSessionDefaultRemoveProc( PCRF& pcrf, SessionEvent* current_event );
+	~GxSessionDefaultRemoveProc();
+	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+};
+
 class GxSessionState
 {
 public:
@@ -346,6 +355,7 @@ public:
 	virtual int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
 	virtual int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
 	virtual int visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
+	virtual int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // default rule remove raa 
 
 private:
 	PCRF& m_pcrf;
@@ -393,6 +403,7 @@ public:
 	int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 	int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 	int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 };
 
 class GxSession
@@ -794,10 +805,11 @@ public:
    void decrementUsage() { SMutexLock l( m_mutex ); m_usagecnt--; }
    static void release( GxIpCan1 *gxevent );
 
-   void sendRAR(bool pending);
-	void rcvdRAA(FDMessageAnswer &ans);
-    int rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa );
-    int rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa );
+   void sendRAR( int triggerValue );
+	void rcvdRAA( FDMessageAnswer &ans );
+   int rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa );
+   int rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa );
+	int rcvdDefaultRemoveRAA( gx::ReAuthAnswerExtractor& raa );
 
 private:
    GxIpCan1();

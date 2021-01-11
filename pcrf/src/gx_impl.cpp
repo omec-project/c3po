@@ -474,7 +474,7 @@ void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
 			{
 				gxIpCan1->rcvdRAA( ans );
 			}
-			delete m_event;
+			//delete m_event;
 			break;
 		}
    }
