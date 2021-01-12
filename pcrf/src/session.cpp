@@ -1133,18 +1133,20 @@ int GxIpCan1::rcvdDefaultRemoveRAA( gx::ReAuthAnswerExtractor& raa )
    {
       for (auto r : rlist)
       {
-         if ( r->getPccStatus() != 0)
+         if ( r->getPccStatus() != 1 )
          {
             status = false;
          }
       }
    }
+	/*
    if ( status == false )
    {
       // removal of default rules failed that's why send rar remove again after 10 min
       Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, 10000 );
    }
+	*/
 	if ( status == true )
    {
       // remove the rules from the remove list as we donot need to send rar remove again.
@@ -1198,18 +1200,20 @@ int GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 	{
 		for (auto r : rlist)
 		{
-			if ( r->getPccStatus() != 0)
+			if ( r->getPccStatus() != 1)
 			{
 				status = false;
 			}
 		}
 	}
+	/*
    if ( status == false )
 	{
       // removal of rules failed that's why send rar remove again after 20 sec
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
 		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
 	}
+	*/
    if ( status == true )
    {
       // remove the rules from the remove list as we donot need to send rar remove again.
@@ -1280,12 +1284,14 @@ int GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
 		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
 	}
+	/*
    else
    {
       // again send the rar to install the pending rule, because the pending were not installed successfully at pcef
    	Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
    }
+	*/
    return result;
 }
 
