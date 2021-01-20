@@ -243,6 +243,7 @@ int GxSessionState::visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthA
 
 GxSessionPendingState::GxSessionPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
+	GxSessionState::setStateName( "GxSessionPendingState" );
 	Logger::gx().debug("GxSessionPendingState  ");
 }
 
@@ -275,6 +276,7 @@ int GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::Credi
        ret = ipcan1->validate();
        return ret;
     }
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,7 +284,8 @@ int GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::Credi
 
 GxSessionActivePendingState::GxSessionActivePendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
-    Logger::gx().debug("GxSessionActivePendingState  ");
+	GxSessionState::setStateName( "GxSessionActivePendingState" );
+   Logger::gx().debug("GxSessionActivePendingState  ");
 }
 
 GxSessionActivePendingState::~GxSessionActivePendingState()
@@ -315,6 +318,7 @@ int GxSessionActivePendingState::visit( GxSessionValidateProc* current_proc, gx:
        ret = ipcan1->cleanupSession();
        ret = ipcan1->validate();
     }
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
     return ret;
 }
 
@@ -323,6 +327,7 @@ int GxSessionActivePendingState::visit( GxSessionValidateProc* current_proc, gx:
 
 GxSessionActiveState::GxSessionActiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
+	GxSessionState::setStateName( "GxSessionActiveState" );
 	Logger::gx().debug("GxSessionActiveState  ");
 }
 
@@ -336,6 +341,7 @@ GxSessionActiveState::~GxSessionActiveState()
 
 GxSessionInactiveState::GxSessionInactiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
+	GxSessionState::setStateName( "GxSessionInactiveState" );
 	Logger::gx().debug("GxSessionInactiveState  ");
 }
 
@@ -349,6 +355,7 @@ GxSessionInactiveState::~GxSessionInactiveState()
 
 GxSessionModifyPendingState::GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
 {
+	GxSessionState::setStateName( "GxSessionModifyPendingState" );
 	Logger::gx().debug("GxSessionModifyPendingState  ");
 }
 
@@ -380,6 +387,7 @@ int GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx::
     {
         result = ipcan1->rcvdInstallRAA( raa );
     }
+	 Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
     return result;
 }
 
@@ -394,6 +402,7 @@ int GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::R
         result = ipcan1->rcvdRemoveRAA( raa );
     }
 	// extraction of avps for remove raa here
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
     return result;
 }
 
@@ -407,6 +416,7 @@ int GxSessionModifyPendingState::visit( GxSessionDefaultRemoveProc* current_proc
 	{
 		result = ipcan1->rcvdDefaultRemoveRAA( raa );
 	}
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
 	return result;
 }
 
@@ -438,6 +448,7 @@ int GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlReque
 
 GxSessionInstallProc::GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
+	GxSessionProc::setProcName( "GxSessionInstallProc" );
 	Logger::gx().debug("GxSessionInstallProc ");
 }
 
@@ -458,6 +469,7 @@ int GxSessionInstallProc::accept( GxSessionState* current_state, gx::ReAuthAnswe
 
 GxSessionRemoveProc::GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
+	GxSessionProc::setProcName( "GxSessionRemoveProc" );
 	Logger::gx().debug("GxSessionRemoveProc ");
 }
 
@@ -478,6 +490,7 @@ int GxSessionRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswer
 
 GxSessionValidateProc::GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
+	GxSessionProc::setProcName( "GxSessionValidateProc" );
 	Logger::gx().debug("GxSessionValidateProc ");
 }
 
@@ -498,6 +511,7 @@ int GxSessionValidateProc::accept( GxSessionState* current_state, gx::CreditCont
 
 GxSessionDefaultRemoveProc::GxSessionDefaultRemoveProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
 {
+	 GxSessionProc::setProcName( "GxSessionDefaultRemoveProc" );
 	Logger::gx().debug("GxSessionDefaultRemoveProc ");
 }
 
@@ -1312,10 +1326,6 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 			gx_proc = dynamic_cast<GxSessionDefaultRemoveProc*>( current_proc );
       	if ( gx_proc != NULL )
       	{
-				if ( getCurrentState() != NULL )
-      		{
-         		delete( getCurrentState() );
-      		}
 				setCurrentState( NULL );
          	// this is defaultRemoveProc so we need to destroy the GxSession because the default rules have been removed in pcef
          	// PCRF initiated IP-Can Session Termination
@@ -1325,15 +1335,7 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 			else
 			if ( gx_proc == NULL )
 			{
-				if ( getCurrentState() != NULL )
-      		{
-         		delete( getCurrentState() );
-      		}
       		setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
-				if ( getCurrentProc() != NULL )
-				{
-					delete( getCurrentProc() );
-				}
 				setCurrentProc( NULL );
 			}
 		}
@@ -1448,10 +1450,6 @@ void GxIpCan1::sendRAR( int triggerValue )
 				req->add( prar );
 			}
 		}
-      if ( getCurrentProc() != NULL )
-      {
-      	delete( getCurrentProc() );
-      }
       setCurrentProc( new GxSessionRemoveProc( getPCRF(), this ) );
 	}
 	else
@@ -1520,10 +1518,6 @@ void GxIpCan1::sendRAR( int triggerValue )
 		defBearerQos.add( avp_arp );
 		req->add(defBearerQos);
         
-      if ( getCurrentProc() != NULL )
-      {
-      	delete( getCurrentProc() );
-      }
       setCurrentProc( new GxSessionInstallProc( getPCRF(), this ) );
 	}
 
@@ -1535,11 +1529,7 @@ void GxIpCan1::sendRAR( int triggerValue )
 	
 	req->dump();
 	req->send();
-    if ( getCurrentState() != NULL )
-    {
-        delete( getCurrentState() );
-    }
-    setCurrentState( new GxSessionModifyPendingState(getPCRF(), this ) );
+   setCurrentState( new GxSessionModifyPendingState(getPCRF(), this ) );
     
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
    //if (result)
@@ -1566,6 +1556,10 @@ void GxIpCan1::sendCCA()
   
 int GxIpCan1::cleanupSession()
 {
+	 if ( getTriggerTimer() != NULL )
+	 {
+		 delete( getTriggerTimer() );
+	 }
     printf("%s:%d\n", __FUNCTION__,__LINE__);
     if ( getPCRF().dataaccess().sessionExists( getGxSession()->getImsi(), getGxSession()->getApn() ) )
     {
@@ -2277,51 +2271,37 @@ bool GxIpCan1::processPhase1()
    
    switch( ret )
    {
-       case ValidateErrorCode::contextExists :
-       {
-           // set current state to ActivePending and again validate the req
-           if ( getCurrentState() != NULL )
-           {
-               delete( getCurrentState() );
-           }
-           setCurrentState( new GxSessionActivePendingState( getPCRF(), this ) );
+      case ValidateErrorCode::contextExists :
+      {
+		
+      	// set current state to ActivePending and again validate the req
+         setCurrentState( new GxSessionActivePendingState( getPCRF(), this ) );
            
-           ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
-           result = true;
-           break;
+         ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
+			if ( ret == ValidateErrorCode::success )
+			{
+				setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
+				setCurrentProc( NULL );
+			}
+         result = true;
+         break;
        }
        case ValidateErrorCode::success :
        {
-          if ( getCurrentState() != NULL )
-          {
-             delete( getCurrentState() );
-          }
           setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
-          if ( getCurrentProc() != NULL )
-          {
-             delete( getCurrentProc() );
-          }
           setCurrentProc( NULL );
           if ( getStatus() == esComplete )
-	      {
-	         // we have sent the successful CCA Initial, hence start the timer
+	       {
+	          // we have sent the successful CCA Initial, hence start the timer
              Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-		     m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
-	      }
+		       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
+	       }
           result = true;
           break;
        }
        default :
        {
-          if ( getCurrentState() != NULL )
-          {
-             delete( getCurrentState() );
-          }
           setCurrentState( NULL );
-          if ( getCurrentProc() != NULL )
-          {
-             delete( getCurrentProc() );
-          }
           setCurrentProc( NULL );
           result = false;
           break;
@@ -2536,17 +2516,7 @@ bool GxIpCan1::processPhase3()
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
-   
-   
-   if ( getCurrentProc() != NULL )
-   {
-       delete( getCurrentProc() );
-   }
    setCurrentProc( NULL );
-   if ( getCurrentState() != NULL )
-   {
-       delete( getCurrentState() );
-   }
    setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
 
    // flag this event as complete

@@ -303,11 +303,15 @@ class GxSessionProc
 public:
 	GxSessionProc( PCRF& pcrf, SessionEvent* current_event );
 	virtual ~GxSessionProc();
+	std::string& getProcName() { return m_procname; }
+	std::string& setProcName( char const* name) { m_procname = name; return getProcName(); }
+	std::string& setProcName( std::string& name) { m_procname = name; return getProcName(); }
 	virtual int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
 	virtual int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
 private:
 	PCRF& m_pcrf;
 	SessionEvent* mp_sessionevent;
+	std::string m_procname;
 };
 
 class GxSessionInstallProc : public GxSessionProc
@@ -348,6 +352,9 @@ public:
 	GxSessionState( PCRF& pcrf, SessionEvent* current_session );
 	virtual ~GxSessionState();
 	SessionEvent* getCurrentEvent() { return mp_sessionevent; }
+	std::string& getStateName() { return m_statename; }
+	std::string& setStateName( char const* name) { m_statename = name; return getStateName(); }
+   std::string& setStateName( std::string& name) { m_statename = name; return getStateName(); }
 	// events function
 	virtual int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
 	virtual int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
@@ -360,6 +367,7 @@ public:
 private:
 	PCRF& m_pcrf;
 	SessionEvent* mp_sessionevent;
+	std::string m_statename;
 };
 
 class GxSessionPendingState : public GxSessionState
@@ -488,10 +496,24 @@ public:
    SMutex &getMutex() { return m_mutex; }
 	
 	GxSessionState* getCurrentState() { return mp_currentstate; }
-   void setCurrentState( GxSessionState* current_state) { mp_currentstate = current_state; }
+   void setCurrentState( GxSessionState* current_state) 
+	{ 
+		if ( getCurrentState() != NULL )
+		{
+			delete ( getCurrentState() );
+		}
+		mp_currentstate = current_state; 
+	}
 
    GxSessionProc* getCurrentProc() { return mp_currentproc; }
-   void setCurrentProc( GxSessionProc* current_proc ) { mp_currentproc = current_proc; }
+   void setCurrentProc( GxSessionProc* current_proc ) 
+	{ 
+		if ( getCurrentProc() != NULL )
+		{
+			delete( getCurrentProc() );
+		}
+		mp_currentproc = current_proc; 
+	}
 
    static void teardownSession( const char *source, GxSession *gx, SdSession::SessionReleaseCause src, bool lock = true ) { teardownSession( source, gx, src, StSession::tcDiameterLogout, lock ); }
    static void teardownSession( const char *source, GxSession *gx, StSession::TerminationCause tc, bool lock = true ) { teardownSession( source, gx, SdSession::srcUnspecifiedReason, tc, lock ); }
@@ -800,6 +822,8 @@ public:
 
 	GxSessionProc* getCurrentProc() { getGxSession()->getCurrentProc(); }
 	void setCurrentProc( GxSessionProc* current_proc ) { getGxSession()->setCurrentProc( current_proc ); }
+
+	TriggerTimer* getTriggerTimer() { return m_triggertimer; }
 
    void incrementUsage() { SMutexLock l( m_mutex ); m_usagecnt++; }
    void decrementUsage() { SMutexLock l( m_mutex ); m_usagecnt--; }

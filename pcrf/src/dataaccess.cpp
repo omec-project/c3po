@@ -119,7 +119,6 @@ bool DataAccess::getRules( RulesMap &rules )
 
    while ( result && rows.nextRow() )
    {
-		int i = 0;
       SCassRow row = rows.row();
       Rule *r = new Rule();
 
@@ -165,7 +164,6 @@ bool DataAccess::getRules( RulesMap &rules )
          delete r;
          break;
       }
-		i++;
    }
    return result;
 }
