@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -99,7 +100,9 @@ bool PCRF::init()
    // load the rules into memory
    //
    if ( !m_dataaccess.getRules( m_rules ) )
+	{
       return false;
+	}
 
    if ( Options::enableRuleTimers() )
    {

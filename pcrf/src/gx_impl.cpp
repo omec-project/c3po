@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -407,6 +408,11 @@ void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
          gx = ((GxProcessRulesUpdate*)m_event)->getGxSession();
          break;
       }
+		case SessionEvent::etIpCan1:
+		{
+			gx = ((GxIpCan1*)m_event)->getGxSession();
+			break;
+		}
       default:
       {
          std::string s;
@@ -461,6 +467,16 @@ void GxRulesRARreq::processAnswer( FDMessageAnswer &ans )
          delete m_event;
          break;
       }
+		case SessionEvent::etIpCan1:
+		{
+			GxIpCan1* gxIpCan1 = dynamic_cast<GxIpCan1*>(m_event);
+			if (gxIpCan1 != NULL)
+			{
+				gxIpCan1->rcvdRAA( ans );
+			}
+			//delete m_event;
+			break;
+		}
    }
 }
 

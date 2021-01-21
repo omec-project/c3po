@@ -14,7 +14,7 @@
   "logname": "logs/c3popcrf.log",
   "logqsize": 8192,
   "selfredirect": false,
-  "enableruletimers": true,
+  "enableruletimers": false,
   "rulecallbackport": 9081,
   "rulecallbackthreads": 1,
   "rulecallbackurl": "http://192.168.33.18:9081/ruleTimer",

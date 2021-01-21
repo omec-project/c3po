@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -22,6 +23,9 @@
 #include "endpoint.h"
 #include "rule.h"
 #include "subscriber.h"
+#include "stimer.h"
+#include "sthread.h"
+#include "stime.h"
 
 class PCRF;
 class GxSession;
@@ -30,6 +34,50 @@ class StSession;
 class GxCreditControlRequest;
 
 class SdSessionMap;
+const uint16_t RARPendingRuleInstallTimeout    =    ETM_USER + 10;
+const uint16_t RARPendingRuleRemoveTimeout     =    ETM_USER + 11;
+const uint16_t RARDefaultRuleRemoveTimeout     =    ETM_USER + 12;
+
+enum ValidateErrorCode
+{
+    success = 0,
+    failure,
+    subscriptionIdMissing,
+    imsiInvalid,
+    imsiEmpty,
+    calledStationIdMissing,
+    calledStationIdEmpty,
+    apnMissing,
+    contextExists,
+    unableToAddNewSubscriber,
+    apnNotConfigured,
+    unableToAssociateApnWithSubscriber,
+    invalidIPForFrammedIPAddress,
+    ipv4OrIpv6Missing,
+    invalidFeatureListId,
+    unableToAddPcef,
+    unableToAddPcefInDatabase,
+    originHostMissing,
+    unableToAddTdfEndpoint,
+    unableToAddTdfEndpointToDatabase,
+    exceptionWhileAddingTdfEndpoint,
+    tdfEndpointEntryInvalid,
+    tssfEndpointEntryInvalid,
+    syInterfaceNotSuported,
+    unableToAddSessionToDatabase,
+    unableToAddSessionInSessionMap,
+    unableToAllocateSdIpCan1Object,
+    sdEstablishSessionFailed,
+    unableToAllocateStIpCan1EstablishSessionObject,
+    stEstablishSessionFailed
+};
+
+enum RARTrigger
+{
+	triggerRARInstall = 0,
+	triggerRARRemove,
+	triggerRARPending
+};
 
 namespace sd
 {
@@ -248,6 +296,124 @@ private:
    std::string m_apn;
 };
 
+class GxSessionState;
+
+class GxSessionProc
+{
+public:
+	GxSessionProc( PCRF& pcrf, SessionEvent* current_event );
+	virtual ~GxSessionProc();
+	std::string& getProcName() { return m_procname; }
+	std::string& setProcName( char const* name) { m_procname = name; return getProcName(); }
+	std::string& setProcName( std::string& name) { m_procname = name; return getProcName(); }
+	virtual int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
+	virtual int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
+private:
+	PCRF& m_pcrf;
+	SessionEvent* mp_sessionevent;
+	std::string m_procname;
+};
+
+class GxSessionInstallProc : public GxSessionProc
+{
+public:
+	GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event );
+	~GxSessionInstallProc();
+	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+};
+
+class GxSessionRemoveProc : public GxSessionProc
+{
+public:
+	GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event );
+	~GxSessionRemoveProc();
+	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+};
+
+class GxSessionValidateProc : public GxSessionProc
+{
+public:
+	GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event );
+	~GxSessionValidateProc();
+	int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
+};
+
+class GxSessionDefaultRemoveProc : public GxSessionProc
+{
+public:
+	GxSessionDefaultRemoveProc( PCRF& pcrf, SessionEvent* current_event );
+	~GxSessionDefaultRemoveProc();
+	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+};
+
+class GxSessionState
+{
+public:
+	GxSessionState( PCRF& pcrf, SessionEvent* current_session );
+	virtual ~GxSessionState();
+	SessionEvent* getCurrentEvent() { return mp_sessionevent; }
+	std::string& getStateName() { return m_statename; }
+	std::string& setStateName( char const* name) { m_statename = name; return getStateName(); }
+   std::string& setStateName( std::string& name) { m_statename = name; return getStateName(); }
+	// events function
+	virtual int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
+	virtual int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
+	// visitor functions
+	virtual int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
+	virtual int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
+	virtual int visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
+	virtual int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // default rule remove raa 
+
+private:
+	PCRF& m_pcrf;
+	SessionEvent* mp_sessionevent;
+	std::string m_statename;
+};
+
+class GxSessionPendingState : public GxSessionState
+{
+public:
+	GxSessionPendingState( PCRF& pcrf, SessionEvent* current_session );
+	~GxSessionPendingState();
+	int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+	int visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+};
+
+class GxSessionActivePendingState : public GxSessionState
+{
+public:
+    GxSessionActivePendingState( PCRF& pcrf, SessionEvent* current_session );
+    ~GxSessionActivePendingState();
+    int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+    int visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+};
+
+class GxSessionActiveState : public GxSessionState
+{
+public:
+	GxSessionActiveState( PCRF& pcrf, SessionEvent* current_session );
+	~GxSessionActiveState();
+};
+
+class GxSessionInactiveState : public GxSessionState
+{
+public:
+	GxSessionInactiveState( PCRF& pcrf, SessionEvent* current_session );
+	~GxSessionInactiveState();
+
+};
+
+class GxSessionModifyPendingState : public GxSessionState
+{
+public:
+	GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_session );
+	~GxSessionModifyPendingState();
+	int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+	int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
+};
+
 class GxSession
 {
 public:
@@ -269,7 +435,7 @@ public:
       eIpcan4
    };
 
-   GxSession( PCRF &pcrf );
+   GxSession( PCRF &pcrf, SessionEvent* current_event );
    ~GxSession();
 
    bool canDelete();
@@ -323,9 +489,31 @@ public:
    RulesList &getRules() { return m_rules; }
    RulesList &getInstalledRules() { return m_installed; }
 
+	RulesReportList &getRulesReport() { return m_rulesreport; }
+
    Subscriber &getSubscriber() { return m_subscriber; }
 
    SMutex &getMutex() { return m_mutex; }
+	
+	GxSessionState* getCurrentState() { return mp_currentstate; }
+   void setCurrentState( GxSessionState* current_state) 
+	{ 
+		if ( getCurrentState() != NULL )
+		{
+			delete ( getCurrentState() );
+		}
+		mp_currentstate = current_state; 
+	}
+
+   GxSessionProc* getCurrentProc() { return mp_currentproc; }
+   void setCurrentProc( GxSessionProc* current_proc ) 
+	{ 
+		if ( getCurrentProc() != NULL )
+		{
+			delete( getCurrentProc() );
+		}
+		mp_currentproc = current_proc; 
+	}
 
    static void teardownSession( const char *source, GxSession *gx, SdSession::SessionReleaseCause src, bool lock = true ) { teardownSession( source, gx, src, StSession::tcDiameterLogout, lock ); }
    static void teardownSession( const char *source, GxSession *gx, StSession::TerminationCause tc, bool lock = true ) { teardownSession( source, gx, SdSession::srcUnspecifiedReason, tc, lock ); }
@@ -335,6 +523,8 @@ public:
 private:
    SMutex m_mutex;
    State m_state;
+	GxSessionState* mp_currentstate;
+   GxSessionProc* mp_currentproc;
    PCRF &m_pcrf;
    std::string m_imsi;
    std::string m_apn;
@@ -354,6 +544,7 @@ private:
    StSession m_tssf;
    RulesList m_rules;
    RulesList m_installed;
+	RulesReportList m_rulesreport;
    Subscriber m_subscriber;
 };
 
@@ -368,7 +559,7 @@ public:
    bool exists( GxSession *gx, bool lock = true );
    bool exists( const std::string &sessionid, bool lock = true );
    bool addSession( GxSession *gx, bool lock = true );
-   //void eraseSession( const std::string &imsi, const std::string &apn, bool lock = true );
+   bool eraseSession( const std::string &imsi, const std::string &apn, bool lock = true );
    bool findSession( const std::string &imsi, const std::string &apn, GxSession* &gx, bool lock = true );
    bool findSession( const std::string &sessionid, GxSession* &gx, bool lock = true );
 
@@ -575,6 +766,24 @@ private:
    GxSession *m_gx;
 };
 
+
+class TriggerTimer : public SEventThread
+{
+public:
+	TriggerTimer( GxIpCan1* gxIpCan1, int triggerRARValue, int timer );
+	~TriggerTimer();
+	void onInit();
+   void onQuit();
+   void onTimer( SEventThread::Timer &t);
+   void dispatch( SEventThreadMessage &msg);
+private :
+	GxIpCan1* m_gxipcan1;
+	int m_timer;
+	int m_triggerRARValue;
+	SEventThread::Timer *m_reqTimer;
+	
+};
+
 class GxIpCan1 : public SessionEvent
 {
 public:
@@ -605,10 +814,26 @@ public:
                            // a CCA error and start the teardown process
 
    void sendCCA();
+   int validate();
+   int cleanupSession();
+
+	GxSessionState* getCurrentState() { getGxSession()->getCurrentState(); }
+	void setCurrentState( GxSessionState* current_state) { getGxSession()->setCurrentState( current_state ); }
+
+	GxSessionProc* getCurrentProc() { getGxSession()->getCurrentProc(); }
+	void setCurrentProc( GxSessionProc* current_proc ) { getGxSession()->setCurrentProc( current_proc ); }
+
+	TriggerTimer* getTriggerTimer() { return m_triggertimer; }
 
    void incrementUsage() { SMutexLock l( m_mutex ); m_usagecnt++; }
    void decrementUsage() { SMutexLock l( m_mutex ); m_usagecnt--; }
    static void release( GxIpCan1 *gxevent );
+
+   void sendRAR( int triggerValue );
+	void rcvdRAA( FDMessageAnswer &ans );
+   int rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa );
+   int rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa );
+	int rcvdDefaultRemoveRAA( gx::ReAuthAnswerExtractor& raa );
 
 private:
    GxIpCan1();
@@ -634,6 +859,9 @@ private:
    StIpCan1EstablishSession *m_stEstablishSession;
    SdIpCan1ProcessRules *m_sdProcessRules;
    StIpCan1ProcessRules *m_stProcessRules;
+   //SEventThread::Timer *m_rarTimer;
+	TriggerTimer *m_triggertimer;
+   //SEventThread::Timer *m_raaTimer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

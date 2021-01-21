@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -143,6 +144,7 @@ bool DataAccess::getRules( RulesMap &rules )
          GET_EVENT_DATA2( row, sy_required, b, r->setSyRequired );
          GET_EVENT_DATA2( row, timemask, i64, r->setTimeMask );
          GET_EVENT_DATA2( row, featuremask, i64, r->setFeatureMask );
+         GET_EVENT_DATA2( row, defaultrule, b, r->setDefaultFlag );
 
          rules.insert( std::pair<std::string,Rule*>( r->getRuleName(), r ) );
       }
@@ -163,7 +165,6 @@ bool DataAccess::getRules( RulesMap &rules )
          break;
       }
    }
-
    return result;
 }
 
