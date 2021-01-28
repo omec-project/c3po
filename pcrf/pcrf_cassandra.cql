@@ -53,7 +53,8 @@ CREATE TABLE vpcrf.subscriber_apn (
 	domain text,
 	computed_rules text,
 	sy_required boolean,
-	transfer_policy text,	
+	transfer_policy text,
+   timer int,
 	primary key (imsi,apn)
 );
 
@@ -69,13 +70,20 @@ CREATE TABLE vpcrf.apns (
 	sy_required boolean,
 	default_bearer_ctl_mode int,
 	force_default_bearer_ctl_mode boolean,
+   timer int,
 	primary key (apn)
 );
 
 insert into vpcrf.apns
 (apn,sy_subscription_id,fail_on_uninstallable_rule,auto_create_spr,membership_value,domain,
-computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode) values (
-'internet','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true);
+computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode,timer) values (
+'internet','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000);
+
+insert into vpcrf.apns
+(apn,sy_subscription_id,fail_on_uninstallable_rule,auto_create_spr,membership_value,domain,
+computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode,timer) values (
+'apntwo','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000);
+
 
 
 DROP TABLE IF EXISTS vpcrf.endpoints;

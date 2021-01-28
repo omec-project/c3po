@@ -28,6 +28,7 @@ public:
    const RulesList &getComputedRules() const { return m_computed_rules; }
    bool getSyRequired() const { return m_syrequired; }
    const std::string &getTransferPolicy() const { return m_transfer_policy; }
+	const int getTimerVal() const { return m_timerval; }
 
    const std::string &setApn( const char *v ) { m_apn = v; return getApn(); }
    const std::string &setApn( const std::string &v ) { m_apn = v; return getApn(); }
@@ -38,6 +39,7 @@ public:
    bool setSyRequired( bool v ) { m_syrequired = v; return getSyRequired(); }
    const std::string &setTransferPolicy( const char *v ) { m_transfer_policy = v; return getTransferPolicy(); }
    const std::string &setTransferPolicy( const std::string &v ) { m_transfer_policy = v; return getTransferPolicy(); }
+	const int setTimerVal( const int v ) { m_timerval = v; return getTimerVal(); }
 
    SubscriberApn &addComputedRule( Rule *r ) { m_computed_rules.push_back( r ); return *this; }
 
@@ -48,6 +50,7 @@ private:
    RulesList m_computed_rules;
    bool m_syrequired;
    std::string m_transfer_policy;
+	int m_timerval;
 };
 
 class SubscriberApnMap : public std::map<std::string,SubscriberApn*>

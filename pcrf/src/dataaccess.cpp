@@ -684,6 +684,7 @@ bool DataAccess::_getSubscriberApns( const char *imsi, Subscriber &sub, RulesMap
 {
    bool result = true;
    bool b;
+	int32_t i32;
    std::string s;
    std::vector<std::string> crv;
    RulesMap::iterator ruleit;
@@ -718,6 +719,7 @@ bool DataAccess::_getSubscriberApns( const char *imsi, Subscriber &sub, RulesMap
          GET_EVENT_DATA2( row, domain, s, subapn->setDomain );
          GET_EVENT_DATA2( row, sy_required, b, subapn->setSyRequired );
          GET_EVENT_DATA2( row, transfer_policy, s, subapn->setApn );
+         GET_EVENT_DATA2( row, timer, i32, subapn->setTimerVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
@@ -804,7 +806,7 @@ bool DataAccess::_addSubscriberApn( const char *imsi, const SubscriberApn &sa )
    _concatenateRules( sa.getComputedRules(), cr );
 
    ss << "INSERT INTO subscriber_apn ("
-         << "imsi, apn, membership_value, domain, computed_rules, sy_required, transfer_policy"
+         << "imsi, apn, membership_value, domain, computed_rules, sy_required, transfer_policy,timer"
       << ") VALUES ("
          << "'" << imsi << "',"
          << "'" << sa.getApn() << "',"
@@ -812,7 +814,8 @@ bool DataAccess::_addSubscriberApn( const char *imsi, const SubscriberApn &sa )
          << "'" << sa.getDomain() << "',"
          << "'" << cr << "',"
          << "" << (sa.getSyRequired() ? "true" : "false") << ","
-         << "'" << sa.getTransferPolicy() << "'"
+         << "'" << sa.getTransferPolicy() << "',"
+			<< "" << sa.getTimerVal() << ""
       << ")";
 
    SCassStatement stmt( ss.str().c_str() );

@@ -1233,7 +1233,8 @@ int GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
       // remove the rules from the remove list as we donot need to send rar remove again.
       rrules.clear();
 		// start the timer of 10 mins to send RAR for removal of all the default rules.
-		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, 10000 );
+		int timer = getGxSession()->getApnEntry()->getTimerVal();
+		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, timer );
    }
 	return result;
 }
@@ -1296,7 +1297,8 @@ int GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 	{
         // if the pending rules are installed successfully at pcef, sendrar after 20 sec to remove the rules
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
+		int timer = getGxSession()->getApnEntry()->getTimerVal();
+		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, timer );
 	}
 	/*
    else
@@ -2266,6 +2268,9 @@ bool GxIpCan1::processPhase1()
    setStatus( esProcessing );
    
    setGxSession( new GxSession( getPCRF(), this ) );
+
+	//GxSession* ptr = NULL;
+	//ptr->getApnEntry();
    
    ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
    
@@ -2294,7 +2299,8 @@ bool GxIpCan1::processPhase1()
 	       {
 	          // we have sent the successful CCA Initial, hence start the timer
              Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-		       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
+				 int timer = getGxSession()->getApnEntry()->getTimerVal();
+		       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
 	       }
           result = true;
           break;
