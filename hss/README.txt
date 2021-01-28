@@ -10,7 +10,7 @@ Perform the following procedures in order.
 
        $ cd {isntallation_root}/c3po/hss
        $ make
-        
+
   3. Update the following files with any configuration changes:
 
        {installation_root}/c3po/hss/conf/hss.conf
