@@ -29,6 +29,8 @@ public:
    bool getSyRequired() const { return m_syrequired; }
    const std::string &getTransferPolicy() const { return m_transfer_policy; }
 	const int getTimerVal() const { return m_timerval; }
+	const int getDedicatedBearerCreation() const { return m_dedicated_bearer_creation; }
+	const int getMaxCallTimerVal() const { return m_max_call_timer; }
 
    const std::string &setApn( const char *v ) { m_apn = v; return getApn(); }
    const std::string &setApn( const std::string &v ) { m_apn = v; return getApn(); }
@@ -40,6 +42,8 @@ public:
    const std::string &setTransferPolicy( const char *v ) { m_transfer_policy = v; return getTransferPolicy(); }
    const std::string &setTransferPolicy( const std::string &v ) { m_transfer_policy = v; return getTransferPolicy(); }
 	const int setTimerVal( const int v ) { m_timerval = v; return getTimerVal(); }
+	const bool setDedicatedBearerCreation( const int v ) { m_dedicated_bearer_creation = v; return getDedicatedBearerCreation(); }
+	const int setMaxCallTimerVal( const int v ) { m_max_call_timer = v; return getMaxCallTimerVal(); }
 
    SubscriberApn &addComputedRule( Rule *r ) { m_computed_rules.push_back( r ); return *this; }
 
@@ -51,6 +55,8 @@ private:
    bool m_syrequired;
    std::string m_transfer_policy;
 	int m_timerval;
+	bool m_dedicated_bearer_creation;
+	int m_max_call_timer;
 };
 
 class SubscriberApnMap : public std::map<std::string,SubscriberApn*>

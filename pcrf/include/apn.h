@@ -30,6 +30,8 @@ public:
    int32_t getDefaultBearerCtlMode() const { return m_default_bearer_ctl_mode; }
    bool getForceDefaultBearerCtlMode() const { return m_force_default_bearer_ctl_mode; }
 	int32_t getTimerVal() const { return m_timerval; }
+	bool getDedicatedBearerCreation() const { return m_dedicated_bearer_creation; }
+	int32_t getMaxCallTimerVal() const { return m_max_call_timer; }
 
    const std::string &setApn( const char *v ) { m_apn = v; return getApn(); }
    const std::string &setApn( const std::string &v ) { m_apn = v; return getApn(); }
@@ -45,6 +47,8 @@ public:
    int32_t setDefaultBearerCtlMode( int32_t v ) { m_default_bearer_ctl_mode = v; return getDefaultBearerCtlMode(); }
    bool setForceDefaultBearerCtlMode( bool v ) { m_force_default_bearer_ctl_mode = v; return getForceDefaultBearerCtlMode(); }
 	int32_t setTimerVal( int32_t v ) { m_timerval = v; return getTimerVal(); }
+   bool setDedicatedBearerCreation( bool v ) { m_dedicated_bearer_creation = v; return getDedicatedBearerCreation(); }
+	int32_t setMaxCallTimerVal( int32_t v ) { m_max_call_timer = v; return getMaxCallTimerVal(); }
 
    Apn &addComputedRule( Rule *r ) { m_computed_rules.push_back( r ); return *this; }
 private:
@@ -59,6 +63,8 @@ private:
    int32_t m_default_bearer_ctl_mode;
    bool m_force_default_bearer_ctl_mode;
 	int32_t m_timerval;
+	bool m_dedicated_bearer_creation;
+	int32_t m_max_call_timer;
 };
 
 class ApnMap : public std::map<std::string,Apn*>

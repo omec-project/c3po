@@ -220,6 +220,9 @@ bool DataAccess::getApns( ApnMap &apns, RulesMap &rules )
          GET_EVENT_DATA2( row, sy_required, b, a->setSyRequired );
          GET_EVENT_DATA2( row, default_bearer_ctl_mode, i32, a->setDefaultBearerCtlMode );
          GET_EVENT_DATA2( row, force_default_bearer_ctl_mode, b, a->setForceDefaultBearerCtlMode );
+         GET_EVENT_DATA2( row, timer, i32, a->setTimerVal );
+         GET_EVENT_DATA2( row, dedicated_bearer_creation, b, a->setDedicatedBearerCreation );
+         GET_EVENT_DATA2( row, max_call_timer, i32, a->setMaxCallTimerVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
@@ -720,6 +723,8 @@ bool DataAccess::_getSubscriberApns( const char *imsi, Subscriber &sub, RulesMap
          GET_EVENT_DATA2( row, sy_required, b, subapn->setSyRequired );
          GET_EVENT_DATA2( row, transfer_policy, s, subapn->setApn );
          GET_EVENT_DATA2( row, timer, i32, subapn->setTimerVal );
+         GET_EVENT_DATA2( row, dedicated_bearer_creation, b, subapn->setDedicatedBearerCreation );
+         GET_EVENT_DATA2( row, max_call_timer, i32, subapn->setMaxCallTimerVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
@@ -806,7 +811,7 @@ bool DataAccess::_addSubscriberApn( const char *imsi, const SubscriberApn &sa )
    _concatenateRules( sa.getComputedRules(), cr );
 
    ss << "INSERT INTO subscriber_apn ("
-         << "imsi, apn, membership_value, domain, computed_rules, sy_required, transfer_policy,timer"
+         << "imsi, apn, membership_value, domain, computed_rules, sy_required, transfer_policy,timer,dedicated_bearer_creation,max_call_timer"
       << ") VALUES ("
          << "'" << imsi << "',"
          << "'" << sa.getApn() << "',"
@@ -815,7 +820,9 @@ bool DataAccess::_addSubscriberApn( const char *imsi, const SubscriberApn &sa )
          << "'" << cr << "',"
          << "" << (sa.getSyRequired() ? "true" : "false") << ","
          << "'" << sa.getTransferPolicy() << "',"
-			<< "" << sa.getTimerVal() << ""
+			<< "" << sa.getTimerVal() << ","
+			<< "" << (sa.getDedicatedBearerCreation() ? "true" : "false") << ","
+			<< "" << sa.getMaxCallTimerVal() << ""
       << ")";
 
    SCassStatement stmt( ss.str().c_str() );

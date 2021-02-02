@@ -977,28 +977,17 @@ void TriggerTimer::onTimer( SEventThread::Timer &t)
 				postMessage( RARDefaultRuleRemoveTimeout );
 				break;
 			}
+			case RARTrigger::triggerCallDisconnect : 
+			{
+				postMessage( MaxCallDurationTimeout );
+				break;
+			}
 		}
    }
 }
 
 void TriggerTimer::dispatch( SEventThreadMessage& msg )
 {
-	/*
-	if ( msg.getId() == RARPendingRuleInstallTimeout )
-   {
-      Logger::gx().debug("RAR TIMEOUT Occured");
-      m_reqTimer->stop();
-      //m_gxipcan1->sendRAR( true );
-      m_gxipcan1->sendRAR( RARTrigger::triggerRARPending );
-   }
-	else
-	if ( msg.getId() == RARPendingRuleRemoveTimeout )
-	{
-		m_reqTimer->stop();
-		m_gxipcan1->sendRAR( RARTrigger::triggerRARRemove );
-	}
-	*/
-
 	switch( msg.getId() )
 	{
 		case RARPendingRuleInstallTimeout : 
@@ -1019,6 +1008,12 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 		{
 			m_reqTimer->stop();
 			m_gxipcan1->sendRAR( RARTrigger::triggerRARInstall );
+			break;
+		}
+		case MaxCallDurationTimeout : 
+		{
+			m_reqTimer->stop();
+			//m_gxipcan1->cleanupSession();
 			break;
 		}
 	}
@@ -1153,14 +1148,6 @@ int GxIpCan1::rcvdDefaultRemoveRAA( gx::ReAuthAnswerExtractor& raa )
          }
       }
    }
-	/*
-   if ( status == false )
-   {
-      // removal of default rules failed that's why send rar remove again after 10 min
-      Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-      m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, 10000 );
-   }
-	*/
 	if ( status == true )
    {
       // remove the rules from the remove list as we donot need to send rar remove again.
@@ -1220,14 +1207,6 @@ int GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 			}
 		}
 	}
-	/*
-   if ( status == false )
-	{
-      // removal of rules failed that's why send rar remove again after 20 sec
-		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
-	}
-	*/
    if ( status == true )
    {
       // remove the rules from the remove list as we donot need to send rar remove again.
@@ -1382,22 +1361,22 @@ void GxIpCan1::sendRAR( int triggerValue )
    req->add( getDict().avpReAuthRequestType(), 0 );
 	if ( triggerValue == RARTrigger::triggerRARInstall )
 	{
-		/*
-		if ( !irules.empty() )
+		RulesList &arules( getGxSession()->getRules() );
+		if ( !arules.empty() )
 		{
 			int crcnt = 0;
 			int pracnt = 0;
-			FDAvp cri ( getDict().avpChargingRuleInstall() );
+			FDAvp cri ( getDict().avpChargingRuleRemove() );
 			FDAvp prai ( getDict().avpPraInstall() );
 			
-			for (auto r : irules)
+			for (auto r : arules)
 			{
-				if (r->getType() == "CHARGING")
+				if (r->getType() == "CHARGING" && r->getDefaultFlag() == true )
 				{
 					cri.addJson (r->getDefinition());
 					crcnt++;
 				}
-				else if (r->getType() == "PRA")
+				else if (r->getType() == "PRA" && r->getDefaultFlag() == true )
 				{
 					prai.addJson( r->getDefinition() );
 					pracnt++;
@@ -1413,23 +1392,22 @@ void GxIpCan1::sendRAR( int triggerValue )
 				req->add(prai);
 			}
 		}
-		*/
-
 		// set current procedure for handling the remove RAA of the default rule
+		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );
 	}
 	else
 	if ( triggerValue == RARTrigger::triggerRARRemove )
 	{ 
 		// add the pending rule in remove list from install list
-		RulesList &arules( getGxSession()->getRules() );
-		if ( !arules.empty() )
+		//RulesList &arules( getGxSession()->getRules() );
+		if ( !rrules.empty() )
 		{
 			int crcnt = 0;
 			int pracnt = 0;
 			FDAvp crr( getDict().avpChargingRuleRemove() );
 			FDAvp prar( getDict().avpPraRemove() );
 			
-			for (auto r : arules)
+			for (auto r : rrules)
 			{
 				if ( r->getType() == "CHARGING" && r->getDefaultFlag() == false )
 				{
@@ -1560,6 +1538,7 @@ int GxIpCan1::cleanupSession()
 {
 	 if ( getTriggerTimer() != NULL )
 	 {
+	    getTriggerTimer()->getTimer()->stop();
 		 delete( getTriggerTimer() );
 	 }
     printf("%s:%d\n", __FUNCTION__,__LINE__);
@@ -2266,14 +2245,11 @@ bool GxIpCan1::processPhase1()
    int ret;
 
    setStatus( esProcessing );
-   
    setGxSession( new GxSession( getPCRF(), this ) );
 
-	//GxSession* ptr = NULL;
-	//ptr->getApnEntry();
-   
+
    ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
-   
+	int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal(); 
    switch( ret )
    {
       case ValidateErrorCode::contextExists :
@@ -2289,20 +2265,26 @@ bool GxIpCan1::processPhase1()
 				setCurrentProc( NULL );
 			}
          result = true;
+			new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
          break;
        }
        case ValidateErrorCode::success :
-       {
-          setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
-          setCurrentProc( NULL );
-          if ( getStatus() == esComplete )
-	       {
+       {	
+			if ( getStatus() == esComplete )
+			{
+				// check whether dedicated bearer creation flag is true or false
+          	 setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
+          	 setCurrentProc( NULL );
+				 if ( getGxSession()->getApnEntry()->getDedicatedBearerCreation() )
+				 {
 	          // we have sent the successful CCA Initial, hence start the timer
-             Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-				 int timer = getGxSession()->getApnEntry()->getTimerVal();
-		       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
+             	Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
+				 	int timer = getGxSession()->getApnEntry()->getTimerVal();
+		       	m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
+				 }
 	       }
           result = true;
+			 new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
           break;
        }
        default :
