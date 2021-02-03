@@ -1373,12 +1373,14 @@ void GxIpCan1::sendRAR( int triggerValue )
 			{
 				if (r->getType() == "CHARGING" && r->getDefaultFlag() == true )
 				{
-					cri.addJson (r->getDefinition());
+					cri.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					cri.addJson( r->getDefinition() );
 					crcnt++;
 				}
 				else if (r->getType() == "PRA" && r->getDefaultFlag() == true )
 				{
 					prai.addJson( r->getDefinition() );
+					prai.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName() );
 					pracnt++;
 				}
 			}
@@ -1399,24 +1401,26 @@ void GxIpCan1::sendRAR( int triggerValue )
 	if ( triggerValue == RARTrigger::triggerRARRemove )
 	{ 
 		// add the pending rule in remove list from install list
-		//RulesList &arules( getGxSession()->getRules() );
-		if ( !rrules.empty() )
+		RulesList &arules( getGxSession()->getRules() );
+		if ( !arules.empty() )
 		{
 			int crcnt = 0;
 			int pracnt = 0;
 			FDAvp crr( getDict().avpChargingRuleRemove() );
 			FDAvp prar( getDict().avpPraRemove() );
 			
-			for (auto r : rrules)
+			for (auto r : arules)
 			{
 				if ( r->getType() == "CHARGING" && r->getDefaultFlag() == false )
 				{
-					crr.add( getDict().avpChargingRuleName(), r->getRuleName());
+					crr.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					crr.addJson( r->getDefinition() );
 					crcnt++;
 				}
 				else if ( r->getType() == "PRA" && r->getDefaultFlag() == false)
 				{
-					prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+					prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName() );
+					prar.addJson( r->getDefinition() );
 					pracnt++;
 				}
 			}
@@ -1449,6 +1453,7 @@ void GxIpCan1::sendRAR( int triggerValue )
 				if (r->getType() == "CHARGING")
 				{
 					crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					crp.addJson( r->getDefinition() );
 					qos_info.addJson(  r->getDefinition() );
 					doc.Parse( r->getDefinition().c_str() );
 					const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
@@ -1467,7 +1472,8 @@ void GxIpCan1::sendRAR( int triggerValue )
 				}
 				else if ( r->getType() == "PRA")
 				{
-					prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+					prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName() );
+					prap.addJson( r->getDefinition() );
 					pracnt++;
 				}
 			}
