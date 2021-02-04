@@ -2436,7 +2436,11 @@ bool GxIpCan1::processPhase3()
    // add the DIAMETER_SUCCESS Result-Code AVP
    getCCA().add( getDict().avpResultCode(), DIAMETER_SUCCESS );
 
-   FDAvp defBearerQos(getDict().avpDefaultEpsBearerQos());
+	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USER_LOCATION_CHANGE );
+	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: UE_TIMEZONE_CHANGE );
+	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USAGE_REPORT );
+	
+   FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
    std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
    defBearerQos.addJson(json_t);
    getCCA().add(defBearerQos);

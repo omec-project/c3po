@@ -39,6 +39,13 @@ const uint16_t RARPendingRuleRemoveTimeout     =    ETM_USER + 11;
 const uint16_t RARDefaultRuleRemoveTimeout     =    ETM_USER + 12;
 const uint16_t MaxCallDurationTimeout          =    ETM_USER + 13;
 
+enum EventTriggerValues
+{
+	USER_LOCATION_CHANGE = 13,
+	UE_TIMEZONE_CHANGE = 25,
+	USAGE_REPORT = 33
+};
+
 enum ValidateErrorCode
 {
     success = 0,
