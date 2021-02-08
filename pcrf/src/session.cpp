@@ -977,27 +977,17 @@ void TriggerTimer::onTimer( SEventThread::Timer &t)
 				postMessage( RARDefaultRuleRemoveTimeout );
 				break;
 			}
+			case RARTrigger::triggerCallDisconnect : 
+			{
+				postMessage( MaxCallDurationTimeout );
+				break;
+			}
 		}
    }
 }
 
 void TriggerTimer::dispatch( SEventThreadMessage& msg )
 {
-	/*
-	if ( msg.getId() == RARPendingRuleInstallTimeout )
-   {
-      Logger::gx().debug("RAR TIMEOUT Occured");
-      m_reqTimer->stop();
-      //m_gxipcan1->sendRAR( true );
-      m_gxipcan1->sendRAR( RARTrigger::triggerRARPending );
-   }
-	else
-	if ( msg.getId() == RARPendingRuleRemoveTimeout )
-	{
-		m_reqTimer->stop();
-		m_gxipcan1->sendRAR( RARTrigger::triggerRARRemove );
-	}
-	*/
 
 	switch( msg.getId() )
 	{
@@ -1019,6 +1009,12 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 		{
 			m_reqTimer->stop();
 			m_gxipcan1->sendRAR( RARTrigger::triggerRARInstall );
+			break;
+		}
+		case MaxCallDurationTimeout : 
+		{
+			m_reqTimer->stop();
+			//m_gxipcan1->cleanupSession();
 			break;
 		}
 	}
@@ -1153,14 +1149,6 @@ int GxIpCan1::rcvdDefaultRemoveRAA( gx::ReAuthAnswerExtractor& raa )
          }
       }
    }
-	/*
-   if ( status == false )
-   {
-      // removal of default rules failed that's why send rar remove again after 10 min
-      Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-      m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, 10000 );
-   }
-	*/
 	if ( status == true )
    {
       // remove the rules from the remove list as we donot need to send rar remove again.
@@ -1220,20 +1208,13 @@ int GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 			}
 		}
 	}
-	/*
-   if ( status == false )
-	{
-      // removal of rules failed that's why send rar remove again after 20 sec
-		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
-	}
-	*/
    if ( status == true )
    {
       // remove the rules from the remove list as we donot need to send rar remove again.
       rrules.clear();
 		// start the timer of 10 mins to send RAR for removal of all the default rules.
-		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, 10000 );
+		int timer = getGxSession()->getApnEntry()->getTimerVal();
+		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARInstall, timer );
    }
 	return result;
 }
@@ -1296,7 +1277,8 @@ int GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 	{
         // if the pending rules are installed successfully at pcef, sendrar after 20 sec to remove the rules
 		Logger::gx().debug("STARTING THE TIMER AS RAA is rcvd");
-		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, 20000 );
+		int timer = getGxSession()->getApnEntry()->getTimerVal();
+		m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARRemove, timer );
 	}
 	/*
    else
@@ -1380,40 +1362,41 @@ void GxIpCan1::sendRAR( int triggerValue )
    req->add( getDict().avpReAuthRequestType(), 0 );
 	if ( triggerValue == RARTrigger::triggerRARInstall )
 	{
-		/*
-		if ( !irules.empty() )
+		RulesList &arules( getGxSession()->getRules() );
+		if ( !arules.empty() )
 		{
 			int crcnt = 0;
 			int pracnt = 0;
-			FDAvp cri ( getDict().avpChargingRuleInstall() );
+			FDAvp cri ( getDict().avpChargingRuleRemove() );
 			FDAvp prai ( getDict().avpPraInstall() );
 			
-			for (auto r : irules)
+			for (auto r : arules)
 			{
-				if (r->getType() == "CHARGING")
+				if (r->getType() == "CHARGING" && r->getDefaultFlag() == true )
 				{
-					cri.addJson (r->getDefinition());
+					cri.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					cri.addJson( r->getDefinition() );
 					crcnt++;
 				}
-				else if (r->getType() == "PRA")
+				else if (r->getType() == "PRA" && r->getDefaultFlag() == true )
 				{
 					prai.addJson( r->getDefinition() );
+					prai.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName() );
 					pracnt++;
 				}
 			}
-			
-			if (crcnt > 0)
-			{
-				req->add(cri);
-			}
-			if (pracnt > 0)
-			{
-				req->add(prai);
-			}
-		}
-		*/
 
+			if (crcnt > 0)
+         {
+            req->add(cri);
+         }
+         if (pracnt > 0)
+         {
+            req->add(prai);
+         }
+		}
 		// set current procedure for handling the remove RAA of the default rule
+		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );
 	}
 	else
 	if ( triggerValue == RARTrigger::triggerRARRemove )
@@ -1431,12 +1414,14 @@ void GxIpCan1::sendRAR( int triggerValue )
 			{
 				if ( r->getType() == "CHARGING" && r->getDefaultFlag() == false )
 				{
-					crr.add( getDict().avpChargingRuleName(), r->getRuleName());
+					crr.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					crr.addJson( r->getDefinition() );
 					crcnt++;
 				}
 				else if ( r->getType() == "PRA" && r->getDefaultFlag() == false)
 				{
-					prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+					prar.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName() );
+					prar.addJson( r->getDefinition() );
 					pracnt++;
 				}
 			}
@@ -1469,6 +1454,7 @@ void GxIpCan1::sendRAR( int triggerValue )
 				if (r->getType() == "CHARGING")
 				{
 					crp.add( getDict().avpChargingRuleName(), r->getRuleName() );
+					crp.addJson( r->getDefinition() );
 					qos_info.addJson(  r->getDefinition() );
 					doc.Parse( r->getDefinition().c_str() );
 					const RAPIDJSON_NAMESPACE::Value& crditem = doc["Charging-Rule-Definition"];
@@ -1487,7 +1473,8 @@ void GxIpCan1::sendRAR( int triggerValue )
 				}
 				else if ( r->getType() == "PRA")
 				{
-					prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName());
+					prap.add( getDict().avpPresenceReportingAreaIdentifier(), r->getRuleName() );
+					prap.addJson( r->getDefinition() );
 					pracnt++;
 				}
 			}
@@ -1558,6 +1545,7 @@ int GxIpCan1::cleanupSession()
 {
 	 if ( getTriggerTimer() != NULL )
 	 {
+	    getTriggerTimer()->getTimer()->stop();
 		 delete( getTriggerTimer() );
 	 }
     printf("%s:%d\n", __FUNCTION__,__LINE__);
@@ -2264,11 +2252,11 @@ bool GxIpCan1::processPhase1()
    int ret;
 
    setStatus( esProcessing );
-   
    setGxSession( new GxSession( getPCRF(), this ) );
-   
+
+
    ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
-   
+	int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal(); 
    switch( ret )
    {
       case ValidateErrorCode::contextExists :
@@ -2284,19 +2272,26 @@ bool GxIpCan1::processPhase1()
 				setCurrentProc( NULL );
 			}
          result = true;
+			new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
          break;
        }
        case ValidateErrorCode::success :
-       {
-          setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
-          setCurrentProc( NULL );
-          if ( getStatus() == esComplete )
-	       {
+       {	
+			if ( getStatus() == esComplete )
+			{
+				// check whether dedicated bearer creation flag is true or false
+          	 setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
+          	 setCurrentProc( NULL );
+				 if ( getGxSession()->getApnEntry()->getDedicatedBearerCreation() )
+				 {
 	          // we have sent the successful CCA Initial, hence start the timer
-             Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-		       m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, 20000 );
+             	Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
+				 	int timer = getGxSession()->getApnEntry()->getTimerVal();
+		       	m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
+				 }
 	       }
           result = true;
+			 new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
           break;
        }
        default :
@@ -2442,7 +2437,11 @@ bool GxIpCan1::processPhase3()
    // add the DIAMETER_SUCCESS Result-Code AVP
    getCCA().add( getDict().avpResultCode(), DIAMETER_SUCCESS );
 
-   FDAvp defBearerQos(getDict().avpDefaultEpsBearerQos());
+	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USER_LOCATION_CHANGE );
+	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: UE_TIMEZONE_CHANGE );
+	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USAGE_REPORT );
+	
+   FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
    std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
    defBearerQos.addJson(json_t);
    getCCA().add(defBearerQos);

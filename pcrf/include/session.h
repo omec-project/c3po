@@ -37,6 +37,14 @@ class SdSessionMap;
 const uint16_t RARPendingRuleInstallTimeout    =    ETM_USER + 10;
 const uint16_t RARPendingRuleRemoveTimeout     =    ETM_USER + 11;
 const uint16_t RARDefaultRuleRemoveTimeout     =    ETM_USER + 12;
+const uint16_t MaxCallDurationTimeout          =    ETM_USER + 13;
+
+enum EventTriggerValues
+{
+	USER_LOCATION_CHANGE = 13,
+	UE_TIMEZONE_CHANGE = 25,
+	USAGE_REPORT = 33
+};
 
 enum ValidateErrorCode
 {
@@ -76,7 +84,8 @@ enum RARTrigger
 {
 	triggerRARInstall = 0,
 	triggerRARRemove,
-	triggerRARPending
+	triggerRARPending,
+	triggerCallDisconnect
 };
 
 namespace sd
@@ -776,6 +785,7 @@ public:
    void onQuit();
    void onTimer( SEventThread::Timer &t);
    void dispatch( SEventThreadMessage &msg);
+	SEventThread::Timer* getTimer() { return m_reqTimer; }
 private :
 	GxIpCan1* m_gxipcan1;
 	int m_timer;
