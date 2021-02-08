@@ -988,6 +988,7 @@ void TriggerTimer::onTimer( SEventThread::Timer &t)
 
 void TriggerTimer::dispatch( SEventThreadMessage& msg )
 {
+
 	switch( msg.getId() )
 	{
 		case RARPendingRuleInstallTimeout : 
@@ -1384,15 +1385,15 @@ void GxIpCan1::sendRAR( int triggerValue )
 					pracnt++;
 				}
 			}
-			
+
 			if (crcnt > 0)
-			{
-				req->add(cri);
-			}
-			if (pracnt > 0)
-			{
-				req->add(prai);
-			}
+         {
+            req->add(cri);
+         }
+         if (pracnt > 0)
+         {
+            req->add(prai);
+         }
 		}
 		// set current procedure for handling the remove RAA of the default rule
 		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );

@@ -89,7 +89,6 @@ computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode
 'apntwo','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000,false,4000000);
 
 
-
 DROP TABLE IF EXISTS vpcrf.endpoints;
 CREATE TABLE vpcrf.endpoints (
 	endpointid text,
