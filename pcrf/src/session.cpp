@@ -2445,6 +2445,29 @@ bool GxIpCan1::processPhase3()
    std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
    defBearerQos.addJson(json_t);
    getCCA().add(defBearerQos);
+
+	FDAvp qos_info( getDict().avpQosInformation() );
+	FDAvp arp( getDict().avpAllocationRetentionPriority() );
+	//FDAvp caamb( getDict().avpConditionalApnAggregateMaxBitrate() );
+
+	qos_info.add( getDict().avpQosClassIdentifier(), 0 );
+	qos_info.add( getDict().avpMaxRequestedBandwidthDl(), 0 );
+	qos_info.add( getDict().avpMaxRequestedBandwidthUl(), 0 );
+	qos_info.add( getDict().avpGuaranteedBitrateUl(), 0 );
+	qos_info.add( getDict().avpGuaranteedBitrateDl(), 0 );
+	qos_info.add( getDict().avpBearerIdentifier(), 0 );
+	
+	arp.add( getDict().avpPriorityLevel(), 0 );
+	arp.add( getDict().avpPreEmptionCapability(), 0 );
+	arp.add( getDict().avpPreEmptionVulnerability(), 0 );
+
+	qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getApnEntry()->getApnAmbrUlVal() );
+	qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getApnEntry()->getApnAmbrDlVal() );
+
+	qos_info.add( arp );
+
+	getCCA().add( qos_info );
+
    // add the rules
    {
       RulesList &irules( getRulesEvaluator().getGxInstallRules() );
