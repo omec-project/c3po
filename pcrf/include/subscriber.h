@@ -31,6 +31,8 @@ public:
 	const int getTimerVal() const { return m_timerval; }
 	const int getDedicatedBearerCreation() const { return m_dedicated_bearer_creation; }
 	const int getMaxCallTimerVal() const { return m_max_call_timer; }
+	const int getApnAmbrUlVal() const { return m_apn_ambr_ul; }
+	const int getApnAmbrDlVal() const { return m_apn_ambr_dl; }
 
    const std::string &setApn( const char *v ) { m_apn = v; return getApn(); }
    const std::string &setApn( const std::string &v ) { m_apn = v; return getApn(); }
@@ -44,6 +46,8 @@ public:
 	const int setTimerVal( const int v ) { m_timerval = v; return getTimerVal(); }
 	const bool setDedicatedBearerCreation( const int v ) { m_dedicated_bearer_creation = v; return getDedicatedBearerCreation(); }
 	const int setMaxCallTimerVal( const int v ) { m_max_call_timer = v; return getMaxCallTimerVal(); }
+	const int setApnAmbrUlVal( const int v ) { m_apn_ambr_ul = v; return getApnAmbrUlVal(); }
+	const int setApnAmbrDlVal( const int v ) { m_apn_ambr_dl = v; return getApnAmbrDlVal(); }
 
    SubscriberApn &addComputedRule( Rule *r ) { m_computed_rules.push_back( r ); return *this; }
 
@@ -57,6 +61,8 @@ private:
 	int m_timerval;
 	bool m_dedicated_bearer_creation;
 	int m_max_call_timer;
+	int m_apn_ambr_ul;
+	int m_apn_ambr_dl;
 };
 
 class SubscriberApnMap : public std::map<std::string,SubscriberApn*>

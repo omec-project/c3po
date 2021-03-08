@@ -524,6 +524,9 @@ public:
 		mp_currentproc = current_proc; 
 	}
 
+	SessionEvent* getCurrentEvent() { return mp_currentevent; }
+	void setCurrentEvent( SessionEvent* current_event ) { mp_currentevent = current_event; }
+
    static void teardownSession( const char *source, GxSession *gx, SdSession::SessionReleaseCause src, bool lock = true ) { teardownSession( source, gx, src, StSession::tcDiameterLogout, lock ); }
    static void teardownSession( const char *source, GxSession *gx, StSession::TerminationCause tc, bool lock = true ) { teardownSession( source, gx, SdSession::srcUnspecifiedReason, tc, lock ); }
    static void teardownSession( const char *source, GxSession *gx, bool lock = true ) { teardownSession( source, gx, SdSession::srcUnspecifiedReason, StSession::tcDiameterLogout, lock ); }
@@ -532,6 +535,7 @@ public:
 private:
    SMutex m_mutex;
    State m_state;
+	SessionEvent* mp_currentevent;
 	GxSessionState* mp_currentstate;
    GxSessionProc* mp_currentproc;
    PCRF &m_pcrf;
@@ -824,7 +828,7 @@ public:
                            // a CCA error and start the teardown process
 
    void sendCCA();
-   int validate();
+   int validate( gx::CreditControlRequestExtractor& ccr );
    int cleanupSession();
 
 	GxSessionState* getCurrentState() { getGxSession()->getCurrentState(); }

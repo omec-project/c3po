@@ -57,6 +57,8 @@ CREATE TABLE vpcrf.subscriber_apn (
    timer int,
 	dedicated_bearer_creation boolean,
 	max_call_timer int,
+	apn_ambr_ul int,
+	apn_ambr_dl int,
 	primary key (imsi,apn)
 );
 
@@ -75,18 +77,20 @@ CREATE TABLE vpcrf.apns (
    timer int,
 	dedicated_bearer_creation boolean,
 	max_call_timer int,
+	apn_ambr_ul int,
+	apn_ambr_dl int,
 	primary key (apn)
 );
 
 insert into vpcrf.apns
 (apn,sy_subscription_id,fail_on_uninstallable_rule,auto_create_spr,membership_value,domain,
-computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode,timer,dedicated_bearer_creation,max_call_timer) values (
-'internet','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000,true,4000000);
+computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode,timer,dedicated_bearer_creation,max_call_timer,apn_ambr_ul,apn_ambr_dl) values (
+'internet','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000,true,4000000,1300000,1400000);
 
 insert into vpcrf.apns
 (apn,sy_subscription_id,fail_on_uninstallable_rule,auto_create_spr,membership_value,domain,
-computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode,timer,dedicated_bearer_creation,max_call_timer) values (
-'apntwo','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000,false,4000000);
+computed_rules,sy_required,default_bearer_ctl_mode,force_default_bearer_ctl_mode,timer,dedicated_bearer_creation,max_call_timer,apn_ambr_ul,apn_ambr_dl) values (
+'apntwo','',true,true,'retail','sprint.com','retail.rule1,retail.rule2',false,2,true,20000,false,4000000,1400000,1300000);
 
 
 DROP TABLE IF EXISTS vpcrf.endpoints;

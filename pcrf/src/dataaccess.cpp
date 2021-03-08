@@ -223,6 +223,8 @@ bool DataAccess::getApns( ApnMap &apns, RulesMap &rules )
          GET_EVENT_DATA2( row, timer, i32, a->setTimerVal );
          GET_EVENT_DATA2( row, dedicated_bearer_creation, b, a->setDedicatedBearerCreation );
          GET_EVENT_DATA2( row, max_call_timer, i32, a->setMaxCallTimerVal );
+         GET_EVENT_DATA2( row, apn_ambr_ul, i32, a->setApnAmbrUlVal );
+         GET_EVENT_DATA2( row, apn_ambr_dl, i32, a->setApnAmbrDlVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
@@ -725,6 +727,8 @@ bool DataAccess::_getSubscriberApns( const char *imsi, Subscriber &sub, RulesMap
          GET_EVENT_DATA2( row, timer, i32, subapn->setTimerVal );
          GET_EVENT_DATA2( row, dedicated_bearer_creation, b, subapn->setDedicatedBearerCreation );
          GET_EVENT_DATA2( row, max_call_timer, i32, subapn->setMaxCallTimerVal );
+         GET_EVENT_DATA2( row, apn_ambr_ul, i32, subapn->setApnAmbrUlVal );
+         GET_EVENT_DATA2( row, apn_ambr_dl, i32, subapn->setApnAmbrDlVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
