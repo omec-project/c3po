@@ -27,6 +27,7 @@
   "auditlogname": "logs/pcrf_audit.log",
   "statfreq": 2000,
   "ossport" : 9082,
-  "ossfile" : "conf/oss.json"
+  "ossfile" : "conf/oss.json",
+  "rulesfile" : "conf/rules.json"
  }
 }
