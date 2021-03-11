@@ -289,7 +289,7 @@ public:
    std::list<user_plane_profile_t*> user_plane_list;
    std::list<access_profile_t*> access_profile_list;
 	std::list<qos_profile_t*> qos_profile_list;
-	//std::list<qos_profile_t*> qos_profile_list;
+	std::list<std::string> service_groups_list;
 };
 
 class Options

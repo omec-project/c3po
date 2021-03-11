@@ -539,9 +539,17 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
    }
    if( doc.HasMember( "Policies" ) )
    {
-      for(uint32_t i=0; i< doc["Policies"].Size();i++)
+      for(uint32_t i=0; i < doc["Policies"].Size();i++)
       {
-         
+         const const RAPIDJSON_NAMESPACE::Value& subServiceGroups = doc["Policies"][i];
+         if( subServiceGroups.HasMember( "service-groups" ) )
+         {
+            for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator service_group_itr = subServiceGroups.MemberBegin(); service_group_itr != subServiceGroups.MemberEnd(); ++service_group_itr )
+            {
+               m_rules_options->service_groups_list.push_back( )
+            }
+            
+         }// if service group is present.
       }
    }
    
