@@ -19,6 +19,15 @@
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
 
+
+PoliciesConfig::PoliciesConfig()
+{
+}
+
+ServiceProfiles::ServiceProfiles()
+{
+}
+
 Options *Options::m_singleton = NULL;
 
 Options::Options()
@@ -36,7 +45,7 @@ Options::Options()
      m_auditlogmaxsize ( 0 ),
      m_auditlognbrfiles ( 0 ),
      m_ossport ( 0 ),
-     m_rules_options( NULL )
+     m_policies_config( NULL )
 {
 }
 
@@ -340,71 +349,22 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
       return false;
    }
    char readBuffer[65536];
-   rapidjson::FileReadStream is( fp, readBuffer, sizeof( readBuffer ) );
+   RAPIDJSON_NAMESPACE::FileReadStream is( fp, readBuffer, sizeof( readBuffer ) );
    fclose( fp );
-   rapidjson::Document doc;
+   RAPIDJSON_NAMESPACE::Document doc;
    doc.ParseStream( is );
    if( !doc.IsObject() )
    {
       std::cout << "Error Parsing the Json config file " << std::endl;
       return false;
    }
-   pcrf_config_profile_t* temp_config = new pcrf_config_profile_t();
-   m_rules_options = new RuleOptions();
-   temp_config->config = ( void* )config_store;
+   m_policies_config = new PoliciesConfig();
 
-   if( doc.HasMember( "subscriber-selection-rules" ) )
-   {
-      for(uint32_t i=0; i< doc["subscriber-selection-rules"].Size();i++)
-      {
-         sub_selection_rule_t *sub_rule = new (sub_selection_rule_t);
-         sub_rule->keys = nullptr;
-         sub_rule->selected_apn_profile = nullptr;
-         sub_rule->selected_user_plane_profile = nullptr;
-         sub_rule->selected_qos_profile = nullptr;
-         sub_rule->selected_access_profile[0] = nullptr;
-         sub_rule->selected_access_profile[1] = nullptr;
-         sub_rule->selected_access_profile[2] = nullptr;
-         sub_rule->selected_access_profile[3] = nullptr;
-         const rapidjson::Value& subRuleSection = doc["subscriber-selection-rules"][i];
-         
-         if(subRuleSection.HasMember("priority"))
-         {
-            sub_rule->rule_priority = subRuleSection["priority"].GetInt();
-            LOG_MSG(LOG_INIT,"\t\tkeys has priority %d ",sub_rule->rule_priority);
-         }
-         
-         if( subRuleSection.HasMember( "keys" ) )
-         {
-            sub_selection_keys_t *key = new (sub_selection_keys_t);
-            key->imsi.is_valid = false;
-            key->plmn.is_valid = false;
-            key->apn.is_valid = false;
-            sub_rule->keys = key;
-            const rapidjson::Value& ruleKeys = subRuleSection["keys"];
-            if( ruleKeys.HasMember( "imsi-range" ) && ruleKeys["imsi-range"].IsObject() )
-            {
-               const rapidjson::Value& imsiKeys = ruleKeys["imsi-range"];
-               if(imsiKeys.HasMember("from"))
-               {
-                  LOG_MSG(LOG_INIT, "\t\t\t\tIMSI range from present %lu ",imsiKeys["from"].GetInt64());
-               }
-               if(imsiKeys.HasMember("to"))
-               {
-                  LOG_MSG(LOG_INIT,"\t\t\t\tIMSI range to present %lu ",imsiKeys["to"].GetInt64());
-               }
-               key->imsi.is_valid = true;
-               key->imsi.from_imsi= imsiKeys["from"].GetInt64();
-               key->imsi.to_imsi= imsiKeys["to"].GetInt64();
-            }
-         }
-         config_store->sub_sel_rules.push_back( sub_rule );
-      } // for loop subscriber selection 
-   }// if bracket subscriber-selection-rules
+	/*
    if( doc.HasMember("apn-profiles") )
    {
-      const rapidjson::Value& apnProfileSection = doc["apn-profiles"];
-      for (rapidjson::Value::ConstMemberIterator itr = apnProfileSection.MemberBegin(); itr != apnProfileSection.MemberEnd(); ++itr)
+      const RAPIDJSON_NAMESPACE::Value& apnProfileSection = doc["apn-profiles"];
+      for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = apnProfileSection.MemberBegin(); itr != apnProfileSection.MemberEnd(); ++itr)
       {
          std::string key = itr->name.GetString();
          if( itr->value.IsObject() )
@@ -412,7 +372,7 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
             apn_profile_t *apn_profile = new (apn_profile_t);
             memset( apn_profile, 0, sizeof(apn_profile_t) );
             strcpy( apn_profile->apn_profile_name, key.c_str() );
-            const rapidjson::Value& apnSection = itr->value;
+            const RAPIDJSON_NAMESPACE::Value& apnSection = itr->value;
             if( apnSection.HasMember("apn-name") ) 
             {
                const char *temp = apnSection["apn-name"].GetString();
@@ -478,75 +438,37 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
          }
       }// for loop apn_profile
    } // if for apn_profile
-   if( doc.HasMember("user-plane-profiles") )
-   {
-      const rapidjson::Value& userProfileSection = doc["user-plane-profiles"];
-      for (rapidjson::Value::ConstMemberIterator itr = userProfileSection.MemberBegin(); itr != userProfileSection.MemberEnd(); ++itr)
-      {
-         std::string key = itr->name.GetString();
-         user_plane_profile_t *user_plane = new (user_plane_profile_t);
-         user_plane->global_address = true; // default global addressing mode
-         user_plane->upf_addr = 0;
-         const rapidjson::Value& userPlaneSection = itr->value;
-         strcpy( user_plane->user_plane_profile_name, key.c_str() );
-         
-         if( userPlaneSection.HasMember("user-plane") )
-         {
-            const char *temp = userPlaneSection["user-plane"].GetString();
-            LOG_MSG(LOG_INIT,"\tUser Plane - %s ",temp);
-            strcpy(user_plane->user_plane_service, temp);
-         }
-         if( userPlaneSection.HasMember("global-address") )
-         {
-            user_plane->global_address = userPlaneSection["global-address"].GetBool();
-         }
-         if( userPlaneSection.HasMember("qos-tags") )
-         {
-            std::cout << "QOS Tags specified " << std::endl;
-         }
-         if( userPlaneSection.HasMember("access-tags") )
-         {
-            std::cout << "Access tags specified " << std::endl;
-         }
-         config_store->user_plane_list.push_back( user_plane );
-      }
-   }
    if( doc.HasMember( "qos-profiles" ) )
    {
-      const rapidjson::Value& qosProfileSection = doc["qos-profiles"];
-      for (rapidjson::Value::ConstMemberIterator itr = qosProfileSection.MemberBegin(); itr != qosProfileSection.MemberEnd(); ++itr)
+      const RAPIDJSON_NAMESPACE::Value& qosProfileSection = doc["qos-profiles"];
+      for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = qosProfileSection.MemberBegin(); itr != qosProfileSection.MemberEnd(); ++itr)
       {
          qos_profile_t *qos_profile = new (qos_profile_t);
          std::string key = itr->name.GetString();
          strcpy(qos_profile->qos_profile_name, key.c_str());
          LOG_MSG(LOG_INIT,"\tQoS profile - %s",key.c_str());
-         const rapidjson::Value& qosPlaneSection = itr->value;
+         const RAPIDJSON_NAMESPACE::Value& qosPlaneSection = itr->value;
          qos_profile->apn_ambr_ul = qosPlaneSection["apn-ambr"][0].GetInt64();
          qos_profile->apn_ambr_dl = qosPlaneSection["apn-ambr"][1].GetInt64();
          config_store->qos_profile_list.push_back( qos_profile );
       }
    }
-   if( doc.HasMember( "access-profiles" ) )
-   {
-      const rapidjson::Value& accessProfileSection = doc["access-profiles"];
-      for (rapidjson::Value::ConstMemberIterator itr = accessProfileSection.MemberBegin(); itr != accessProfileSection.MemberEnd(); ++itr)
-      {
-         std::string key = itr->name.GetString();
-         access_profile_t *access_profile = new (access_profile_t);
-         strcpy( access_profile->access_profile_name, key.c_str() );
-         config_store->access_profile_list.push_back( access_profile );
-      }
-   }
+	*/
    if( doc.HasMember( "Policies" ) )
    {
       for(uint32_t i=0; i < doc["Policies"].Size();i++)
       {
-         const const RAPIDJSON_NAMESPACE::Value& subServiceGroups = doc["Policies"][i];
+         const RAPIDJSON_NAMESPACE::Value& subServiceGroups = doc["Policies"][i];
          if( subServiceGroups.HasMember( "service-groups" ) )
          {
             for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator service_group_itr = subServiceGroups.MemberBegin(); service_group_itr != subServiceGroups.MemberEnd(); ++service_group_itr )
             {
-               m_rules_options->service_groups_list.push_back( )
+					ServiceProfiles* service_profile = new ServiceProfiles();
+					std::string key = service_group_itr->name.GetString();
+					service_profile->setServiceName( key );
+					const RAPIDJSON_NAMESPACE::Value& serviceSection = service_group_itr->value;
+					service_profile->setServiceType( serviceSection["default-activate-service"].GetString() );
+					m_policies_config->service_profile_list.push_back( service_profile ); 
             }
             
          }// if service group is present.
