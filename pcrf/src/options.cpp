@@ -185,6 +185,7 @@ bool Options::parseInputOptions( int argc, char **argv )
 
 bool Options::parseJson()
 {
+	printf( "SOHAN CALLING parseJson\n" );
    char buf[2048];
 
    FILE *fp = fopen ( m_jsoncfg.c_str() , "r");
@@ -216,7 +217,8 @@ bool Options::parseJson()
          m_options |= opt_originrealm;
       }
    }
-   if(doc.HasMember("pcrf")){
+   if(doc.HasMember("pcrf"))
+	{
       const RAPIDJSON_NAMESPACE::Value& pcrfSection = doc["pcrf"];
       if(!(m_options & opt_casshost) && pcrfSection.HasMember("casshost")){
          if(!pcrfSection["casshost"].IsString()) { std::cout << "Error parsing json value: [casshost]" << std::endl; return false; }
@@ -325,7 +327,8 @@ bool Options::parseJson()
          m_ossfile = pcrfSection["ossfile"].GetString();
          m_options |= opt_ossfile;
       }
-		if( !( m_options & opt_rulesfile ) && pcrfSection.HasMember( "rulesfile" ) ) 
+		printf( "SOHAN : before checking rules file \n" );
+		if( /*!( m_options & opt_rulesfile ) &&*/ pcrfSection.HasMember( "rulesfile" ) ) 
 		{
 			if( !pcrfSection["rulesfile"].IsString() )
 			{
@@ -333,8 +336,15 @@ bool Options::parseJson()
 				return false;
 			}
 			m_rulesfile = pcrfSection["rulesfile"].GetString();
-			m_options |= opt_rulesfile;	
+			printf( "SOHAN : Rules File : %s\n", m_rulesfile.c_str() );
+			m_options |= opt_rulesfile;
+			parseSubscriberProfiles( m_rulesfile.c_str() );
 		}
+		else
+		{
+			printf( "SOHAN CANNOT FIND RULES FILE OBJ IN JSON FILE\n" );
+		}
+		
    }
 
    return true;
@@ -342,6 +352,7 @@ bool Options::parseJson()
 
 bool Options::parseSubscriberProfiles( const char* jsonFile )
 {
+	printf( "SOHAN : Called ParseSubscriberProfiles \n" );
    FILE* fp = fopen( jsonFile, "r" );
    if ( fp == NULL )
    {
@@ -359,112 +370,27 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
       return false;
    }
    m_policies_config = new PoliciesConfig();
-
-	/*
-   if( doc.HasMember("apn-profiles") )
-   {
-      const RAPIDJSON_NAMESPACE::Value& apnProfileSection = doc["apn-profiles"];
-      for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = apnProfileSection.MemberBegin(); itr != apnProfileSection.MemberEnd(); ++itr)
-      {
-         std::string key = itr->name.GetString();
-         if( itr->value.IsObject() )
-         {
-            apn_profile_t *apn_profile = new (apn_profile_t);
-            memset( apn_profile, 0, sizeof(apn_profile_t) );
-            strcpy( apn_profile->apn_profile_name, key.c_str() );
-            const RAPIDJSON_NAMESPACE::Value& apnSection = itr->value;
-            if( apnSection.HasMember("apn-name") ) 
-            {
-               const char *temp = apnSection["apn-name"].GetString();
-               strncpy( &apn_profile->apn_name[1], temp, strlen(temp) );
-               char *ptr, *size;
-               size = &apn_profile->apn_name[0];
-               *size = 0;
-               ptr = apn_profile->apn_name + strlen(temp);
-               do 
-               {
-                  if (ptr == size)
-                  {
-                     break;
-                  }
-                  if (*ptr == '.')
-                  {
-                     *ptr = *size;
-                     *size = 0;
-                  }
-                  else
-                  {
-                     (*size)++;
-                  }
-                  --ptr;
-               }while( ptr != apn_profile->apn_name );
-            } // if apn_name
-            
-            if( apnSection.HasMember( "usage") )
-            {
-               int usage = apnSection["usage"].GetInt();
-               apn_profile->apn_usage_type = usage;
-            }
-            if( apnSection.HasMember( "network" ) )
-            {
-               const char *temp = apnSection["network"].GetString();
-               strcpy(apn_profile->apn_net_cap, temp);
-            }
-            if( apnSection.HasMember( "gx_enabled" ) )
-            {
-               bool gx_enabled = apnSection["gx_enabled"].GetBool();
-               apn_profile->gx_enabled = gx_enabled;
-            }
-            if( apnSection.HasMember( "mtu" ) )
-            {
-               uint16_t mtu = apnSection["mtu"].GetInt();
-               apn_profile->mtu = mtu;
-            }
-            if( apnSection.HasMember( "dns_primary" ) )
-            {
-               const char *temp = apnSection["dns_primary"].GetString();
-               struct in_addr temp_i;
-               inet_aton(temp, &temp_i);
-               apn_profile->dns_primary = temp_i.s_addr;
-            }
-            if( apnSection.HasMember( "dns_secondary" ) )
-            {
-               const char *temp = apnSection["dns_secondary"].GetString();
-               struct in_addr temp_i;
-               inet_aton(temp, &temp_i);
-               apn_profile->dns_secondary = temp_i.s_addr;
-            }
-            config_store->apn_profile_list.push_back( apn_profile );
-         }
-      }// for loop apn_profile
-   } // if for apn_profile
-   if( doc.HasMember( "qos-profiles" ) )
-   {
-      const RAPIDJSON_NAMESPACE::Value& qosProfileSection = doc["qos-profiles"];
-      for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = qosProfileSection.MemberBegin(); itr != qosProfileSection.MemberEnd(); ++itr)
-      {
-         qos_profile_t *qos_profile = new (qos_profile_t);
-         std::string key = itr->name.GetString();
-         strcpy(qos_profile->qos_profile_name, key.c_str());
-         LOG_MSG(LOG_INIT,"\tQoS profile - %s",key.c_str());
-         const RAPIDJSON_NAMESPACE::Value& qosPlaneSection = itr->value;
-         qos_profile->apn_ambr_ul = qosPlaneSection["apn-ambr"][0].GetInt64();
-         qos_profile->apn_ambr_dl = qosPlaneSection["apn-ambr"][1].GetInt64();
-         config_store->qos_profile_list.push_back( qos_profile );
-      }
-   }
-	*/
    if( doc.HasMember( "Policies" ) )
    {
+		printf( "SOHAN : Policies found\n" );
+		const RAPIDJSON_NAMESPACE::Value& subServiceGroups = doc["Policies"];
+		for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator service_group_itr = subServiceGroups.MemberBegin(); service_group_itr != subServiceGroups.MemberEnd(); ++service_group_itr )
+		{
+			printf( " SOHAN : Service Group : %s\n", service_group_itr->name.GetString() );	
+		}
+		/*
       for(uint32_t i=0; i < doc["Policies"].Size();i++)
       {
          const RAPIDJSON_NAMESPACE::Value& subServiceGroups = doc["Policies"][i];
          if( subServiceGroups.HasMember( "service-groups" ) )
          {
+				printf( "SOHAN : Inside service groups \n" );
             for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator service_group_itr = subServiceGroups.MemberBegin(); service_group_itr != subServiceGroups.MemberEnd(); ++service_group_itr )
             {
+					printf(" SOHAN : inside subservice group iterator\n" );
 					ServiceProfiles* service_profile = new ServiceProfiles();
 					std::string key = service_group_itr->name.GetString();
+					printf( "SOHAN : KEY : %s\n", key.c_str() );
 					service_profile->setServiceName( key );
 					const RAPIDJSON_NAMESPACE::Value& serviceSection = service_group_itr->value;
 					service_profile->setServiceType( serviceSection["default-activate-service"].GetString() );
@@ -473,7 +399,12 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
             
          }// if service group is present.
       }
+		*/
    }
+	else
+	{
+		printf( "SOHAN : Policies not found \n" );
+	}
    
 }
 

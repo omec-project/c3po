@@ -116,7 +116,7 @@ private:
      opt_auditlogmaxsize      = 0x00400000,
      opt_ossport              = 0x00800000,
      opt_ossfile              = 0x01000000,
-     opt_rulesfile              = 0x01200000
+     opt_rulesfile            = 0x02000000
    };
 
    static Options *m_singleton;
