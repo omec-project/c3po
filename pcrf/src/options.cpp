@@ -24,8 +24,69 @@ PoliciesConfig::PoliciesConfig()
 {
 }
 
+void PoliciesConfig::add_service_group_map( std::string service_name, ServiceProfiles* service_profile )
+{
+	service_group_map[service_name] = service_profile; 
+}
+
+void PoliciesConfig::remove_service_group_map( std::string& service_name )
+{
+	service_group_map.erase( service_name );
+}
+
+ServiceProfiles* PoliciesConfig::get_service_group_map( std::string& service_name )
+{
+	auto itr = service_group_map.find( service_name );
+	if( itr == service_group_map.end() )
+	{
+		return NULL;
+	}
+	return itr->second;
+}
+
 ServiceProfiles::ServiceProfiles()
 {
+}
+
+void ServiceProfiles::add_service_type_list( std::string v )
+{
+	m_service_type_list.push_back( v );
+}
+
+void ServiceProfiles::remove_service_type_list( std::string& v )
+{
+	m_service_type_list.remove( v );
+}
+
+bool ServiceProfiles::get_service_type_list( std::string v )
+{
+	std::list<std::string>::iterator it;
+	it = std::find( m_service_type_list.begin(), m_service_type_list.end(), v );
+	if( it != m_service_type_list.end() )
+	{
+		return true;
+	}
+	return false;
+}
+
+void ServiceProfiles::add_service_type_map( std::string key, std::string val )
+{
+	m_service_type_map[key] = val;
+}
+
+void ServiceProfiles::remove_service_type_map( std::string& key )
+{
+	m_service_type_map.erase( key );
+}
+
+std::string ServiceProfiles::get_service_type_map( std::string& key )
+{
+	auto itr = m_service_type_map.find( key );
+   if( itr == m_service_type_map.end() )
+   {
+      return NULL;
+   }
+   return itr->second;	
 }
 
 Options *Options::m_singleton = NULL;
@@ -373,10 +434,49 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
    if( doc.HasMember( "Policies" ) )
    {
 		printf( "SOHAN : Policies found\n" );
-		const RAPIDJSON_NAMESPACE::Value& subServiceGroups = doc["Policies"];
-		for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator service_group_itr = subServiceGroups.MemberBegin(); service_group_itr != subServiceGroups.MemberEnd(); ++service_group_itr )
+		
+		const RAPIDJSON_NAMESPACE::Value& subPolicies = doc["Policies"];
+		for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator service_policies_itr = subPolicies.MemberBegin(); service_policies_itr != subPolicies.MemberEnd(); ++service_policies_itr )
 		{
-			printf( " SOHAN : Service Group : %s\n", service_group_itr->name.GetString() );	
+			printf( " SOHAN : Service Group : %s\n", service_policies_itr->name.GetString() );
+			std::string service_group_name = service_policies_itr->name.GetString();
+			if( strcmp( service_group_name.c_str(), "service-groups" ) == 0 )
+			{
+				const RAPIDJSON_NAMESPACE::Value& subServiceGroup = service_policies_itr->value;
+				for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_group_itr = subServiceGroup.MemberBegin(); sub_service_group_itr != subServiceGroup.MemberEnd(); ++sub_service_group_itr )
+				{
+					printf( " SOHAN : Service Group : %s\n", sub_service_group_itr->name.GetString() );
+					ServiceProfiles* service_profile = new ServiceProfiles();
+					std::string service_group_name = sub_service_group_itr->name.GetString();
+					service_profile->setServiceName( service_group_name );
+					const RAPIDJSON_NAMESPACE::Value& subServiceSection = sub_service_group_itr->value;
+					for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_section_itr = subServiceSection.MemberBegin(); sub_service_section_itr != subServiceSection.MemberEnd(); ++sub_service_section_itr )
+					{
+						printf( "SOHAN : ServiceSection Name : %s\n", sub_service_section_itr->name.GetString() );
+						std::string activate_service_name = sub_service_section_itr->name.GetString(); 
+						if( sub_service_section_itr->value.IsArray() )
+						{
+							printf( "SOHAN : ServiceSection Value is array \n" );
+						}
+						/*
+						const RAPIDJSON_NAMESPACE::Value& service_section_value = sub_service_section_itr->value;
+						for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_section_value_itr = service_section_value.MemberBegin(); sub_service_section_value_itr != service_section_value.MemberEnd(); ++sub_service_section_value_itr )
+						{
+							
+							printf( "SOHAN : SubServiceSection name NEW NEW NEW : %s\n", sub_service_section_value_itr->name.GetString() );
+						}
+						*/
+						//printf( "SOHAN : ServiceSection Value : %s\n", service_section_value[""].GetString() );
+						//std::string activate_service_val = sub_service_section_itr->value.GetString();
+						//service_profile->add_service_type_map( activate_service_name, activate_service_val );
+					}
+				}
+			}
+			else
+			if( strcmp( service_group_name.c_str(), "services" ) == 0 )
+			{
+				
+			}
 		}
 		/*
       for(uint32_t i=0; i < doc["Policies"].Size();i++)

@@ -12,6 +12,8 @@
 #include <string>
 #include <iostream>
 #include <list>
+#include <unordered_map>
+#include <algorithm>
 
 
 class ServiceProfiles
@@ -27,9 +29,19 @@ public:
 
 	const std::string &getServiceName() const { return m_service_name; }
 	const std::string &getServiceType() const { return m_service_type; }
+	
+	void add_service_type_list( std::string v );
+	void remove_service_type_list( std::string& v );
+	bool get_service_type_list( std::string v );
+
+	void add_service_type_map( std::string key, std::string val );
+	void remove_service_type_map( std::string& v );
+	std::string get_service_type_map( std::string& v );
 private:	
 	std::string m_service_name;
 	std::string m_service_type;
+	std::list<std::string> m_service_type_list;
+	std::unordered_map<std::string, std::string> m_service_type_map;
 };
 
 
@@ -46,8 +58,12 @@ public:
       }
        
 	}
+	void add_service_group_map( std::string service_name, ServiceProfiles* service_profile );
+	void remove_service_group_map( std::string& service_name );
+	ServiceProfiles* get_service_group_map( std::string& service_name );
 public:
 	std::list<ServiceProfiles*> service_profile_list;
+	std::unordered_map<std::string, ServiceProfiles*> service_group_map;
 };
 
 class Options
