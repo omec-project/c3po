@@ -16,6 +16,32 @@
 #include <algorithm>
 
 
+class ServiceSelection
+{
+public:
+	ServiceSelection();
+	~ServiceSelection();
+	
+	int getQci() { return m_qci; }
+	int getArp() { return m_arp; }
+	int getAmbrUl() { return m_ambr_ul; }
+	int getAmbrDl() { return m_ambr_dl; }
+	int setQci( int v ) { m_qci = v; return getQci(); }
+	int setArp( int v ) { m_arp = v; return getArp(); }
+	int setAmbrUl( int v ) { m_ambr_ul = v; return getAmbrUl(); }
+	int setAmbrDl( int v ) { m_ambr_dl = v; return getAmbrDl(); }
+	const std::string &setServiceName( const char *v ) { m_service_name = v; return getServiceName(); }
+   const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
+	const std::string &getServiceName() const { return m_service_name; }	
+
+private:
+	int m_qci;
+	int m_arp;
+	int m_ambr_ul;
+	int m_ambr_dl;
+	std::string m_service_name;
+};
+
 class ServiceProfiles
 {
 public:
@@ -38,7 +64,7 @@ public:
 	void remove_service_type_map( std::string& v );
 	std::string get_service_type_map( std::string& v );
 private:	
-	std::string m_service_name;
+	std::string m_service_name; // service_group_name;
 	std::string m_service_type;
 	std::list<std::string> m_service_type_list;
 	std::unordered_map<std::string, std::string> m_service_type_map;
