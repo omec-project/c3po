@@ -16,6 +16,53 @@
 #include <algorithm>
 
 
+class ConfigRule
+{
+public:
+	ConfigRule();
+	~ConfigRule();
+	
+	const std::string &setRuleName( const char *v ) { m_rule_name = v; return getRuleName(); }
+   const std::string &setRuleName( const std::string &v ) { m_rule_name = v; return getRuleName(); }
+   const std::string &getRuleName() const { return m_rule_name; }
+
+	const std::string &setFlowInformation( const char *v ) { m_flow_information = v; return getFlowInformation(); }
+   const std::string &setFlowInformation( const std::string &v ) { m_flow_information = v; return getFlowInformation(); }
+   const std::string &getFlowInformation() const { return m_flow_information; }
+
+	int getQci() { return m_qci; }
+	int setQci( int v ) { m_qci = v; return getQci(); }	
+
+	int getMaxRequestedBandwidthUl() { return m_max_requested_bandwidth_ul; }
+	int setMaxRequestedBandwidthUl( int v ) { m_max_requested_bandwidth_ul = v; return getMaxRequestedBandwidthUl(); }
+
+	int getMaxRequestedBandwidthDl() { return m_max_requested_bandwidth_dl; }
+   int setMaxRequestedBandwidthDl( int v ) { m_max_requested_bandwidth_dl = v; return getMaxRequestedBandwidthDl(); }
+
+	int getGuaranteedBitrateUl() { return m_guaranteed_bitrate_ul; }
+	int setGuaranteedBitrateUl( int v ) { m_guaranteed_bitrate_ul = v; return getGuaranteedBitrateUl(); }
+
+	int getGuaranteedBitrateDl() { return m_guaranteed_bitrate_dl; }
+   int setGuaranteedBitrateDl( int v ) { m_guaranteed_bitrate_dl = v; return getGuaranteedBitrateDl(); }	
+
+	int getApnAggregateMaxBitrateUl() { return m_apn_aggregate_max_bitrate_ul; }
+	int setApnAggregateMaxBitrateUl( int v ) { m_apn_aggregate_max_bitrate_ul = v; return getApnAggregateMaxBitrateUl(); }
+
+	int getApnAggregateMaxBitrateDl() { return m_apn_aggregate_max_bitrate_dl; }
+   int setApnAggregateMaxBitrateDl( int v ) { m_apn_aggregate_max_bitrate_dl = v; return getApnAggregateMaxBitrateDl(); }
+
+private:
+	std::string m_rule_name;
+	int m_qci;
+	int m_max_requested_bandwidth_ul;
+	int m_max_requested_bandwidth_dl;
+	int m_guaranteed_bitrate_ul;
+	int m_guaranteed_bitrate_dl;
+	int m_apn_aggregate_max_bitrate_ul;
+	int m_apn_aggregate_max_bitrate_dl;
+	std::string m_flow_information;
+};
+
 class ServiceSelection
 {
 public:
@@ -34,12 +81,17 @@ public:
    const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
 	const std::string &getServiceName() const { return m_service_name; }	
 
+	void add_activation_rules_list( std::string v );
+   void remove_activation_rules_list( std::string& v );
+   bool get_activation_rules_list( std::string v );
+
 private:
 	int m_qci;
 	int m_arp;
 	int m_ambr_ul;
 	int m_ambr_dl;
 	std::string m_service_name;
+	std::list<std::string> m_activation_rules_list;
 };
 
 class ServiceProfiles
@@ -87,9 +139,14 @@ public:
 	void add_service_group_map( std::string service_name, ServiceProfiles* service_profile );
 	void remove_service_group_map( std::string& service_name );
 	ServiceProfiles* get_service_group_map( std::string& service_name );
+
+	void add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection );
+	void remove_service_selection_map( std::string& service_selection_name );
+	ServiceSelection* get_service_selection_map( std::string& service_selection_name );
 public:
 	std::list<ServiceProfiles*> service_profile_list;
 	std::unordered_map<std::string, ServiceProfiles*> service_group_map;
+	std::unordered_map<std::string, ServiceSelection*> service_selection_map;
 };
 
 class Options

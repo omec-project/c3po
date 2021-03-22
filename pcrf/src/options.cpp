@@ -47,6 +47,27 @@ ServiceProfiles* PoliciesConfig::get_service_group_map( std::string& service_nam
 	return itr->second;
 }
 
+void PoliciesConfig::add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection )
+{
+	service_selection_map[service_selection_name] = service_selection; 
+}
+
+void PoliciesConfig::remove_service_selection_map( std::string& service_selection_name )
+{
+	service_selection_map.erase( service_selection_name );
+}
+
+ServiceSelection* PoliciesConfig::get_service_selection_map( std::string& service_selection_name )
+{
+	auto itr = service_selection_map.find( service_selection_name );
+	if( itr == service_selection_map.end() )
+	{
+		return NULL;
+	}
+	return itr->second;
+}
+
+
 ServiceProfiles::ServiceProfiles()
 {
 }
@@ -97,6 +118,35 @@ ServiceSelection::ServiceSelection()
 }
 
 ServiceSelection::~ServiceSelection()
+{
+}
+
+void ServiceSelection::add_activation_rules_list( std::string v )
+{
+   m_activation_rules_list.push_back( v );
+}
+
+void ServiceSelection::remove_activation_rules_list( std::string& v )
+{
+   m_activation_rules_list.remove( v );
+}
+
+bool ServiceSelection::get_activation_rules_list( std::string v )
+{
+   std::list<std::string>::iterator it;
+   it = std::find( m_activation_rules_list.begin(), m_activation_rules_list.end(), v );
+   if( it != m_activation_rules_list.end() )
+   {
+      return true;
+   }
+   return false;
+}
+
+ConfigRule::ConfigRule()
+{
+}
+
+ConfigRule::~ConfigRule()
 {
 }
 
@@ -479,63 +529,20 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 				const RAPIDJSON_NAMESPACE::Value& subServiceSelection = service_policies_itr->value;
 				for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_selection_itr = subServiceSelection.MemberBegin(); sub_service_selection_itr != subServiceSelection.MemberEnd(); ++sub_service_selection_itr )
             {
-					printf( " SOHAN : Services : %s\n", sub_service_selection_itr->name.GetString() );
+					//printf( " SOHAN : Services : %s\n", sub_service_selection_itr->name.GetString() );
 					ServiceSelection* service_selection = new ServiceSelection();
 					std::string service_selection_name = sub_service_selection_itr->name.GetString();
                service_selection->setServiceName( service_selection_name );
                const RAPIDJSON_NAMESPACE::Value& subServiceSection = sub_service_selection_itr->value;
-					/*
-					if( subServiceSection.HasMember( "qci" ) )
-					{
-						//printf( "SOHAN : QCI : %d\n", subServiceSection["qci"].GetInt() );
-						service_selection->setQci( subServiceSection["qci"].GetInt() );
-					}
-					if( subServiceSection.HasMember( "arp" ) )
-					{
-						if( subServiceSection["arp"].IsDouble() )
-						{
-							//printf( "SOHAN : ARP : %d\n", subServiceSection["arp"].GetInt() );
-							service_selection->setArp( subServiceSection["arp"].GetDouble() );
-						}
-					}
-					
-					if( subServiceSection.HasMember( "AMBR_DL" ) )
-					{
-						if( subServiceSection["AMBR_DL"].IsDouble() )
-						{
-							//printf( "SOHAN : AMBR_DL : %d\n", subServiceSection["AMBR_DL"].GetInt() );
-							service_selection->setAmbrDl( subServiceSection["AMBR_DL"].GetDouble() );
-						}
-					}
-					if( subServiceSection.HasMember( "AMBR_UL" ) )
-					{
-						if( subServiceSection["AMBR_UL"].IsDouble() )
-						{
-							//printf( "SOHAN : AMBR_UL : %d\n", subServiceSection["AMBR_UL"].GetInt() );
-							service_selection->setAmbrUl( subServiceSection["AMBR_UL"].GetDouble() );
-						}
-					}
-					
-					if( subServiceSection.HasMember( "service_activation_rules" ) )
-					{
-						printf(" SOHAN : has service activation rule \n" );
-						const RAPIDJSON_NAMESPACE::Value& subServiceActivationRules = subServiceSection["service_activation_rules"];
-						if( subServiceActivationRules.IsObject() )
-						{
-							printf( "SOHAN : SERVICE ACTIVATION RULES IS ARRAY \n" );
-						}
-						//for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_section_itr = subServiceSection.MemberBegin(); sub_service_section_itr != subServiceSection.MemberEnd(); ++sub_service_section_itr )
-					}
-					*/
 					
                for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_section_itr1 = subServiceSection.MemberBegin(); sub_service_section_itr1 != subServiceSection.MemberEnd(); ++sub_service_section_itr1 )
                {
-						printf( "SOHAN : ServiceSection Name : %s\n", sub_service_section_itr1->name.GetString() );
+						//printf( "SOHAN : ServiceSection Name : %s\n", sub_service_section_itr1->name.GetString() );
 						if( strcmp( service_selection_name.c_str(), "video-non-gbr-1" ) == 0 )
 						{
 							continue;
 						}
-						printf( "SOHAN : ServiceSection Value Type : %s\n", kTypeNames[sub_service_section_itr1->value.GetType()] );
+						//printf( "SOHAN : ServiceSection Value Type : %s\n", kTypeNames[sub_service_section_itr1->value.GetType()] );
 						
 						if( strcmp( sub_service_section_itr1->name.GetString(), "qci" ) == 0 )
 						{
@@ -556,14 +563,96 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 						{
 							service_selection->setAmbrUl( subServiceSection["AMBR_UL"].GetInt() );
 						}
+						else
+						if( strcmp( sub_service_section_itr1->name.GetString(), "service-activation-rules" ) == 0 )
+						{
+							std::string activation_rule;
+							const RAPIDJSON_NAMESPACE::Value& subServiceActivationRules = subServiceSection["service-activation-rules"];
+							for( uint32_t i = 0; i < sub_service_section_itr1->value.Size(); i++ )
+							{
+								activation_rule =  sub_service_section_itr1->value[i].GetString();	
+								//printf( " SOHAN : Activation Rule : %s\n", activation_rule.c_str() );
+								service_selection->add_activation_rules_list( activation_rule );	
+							}
+						}
 					}
+					m_policies_config->add_service_selection_map( service_selection_name, service_selection );
 				}	
+			}
+			else
+			if( strcmp( service_group_name.c_str(), "rules" ) == 0 )
+			{
+				const RAPIDJSON_NAMESPACE::Value& subRule = service_policies_itr->value;
+            for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_itr = subRule.MemberBegin(); sub_rule_itr != subRule.MemberEnd(); ++sub_rule_itr )
+            {
+               printf( " SOHAN : Rule Name : %s\n", sub_rule_itr->name.GetString() );
+
+					const RAPIDJSON_NAMESPACE::Value& subRuleObject = sub_rule_itr->value;
+            	for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_selection_itr = subRuleObject.MemberBegin(); sub_rule_selection_itr != subRuleObject.MemberEnd(); ++sub_rule_selection_itr )
+            	{	
+               	printf( " SOHAN : Rule Attributes : %s\n", sub_rule_selection_itr->name.GetString() );
+						const RAPIDJSON_NAMESPACE::Value& subRuleDefinition = sub_rule_selection_itr->value;
+						ConfigRule* config_rule = new ConfigRule();
+						if( subRuleDefinition.HasMember( "Charging-Rule-Name" ) )
+						{
+							std::string rule_name = subRuleDefinition["Charging-Rule-Name"].GetString();
+							config_rule->setRuleName( rule_name );
+						}
+						if( subRuleDefinition.HasMember( "QoS-Information" ) )
+						{
+							const RAPIDJSON_NAMESPACE::Value& qosInformation = subRuleDefinition["QoS-Information"];
+							if( qosInformation.HasMember( "QoS-Class-Identifier" ) )
+							{
+								int qci = qosInformation["QoS-Class-Identifier"].GetInt();
+								printf( "QCI : %d\n", qci );
+								config_rule->setQci( qci );
+							}
+							if( qosInformation.HasMember( "Max-Requested-Bandwidth-UL" ) )
+							{
+								int max_requested_bandwidth_ul = qosInformation["Max-Requested-Bandwidth-UL"].GetInt();
+								printf( "MRBUL : %d\n", max_requested_bandwidth_ul );
+								config_rule->setMaxRequestedBandwidthUl( max_requested_bandwidth_ul );
+							}
+							if( qosInformation.HasMember( "Max-Requested-Bandwidth-DL" ) )
+							{
+								int max_requested_bandwidth_dl = qosInformation["Max-Requested-Bandwidth-DL"].GetInt();
+								printf( "MRBDL : %d\n", max_requested_bandwidth_dl );
+								config_rule->setMaxRequestedBandwidthDl( max_requested_bandwidth_dl );
+							}
+							if( qosInformation.HasMember( "Guaranteed-Bitrate-UL" ) )
+							{
+								int guaranteed_bitrate_ul = qosInformation["Guaranteed-Bitrate-UL"].GetInt();
+								printf( "GBUL : %d\n", guaranteed_bitrate_ul );
+								config_rule->setGuaranteedBitrateUl( guaranteed_bitrate_ul );
+							}
+							if( qosInformation.HasMember( "Guaranteed-Bitrate-DL" ) )
+							{
+								int guaranteed_bitrate_dl = qosInformation["Guaranteed-Bitrate-DL"].GetInt();
+								printf( "GBDL : %d\n", guaranteed_bitrate_dl );
+								config_rule->setGuaranteedBitrateDl( guaranteed_bitrate_dl );
+							}
+						}
+						/*
+						for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_definition_itr = subRuleDefinition.MemberBegin(); sub_rule_definition_itr != subRuleDefinition.MemberEnd(); ++sub_rule_definition_itr )
+						{
+							printf( " SOHAN : Rule Definition : %s\n", sub_rule_definition_itr->name.GetString() );
+							ConfigRule* config_rule = new ConfigRule();
+							std::string rule_name = subRuleDefinition["Charging-Rule-Name"].GetString();
+							config_rule->setRuleName( rule_name );
+							const RAPIDJSON_NAMESPACE::Value& qosInformation = subRuleDefinition["QoS-Information"];
+							
+							
+						}
+						*/
+					}
+				}
 			}
 		}
    }
 }
 
-bool Options::validateOptions(){
+bool Options::validateOptions()
+{
    return ( m_options & opt_jsoncfg )
       && ( m_options & opt_originhost )
       && ( m_options & opt_originrealm )
@@ -587,6 +676,7 @@ bool Options::validateOptions(){
       && ( m_options & opt_auditlognbrfiles )
       && ( m_options & opt_auditlogmaxsize )
       && ( m_options & opt_ossport )
-      && ( m_options & opt_ossfile );
+      && ( m_options & opt_ossfile )
+      && ( m_options & opt_rulesfile );
 }
 
