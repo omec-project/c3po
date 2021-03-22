@@ -48,6 +48,8 @@ public:
    static const int         &getossport()               { return singleton().m_ossport; }
    static const std::string &getossfile()               { return singleton().m_ossfile; }
 
+   static const int         &getrestport()              { return singleton().m_restport; }
+
 private:
    enum OptionsSelected {
      opt_jsoncfg              = 0x00000001,
@@ -75,6 +77,7 @@ private:
      opt_auditlogmaxsize      = 0x00400000,
      opt_ossport              = 0x00800000,
      opt_ossfile              = 0x01000000,
+     opt_restport             = 0x02000000,
    };
 
    static Options *m_singleton;
@@ -120,6 +123,8 @@ private:
 
    int         m_ossport;
    std::string m_ossfile;
+
+   int         m_restport;
 };
 
 #endif // #define __OPTIONS_H
