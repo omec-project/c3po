@@ -51,6 +51,15 @@ public:
 	int getApnAggregateMaxBitrateDl() { return m_apn_aggregate_max_bitrate_dl; }
    int setApnAggregateMaxBitrateDl( int v ) { m_apn_aggregate_max_bitrate_dl = v; return getApnAggregateMaxBitrateDl(); }
 
+	int getPriorityLevel() { return m_priority_level; }
+	int setPriorityLevel( int v ) { m_priority_level = v; return getPriorityLevel(); }
+	
+	int getPreemptionCapability() { return m_preemption_capability; }
+	int setPreemptionCapability( int v ) { m_preemption_capability = v; return getPreemptionCapability(); }
+
+	int getPreemptionVulnerability() { return m_preemption_vulnerability; }
+	int setPreemptionVulnerability( int v ) { m_preemption_vulnerability = v; return getPreemptionVulnerability(); }
+
 private:
 	std::string m_rule_name;
 	int m_qci;
@@ -61,6 +70,9 @@ private:
 	int m_apn_aggregate_max_bitrate_ul;
 	int m_apn_aggregate_max_bitrate_dl;
 	std::string m_flow_information;
+	int m_priority_level;
+	int m_preemption_capability;
+	int m_preemption_vulnerability;
 };
 
 class ServiceSelection
@@ -143,10 +155,15 @@ public:
 	void add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection );
 	void remove_service_selection_map( std::string& service_selection_name );
 	ServiceSelection* get_service_selection_map( std::string& service_selection_name );
+
+	void add_config_rule_map( std::string rule_name, ConfigRule* config_rule );
+	ConfigRule* get_config_rule_map( std::string& rule_name );
+	void remove_config_rule_map( std::string& rule_name );
 public:
 	std::list<ServiceProfiles*> service_profile_list;
 	std::unordered_map<std::string, ServiceProfiles*> service_group_map;
 	std::unordered_map<std::string, ServiceSelection*> service_selection_map;
+	std::unordered_map<std::string, ConfigRule*> config_rule_map;
 };
 
 class Options
