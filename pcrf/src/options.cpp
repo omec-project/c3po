@@ -35,7 +35,8 @@ Options::Options()
      m_statsfrequency( 0 ),
      m_auditlogmaxsize ( 0 ),
      m_auditlognbrfiles ( 0 ),
-     m_ossport ( 0 )
+     m_ossport ( 0 ),
+     m_restport ( 0 )
 {
 }
 
@@ -314,6 +315,11 @@ bool Options::parseJson()
          if(!pcrfSection["ossfile"].IsString()) { std::cout << "Error parsing json value: [ossfile]" << std::endl; return false; }
          m_ossfile = pcrfSection["ossfile"].GetString();
          m_options |= opt_ossfile;
+      }
+      if(!(m_options & opt_restport) && pcrfSection.HasMember("restport")){
+         if(!pcrfSection["restport"].IsInt()) { std::cout << "Error parsing json value: [restport]" << std::endl; return false; }
+         m_restport = pcrfSection["restport"].GetInt();
+         m_options |= opt_restport;
       }
    }
 
