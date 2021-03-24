@@ -1668,10 +1668,9 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
          return ValidateErrorCode::calledStationIdMissing ;
       }
 
-		printf( "SOHAN : APN : %s\n", s.c_str() );
 		DefaultRule* default_rule = new DefaultRule();
 		Options::getPolicesConfig().getDefaultRule( s, default_rule );
-		printf( "SOHAN : Default Rule Qci : %d\n", default_rule->getQci() );
+		printf( "Default Rule Qci : %d\n", default_rule->getQci() );
 			
 
 
