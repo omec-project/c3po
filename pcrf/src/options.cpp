@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -14,6 +15,7 @@
 #include <freeDiameter/freeDiameter-host.h>
 
 #include "options.h"
+#include "session.h"
 
 #define RAPIDJSON_NAMESPACE pcrfrapidjson
 #include "rapidjson/filereadstream.h"
@@ -37,7 +39,7 @@ void PoliciesConfig::remove_service_group_map( std::string& service_name )
 	service_group_map.erase( service_name );
 }
 
-ServiceProfiles* PoliciesConfig::get_service_group_map( std::string& service_name )
+ServiceProfiles* PoliciesConfig::get_service_group_map( std::string& service_name ) const 
 {
 	auto itr = service_group_map.find( service_name );
 	if( itr == service_group_map.end() )
@@ -57,7 +59,7 @@ void PoliciesConfig::remove_service_selection_map( std::string& service_selectio
 	service_selection_map.erase( service_selection_name );
 }
 
-ServiceSelection* PoliciesConfig::get_service_selection_map( std::string& service_selection_name )
+ServiceSelection* PoliciesConfig::get_service_selection_map( std::string& service_selection_name ) const
 {
 	auto itr = service_selection_map.find( service_selection_name );
 	if( itr == service_selection_map.end() )
@@ -72,7 +74,7 @@ void PoliciesConfig::add_config_rule_map( std::string rule_name, ConfigRule* con
 	config_rule_map[rule_name] = config_rule;
 }
 
-ConfigRule* PoliciesConfig::get_config_rule_map( std::string& rule_name )
+ConfigRule* PoliciesConfig::get_config_rule_map( std::string& rule_name ) const
 {
 	auto itr = config_rule_map.find( rule_name );
    if( itr == config_rule_map.end() )
@@ -85,6 +87,40 @@ ConfigRule* PoliciesConfig::get_config_rule_map( std::string& rule_name )
 void PoliciesConfig::remove_config_rule_map( std::string& rule_name )
 {
 	config_rule_map.erase( rule_name );
+}
+
+void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default_rule ) const
+{
+	ServiceProfiles* service_profile = 	get_service_group_map( apn_name );	
+	if( service_profile != NULL )
+	{
+		std::string service_type = service_profile->getServiceType();
+		std::string service_name = service_profile->get_service_type_map( service_type );
+		//printf( "SOHAN : Service Name : %s\n", service_name.c_str() );
+	
+		ServiceSelection* service_selection = get_service_selection_map( service_name );
+		if( service_selection != NULL )
+		{
+			default_rule->setApnAggregateMaxBitrateUl( service_selection->getAmbrUl() );
+			default_rule->setApnAggregateMaxBitrateDl( service_selection->getAmbrDl() );	
+			std::list<int> activation_rules_index_list = service_selection->get_activation_rules_index_list();
+			for (std::list<int>::iterator it=activation_rules_index_list.begin(); it != activation_rules_index_list.end(); ++it)
+			{
+    			int index = *it;
+				std::string activation_rule_name = service_selection->get_activation_rules_map( index );
+				//printf( "SOHAN : Activation Rule Name : %s\n", activation_rule_name.c_str() );
+				ConfigRule* config_rule = get_config_rule_map( activation_rule_name );
+				if( config_rule != NULL )
+				{
+					default_rule->setRuleName( config_rule->getRuleName() );
+					default_rule->setPriorityLevel( config_rule->getPriorityLevel() );
+					default_rule->setPreemptionCapability( config_rule->getPreemptionCapability() );
+					default_rule->setPreemptionVulnerability( config_rule->getPreemptionVulnerability() );
+					default_rule->setQci( config_rule->getQci() );
+				}
+			}
+		}		
+	}
 }
 
 
@@ -141,18 +177,38 @@ ServiceSelection::~ServiceSelection()
 {
 }
 
-void ServiceSelection::add_activation_rules_list( std::string v )
+void ServiceSelection::add_activation_rules_index_list( int index )
 {
-   m_activation_rules_list.push_back( v );
+	m_activation_rules_index_list.push_back( index );
 }
 
-void ServiceSelection::remove_activation_rules_list( std::string& v )
+void ServiceSelection::remove_activation_rules_index_list( int index )
 {
-   m_activation_rules_list.remove( v );
+	m_activation_rules_index_list.remove( index );
 }
 
-bool ServiceSelection::get_activation_rules_list( std::string v )
+std::list<int>& ServiceSelection::get_activation_rules_index_list()
 {
+	return m_activation_rules_index_list;
+}
+
+void ServiceSelection::add_activation_rules_map( int index, std::string v )
+{
+	
+   //m_activation_rules_list.push_back( v );
+	m_activation_rules_map[index] = v;
+	
+}
+
+void ServiceSelection::remove_activation_rules_map( int index )
+{
+  // m_activation_rules_list.remove( v );
+	m_activation_rules_map.erase( index );
+}
+
+std::string ServiceSelection::get_activation_rules_map( int index )
+{
+	/*
    std::list<std::string>::iterator it;
    it = std::find( m_activation_rules_list.begin(), m_activation_rules_list.end(), v );
    if( it != m_activation_rules_list.end() )
@@ -160,6 +216,14 @@ bool ServiceSelection::get_activation_rules_list( std::string v )
       return true;
    }
    return false;
+	*/
+
+	auto itr = m_activation_rules_map.find( index );
+   if( itr == m_activation_rules_map.end() )
+   {
+      return "";
+   }
+   return itr->second;
 }
 
 ConfigRule::ConfigRule()
@@ -529,7 +593,8 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 					{
 						//printf( "SOHAN : ServiceSection Name : %s\n", sub_service_section_itr->name.GetString() );
 						std::string activate_service_val;
-						std::string activate_service_name = sub_service_section_itr->name.GetString(); 
+						std::string activate_service_name = sub_service_section_itr->name.GetString();
+						service_profile->setServiceType( activate_service_name );
 						const RAPIDJSON_NAMESPACE::Value& service_section_value = sub_service_section_itr->value;
 						for( uint32_t i = 0; i < sub_service_section_itr->value.Size(); i++ )
 						{	
@@ -591,8 +656,9 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 							for( uint32_t i = 0; i < sub_service_section_itr1->value.Size(); i++ )
 							{
 								activation_rule =  sub_service_section_itr1->value[i].GetString();	
+								service_selection->add_activation_rules_index_list( i );
 								//printf( " SOHAN : Activation Rule : %s\n", activation_rule.c_str() );
-								service_selection->add_activation_rules_list( activation_rule );	
+								service_selection->add_activation_rules_map( i, activation_rule );	
 							}
 						}
 					}
@@ -625,31 +691,31 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 							if( qosInformation.HasMember( "QoS-Class-Identifier" ) )
 							{
 								int qci = qosInformation["QoS-Class-Identifier"].GetInt();
-								printf( "SOHAN : QCI : %d\n", qci );
+								//printf( "SOHAN : QCI : %d\n", qci );
 								config_rule->setQci( qci );
 							}
 							if( qosInformation.HasMember( "Max-Requested-Bandwidth-UL" ) )
 							{
 								int max_requested_bandwidth_ul = qosInformation["Max-Requested-Bandwidth-UL"].GetInt();
-								printf( "SOHAN : MRBUL : %d\n", max_requested_bandwidth_ul );
+								//printf( "SOHAN : MRBUL : %d\n", max_requested_bandwidth_ul );
 								config_rule->setMaxRequestedBandwidthUl( max_requested_bandwidth_ul );
 							}
 							if( qosInformation.HasMember( "Max-Requested-Bandwidth-DL" ) )
 							{
 								int max_requested_bandwidth_dl = qosInformation["Max-Requested-Bandwidth-DL"].GetInt();
-								printf( "SOHAN : MRBDL : %d\n", max_requested_bandwidth_dl );
+								//printf( "SOHAN : MRBDL : %d\n", max_requested_bandwidth_dl );
 								config_rule->setMaxRequestedBandwidthDl( max_requested_bandwidth_dl );
 							}
 							if( qosInformation.HasMember( "Guaranteed-Bitrate-UL" ) )
 							{
 								int guaranteed_bitrate_ul = qosInformation["Guaranteed-Bitrate-UL"].GetInt();
-								printf( "SOHAN : GBUL : %d\n", guaranteed_bitrate_ul );
+								//printf( "SOHAN : GBUL : %d\n", guaranteed_bitrate_ul );
 								config_rule->setGuaranteedBitrateUl( guaranteed_bitrate_ul );
 							}
 							if( qosInformation.HasMember( "Guaranteed-Bitrate-DL" ) )
 							{
 								int guaranteed_bitrate_dl = qosInformation["Guaranteed-Bitrate-DL"].GetInt();
-								printf( "SOHAN : GBDL : %d\n", guaranteed_bitrate_dl );
+								//printf( "SOHAN : GBDL : %d\n", guaranteed_bitrate_dl );
 								config_rule->setGuaranteedBitrateDl( guaranteed_bitrate_dl );
 							}
 							if( qosInformation.HasMember( "Allocation-Retention-Priority" ) )
@@ -658,32 +724,32 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 								if( arp.HasMember( "Priority-Level" ) )
 								{
 									int priority_level = arp["Priority-Level"].GetInt();
-									printf( "SOHAN : Pl : %d\n", priority_level );
+									//printf( "SOHAN : Pl : %d\n", priority_level );
 									config_rule->setPriorityLevel( priority_level );
 								}
 								if( arp.HasMember( "Pre-emption-Capability" ) ) 
 								{
 									int preemption_capability = arp["Pre-emption-Capability"].GetInt();
-									printf(" SOHAN : Pre Cap : %d\n", preemption_capability );
+									//printf(" SOHAN : Pre Cap : %d\n", preemption_capability );
 									config_rule->setPreemptionCapability( preemption_capability );
 								}
 								if( arp.HasMember( "Pre-emption-Vulnerability" ) )
 								{
 									int preemption_vulnerability = arp["Pre-emption-Vulnerability"].GetInt();
-									printf( "SOHAN : Pre Vul : %d\n", preemption_vulnerability );
+									//printf( "SOHAN : Pre Vul : %d\n", preemption_vulnerability );
 									config_rule->setPreemptionVulnerability( preemption_vulnerability );
 								}
 							}
 							if( qosInformation.HasMember( "APN-Aggregate-Max-Bitrate-UL" ) )
 							{
 								int aggregate_max_bitrate_ul = qosInformation["APN-Aggregate-Max-Bitrate-UL"].GetInt();
-								printf( "SOHAN : Aggregate Ul : %d\n", aggregate_max_bitrate_ul );
+								//printf( "SOHAN : Aggregate Ul : %d\n", aggregate_max_bitrate_ul );
 								config_rule->setApnAggregateMaxBitrateUl( aggregate_max_bitrate_ul );
 							} 
 							if( qosInformation.HasMember( "APN-Aggregate-Max-Bitrate-DL" ) )
 							{
 								int aggregate_max_bitrate_dl = qosInformation["APN-Aggregate-Max-Bitrate-DL"].GetInt();
-								printf( "SOHAN : Aggregate DL : %d\n", aggregate_max_bitrate_dl );
+								//printf( "SOHAN : Aggregate DL : %d\n", aggregate_max_bitrate_dl );
 								config_rule->setApnAggregateMaxBitrateDl( aggregate_max_bitrate_dl );
 							}
 						}

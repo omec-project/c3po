@@ -536,6 +536,17 @@ int GxSessionDefaultRemoveProc::accept( GxSessionState* current_state, gx::ReAut
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+DefaultRule::DefaultRule()
+{
+}
+
+DefaultRule::~DefaultRule()
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 
 GxSessionMap::GxSessionMap()
 {
@@ -1656,6 +1667,12 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
          return ValidateErrorCode::calledStationIdMissing ;
       }
+
+		printf( "SOHAN : APN : %s\n", s.c_str() );
+		DefaultRule* default_rule = new DefaultRule();
+		Options::getPolicesConfig().getDefaultRule( s, default_rule );
+		printf( "SOHAN : Default Rule Qci : %d\n", default_rule->getQci() );
+			
 
 
       getGxSession()->setApn( s );

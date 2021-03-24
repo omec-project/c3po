@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -15,6 +16,8 @@
 #include <unordered_map>
 #include <algorithm>
 
+
+class DefaultRule;
 
 class ConfigRule
 {
@@ -93,9 +96,13 @@ public:
    const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
 	const std::string &getServiceName() const { return m_service_name; }	
 
-	void add_activation_rules_list( std::string v );
-   void remove_activation_rules_list( std::string& v );
-   bool get_activation_rules_list( std::string v );
+	void add_activation_rules_map( int index, std::string v );
+   void remove_activation_rules_map( int index );
+   std::string get_activation_rules_map( int index );
+
+	void add_activation_rules_index_list( int index );
+	void remove_activation_rules_index_list( int index );	
+	std::list<int>& get_activation_rules_index_list();
 
 private:
 	int m_qci;
@@ -103,7 +110,8 @@ private:
 	int m_ambr_ul;
 	int m_ambr_dl;
 	std::string m_service_name;
-	std::list<std::string> m_activation_rules_list;
+	std::list<int> m_activation_rules_index_list;
+	std::unordered_map<int, std::string> m_activation_rules_map;
 };
 
 class ServiceProfiles
@@ -150,15 +158,18 @@ public:
 	}
 	void add_service_group_map( std::string service_name, ServiceProfiles* service_profile );
 	void remove_service_group_map( std::string& service_name );
-	ServiceProfiles* get_service_group_map( std::string& service_name );
+	ServiceProfiles* get_service_group_map( std::string& service_name ) const;
 
 	void add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection );
 	void remove_service_selection_map( std::string& service_selection_name );
-	ServiceSelection* get_service_selection_map( std::string& service_selection_name );
+	ServiceSelection* get_service_selection_map( std::string& service_selection_name ) const;
 
 	void add_config_rule_map( std::string rule_name, ConfigRule* config_rule );
-	ConfigRule* get_config_rule_map( std::string& rule_name );
+	ConfigRule* get_config_rule_map( std::string& rule_name ) const;
 	void remove_config_rule_map( std::string& rule_name );
+
+
+	void getDefaultRule( std::string& apn_name, DefaultRule* default_rule ) const;
 public:
 	std::list<ServiceProfiles*> service_profile_list;
 	std::unordered_map<std::string, ServiceProfiles*> service_group_map;
