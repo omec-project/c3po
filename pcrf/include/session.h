@@ -541,6 +541,9 @@ public:
    Subscriber &getSubscriber() { return m_subscriber; }
 
    SMutex &getMutex() { return m_mutex; }
+
+	DefaultRule* getDefaultRule() { return m_default_rule; }
+	void setDefaultRule( DefaultRule* default_rule ) { m_default_rule = default_rule; }
 	
 	GxSessionState* getCurrentState() { return mp_currentstate; }
    void setCurrentState( GxSessionState* current_state) 
@@ -583,6 +586,7 @@ private:
    Apn *m_apnentry;
    Endpoint *m_pcef_endpoint;
    Endpoint *m_pcrf_endpoint;
+	DefaultRule* m_default_rule;
    struct in_addr m_ipv4;
    size_t m_ipv4len;
    std::string m_sipv4;
