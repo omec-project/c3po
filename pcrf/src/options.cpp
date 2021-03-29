@@ -249,7 +249,8 @@ Options::Options()
      m_auditlogmaxsize ( 0 ),
      m_auditlognbrfiles ( 0 ),
      m_ossport ( 0 ),
-     m_policies_config( NULL )
+     m_policies_config( NULL ),
+     m_restport ( 0 )
 {
 }
 
@@ -541,6 +542,11 @@ bool Options::parseJson()
 			m_options |= opt_rulesfile;
 			parseSubscriberProfiles( m_rulesfile.c_str() );
 		}
+      if(!(m_options & opt_restport) && pcrfSection.HasMember("restport")){
+         if(!pcrfSection["restport"].IsInt()) { std::cout << "Error parsing json value: [restport]" << std::endl; return false; }
+         m_restport = pcrfSection["restport"].GetInt();
+         m_options |= opt_restport;
+      }
    }
    return true;
 }

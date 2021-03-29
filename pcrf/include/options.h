@@ -216,6 +216,8 @@ public:
    static const std::string &getrulesfile()               { return singleton().m_rulesfile; }
    static const PoliciesConfig& getPolicesConfig()            { return *( singleton().m_policies_config ); }
 
+   static const int         &getrestport()              { return singleton().m_restport; }
+
 private:
    enum OptionsSelected {
      opt_jsoncfg              = 0x00000001,
@@ -244,6 +246,7 @@ private:
      opt_ossport              = 0x00800000,
      opt_ossfile              = 0x01000000,
      opt_rulesfile            = 0x02000000
+     opt_restport             = 0x04000000,
    };
 
    static Options *m_singleton;
@@ -292,6 +295,7 @@ private:
    int         m_ossport;
    std::string m_ossfile;
    std::string m_rulesfile;
+   int         m_restport;
 };
 
 #endif // #define __OPTIONS_H
