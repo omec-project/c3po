@@ -433,6 +433,10 @@ public:
    const std::string &setRuleName( const std::string &v ) { m_rule_name = v; return getRuleName(); }
    const std::string &getRuleName() const { return m_rule_name; }
 
+	const std::string &setDefinition( const char *v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &setDefinition( const std::string &v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &getDefinition() const { return m_rule_definition; }
+
 	int getApnAggregateMaxBitrateUl() { return m_apn_aggregate_max_bitrate_ul; }
    int setApnAggregateMaxBitrateUl( int v ) { m_apn_aggregate_max_bitrate_ul = v; return getApnAggregateMaxBitrateUl(); }
 
@@ -453,6 +457,7 @@ public:
 
 private:
 	std::string m_rule_name;
+	std::string m_rule_definition;
 	int m_priority_level;
    int m_preemption_capability;
    int m_preemption_vulnerability;

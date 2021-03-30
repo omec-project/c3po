@@ -33,6 +33,11 @@ public:
    const std::string &setFlowInformation( const std::string &v ) { m_flow_information = v; return getFlowInformation(); }
    const std::string &getFlowInformation() const { return m_flow_information; }
 
+
+	const std::string &setDefinition( const char *v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &setDefinition( const std::string &v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &getDefinition() const { return m_rule_definition; }	
+
 	int getQci() { return m_qci; }
 	int setQci( int v ) { m_qci = v; return getQci(); }	
 
@@ -73,6 +78,7 @@ private:
 	int m_apn_aggregate_max_bitrate_ul;
 	int m_apn_aggregate_max_bitrate_dl;
 	std::string m_flow_information;
+	std::string m_rule_definition;
 	int m_priority_level;
 	int m_preemption_capability;
 	int m_preemption_vulnerability;

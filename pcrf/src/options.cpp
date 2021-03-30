@@ -20,6 +20,8 @@
 #define RAPIDJSON_NAMESPACE pcrfrapidjson
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 static const char* kTypeNames[] = 
     { "Null", "False", "True", "Object", "Array", "String", "Number" };
@@ -115,6 +117,7 @@ void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default
 					default_rule->setPreemptionCapability( config_rule->getPreemptionCapability() );
 					default_rule->setPreemptionVulnerability( config_rule->getPreemptionVulnerability() );
 					default_rule->setQci( config_rule->getQci() );
+					default_rule->setDefinition( config_rule->getDefinition() );
 				}
 			}
 		}		
@@ -669,6 +672,11 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
             	for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_selection_itr = subRuleObject.MemberBegin(); sub_rule_selection_itr != subRuleObject.MemberEnd(); ++sub_rule_selection_itr )
             	{	
 						const RAPIDJSON_NAMESPACE::Value& subRuleDefinition = sub_rule_selection_itr->value;
+						RAPIDJSON_NAMESPACE::StringBuffer buffer;
+						RAPIDJSON_NAMESPACE::Writer<RAPIDJSON_NAMESPACE::StringBuffer> writer( buffer );
+						subRuleDefinition.Accept( writer );
+						//printf( "SOHAN : Definition String : %s\n", buffer.GetString() );
+						config_rule->setDefinition( buffer.GetString() );
 						if( subRuleDefinition.HasMember( "Charging-Rule-Name" ) )
 						{
 							std::string rule_name = subRuleDefinition["Charging-Rule-Name"].GetString();

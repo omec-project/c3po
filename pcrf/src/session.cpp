@@ -2497,6 +2497,7 @@ bool GxIpCan1::processPhase3()
 	def_qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
 	FDAvp cri( getDict().avpChargingRuleInstall() );
 	cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
+	cri.add( getDict().avpChargingRuleDefinition(), getGxSession()->getDefaultRule()->getDefinition() );
 	cri.add( def_qos_info );
 	FDAvp cri_arp( getDict().avpAllocationRetentionPriority() );
 
@@ -2507,7 +2508,7 @@ bool GxIpCan1::processPhase3()
 	getCCA().add( cri );
 
    // add the rules
-	/*
+	/*	
    {
       RulesList &irules( getRulesEvaluator().getGxInstallRules() );
       RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
@@ -2537,9 +2538,13 @@ bool GxIpCan1::processPhase3()
          }
 
          if ( crcnt > 0 )
-            getCCA().add( cri );
+			{
+            //getCCA().add( cri );
+			}
          if ( pracnt > 0 )
-            getCCA().add( prai );
+			{
+            //getCCA().add( prai );
+			}
       }
 
       if ( !rrules.empty() )
@@ -2567,12 +2572,17 @@ bool GxIpCan1::processPhase3()
          }
 
          if ( crcnt > 0 )
-            getCCA().add( crr );
+			{
+            //getCCA().add( crr );
+			}
          if ( pracnt > 0 )
-             getCCA().add( prar );
+			{
+             //getCCA().add( prar );
+			}
       }
    }
 	*/
+	
 
    // send the cca
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 
