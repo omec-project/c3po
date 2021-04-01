@@ -24,7 +24,7 @@ SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 DEPENDS := $(OBJECTS:%.o=%.d)
-CFLAGS := -g -pthread -std=c++0x $(SGX_CDR_CFLAGS)# -Wall
+CFLAGS := -g -pthread -std=c++14 $(SGX_CDR_CFLAGS)# -Wall
 LFLAGS := -g -pthread -lpthread
 LIBS := \
  $(ROOT)/util/lib/libc3po.a \
