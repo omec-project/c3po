@@ -423,6 +423,49 @@ public:
 	int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 };
 
+
+class DefaultRule
+{
+public:
+	DefaultRule();
+	~DefaultRule();
+	const std::string &setRuleName( const char *v ) { m_rule_name = v; return getRuleName(); }
+   const std::string &setRuleName( const std::string &v ) { m_rule_name = v; return getRuleName(); }
+   const std::string &getRuleName() const { return m_rule_name; }
+
+	const std::string &setDefinition( const char *v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &setDefinition( const std::string &v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &getDefinition() const { return m_rule_definition; }
+
+	int getApnAggregateMaxBitrateUl() { return m_apn_aggregate_max_bitrate_ul; }
+   int setApnAggregateMaxBitrateUl( int v ) { m_apn_aggregate_max_bitrate_ul = v; return getApnAggregateMaxBitrateUl(); }
+
+   int getApnAggregateMaxBitrateDl() { return m_apn_aggregate_max_bitrate_dl; }
+   int setApnAggregateMaxBitrateDl( int v ) { m_apn_aggregate_max_bitrate_dl = v; return getApnAggregateMaxBitrateDl(); }
+
+	int getPriorityLevel() { return m_priority_level; }
+   int setPriorityLevel( int v ) { m_priority_level = v; return getPriorityLevel(); }
+
+   int getPreemptionCapability() { return m_preemption_capability; }
+   int setPreemptionCapability( int v ) { m_preemption_capability = v; return getPreemptionCapability(); }
+
+   int getPreemptionVulnerability() { return m_preemption_vulnerability; }
+   int setPreemptionVulnerability( int v ) { m_preemption_vulnerability = v; return getPreemptionVulnerability(); }
+
+	int getQci() { return m_qci; }
+   int setQci( int v ) { m_qci = v; return getQci(); }
+
+private:
+	std::string m_rule_name;
+	std::string m_rule_definition;
+	int m_priority_level;
+   int m_preemption_capability;
+   int m_preemption_vulnerability;
+	int m_qci;
+	int m_apn_aggregate_max_bitrate_ul;
+   int m_apn_aggregate_max_bitrate_dl;
+};
+
 class GxSession
 {
 public:
@@ -503,6 +546,9 @@ public:
    Subscriber &getSubscriber() { return m_subscriber; }
 
    SMutex &getMutex() { return m_mutex; }
+
+	DefaultRule* getDefaultRule() { return m_default_rule; }
+	void setDefaultRule( DefaultRule* default_rule ) { m_default_rule = default_rule; }
 	
 	GxSessionState* getCurrentState() { return mp_currentstate; }
    void setCurrentState( GxSessionState* current_state) 
@@ -545,6 +591,7 @@ private:
    Apn *m_apnentry;
    Endpoint *m_pcef_endpoint;
    Endpoint *m_pcrf_endpoint;
+	DefaultRule* m_default_rule;
    struct in_addr m_ipv4;
    size_t m_ipv4len;
    std::string m_sipv4;
