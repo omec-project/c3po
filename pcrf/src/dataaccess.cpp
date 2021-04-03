@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -143,6 +144,7 @@ bool DataAccess::getRules( RulesMap &rules )
          GET_EVENT_DATA2( row, sy_required, b, r->setSyRequired );
          GET_EVENT_DATA2( row, timemask, i64, r->setTimeMask );
          GET_EVENT_DATA2( row, featuremask, i64, r->setFeatureMask );
+         GET_EVENT_DATA2( row, defaultrule, b, r->setDefaultFlag );
 
          rules.insert( std::pair<std::string,Rule*>( r->getRuleName(), r ) );
       }
@@ -163,7 +165,6 @@ bool DataAccess::getRules( RulesMap &rules )
          break;
       }
    }
-
    return result;
 }
 
@@ -219,6 +220,11 @@ bool DataAccess::getApns( ApnMap &apns, RulesMap &rules )
          GET_EVENT_DATA2( row, sy_required, b, a->setSyRequired );
          GET_EVENT_DATA2( row, default_bearer_ctl_mode, i32, a->setDefaultBearerCtlMode );
          GET_EVENT_DATA2( row, force_default_bearer_ctl_mode, b, a->setForceDefaultBearerCtlMode );
+         GET_EVENT_DATA2( row, timer, i32, a->setTimerVal );
+         GET_EVENT_DATA2( row, dedicated_bearer_creation, b, a->setDedicatedBearerCreation );
+         GET_EVENT_DATA2( row, max_call_timer, i32, a->setMaxCallTimerVal );
+         GET_EVENT_DATA2( row, apn_ambr_ul, i32, a->setApnAmbrUlVal );
+         GET_EVENT_DATA2( row, apn_ambr_dl, i32, a->setApnAmbrDlVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
@@ -683,6 +689,7 @@ bool DataAccess::_getSubscriberApns( const char *imsi, Subscriber &sub, RulesMap
 {
    bool result = true;
    bool b;
+	int32_t i32;
    std::string s;
    std::vector<std::string> crv;
    RulesMap::iterator ruleit;
@@ -717,6 +724,11 @@ bool DataAccess::_getSubscriberApns( const char *imsi, Subscriber &sub, RulesMap
          GET_EVENT_DATA2( row, domain, s, subapn->setDomain );
          GET_EVENT_DATA2( row, sy_required, b, subapn->setSyRequired );
          GET_EVENT_DATA2( row, transfer_policy, s, subapn->setApn );
+         GET_EVENT_DATA2( row, timer, i32, subapn->setTimerVal );
+         GET_EVENT_DATA2( row, dedicated_bearer_creation, b, subapn->setDedicatedBearerCreation );
+         GET_EVENT_DATA2( row, max_call_timer, i32, subapn->setMaxCallTimerVal );
+         GET_EVENT_DATA2( row, apn_ambr_ul, i32, subapn->setApnAmbrUlVal );
+         GET_EVENT_DATA2( row, apn_ambr_dl, i32, subapn->setApnAmbrDlVal );
 
          GET_EVENT_DATA( row, computed_rules, s );
 
@@ -803,7 +815,7 @@ bool DataAccess::_addSubscriberApn( const char *imsi, const SubscriberApn &sa )
    _concatenateRules( sa.getComputedRules(), cr );
 
    ss << "INSERT INTO subscriber_apn ("
-         << "imsi, apn, membership_value, domain, computed_rules, sy_required, transfer_policy"
+         << "imsi, apn, membership_value, domain, computed_rules, sy_required, transfer_policy,timer,dedicated_bearer_creation,max_call_timer"
       << ") VALUES ("
          << "'" << imsi << "',"
          << "'" << sa.getApn() << "',"
@@ -811,7 +823,10 @@ bool DataAccess::_addSubscriberApn( const char *imsi, const SubscriberApn &sa )
          << "'" << sa.getDomain() << "',"
          << "'" << cr << "',"
          << "" << (sa.getSyRequired() ? "true" : "false") << ","
-         << "'" << sa.getTransferPolicy() << "'"
+         << "'" << sa.getTransferPolicy() << "',"
+			<< "" << sa.getTimerVal() << ","
+			<< "" << (sa.getDedicatedBearerCreation() ? "true" : "false") << ","
+			<< "" << sa.getMaxCallTimerVal() << ""
       << ")";
 
    SCassStatement stmt( ss.str().c_str() );

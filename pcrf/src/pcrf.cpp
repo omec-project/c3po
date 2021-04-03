@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -23,6 +24,7 @@
 #include "logger.h"
 #include "chronos.h"
 #include "statpcrf.h"
+#include "resthandler.h"
 
 PCRF::PCRF()
 {
@@ -100,7 +102,9 @@ bool PCRF::init()
    // load the rules into memory
    //
    if ( !m_dataaccess.getRules( m_rules ) )
+	{
       return false;
+	}
 
    if ( Options::enableRuleTimers() )
    {
@@ -204,6 +208,17 @@ bool PCRF::init()
 
    try
    {
+      Pistache::Address addr( Pistache::Ipv4::any(), Pistache::Port(Options::getrestport()) );
+      auto opts = Pistache::Http::Endpoint::options()
+         .threads(1)
+         .flags( Pistache::Tcp::Options::ReuseAddr );
+//      .flags( Pistache::Tcp::Options::InstallSignalHandler | Pistache::Tcp::Options::ReuseAddr );
+
+      m_endpoint = new Pistache::Http::Endpoint( addr );
+      m_endpoint->init( opts );
+      m_endpoint->setHandler( Pistache::Http::make_handler<RestHandler>() );
+      m_endpoint->serveThreaded();
+
       Pistache::Address addrOss( Pistache::Ipv4::any(), Pistache::Port(Options::getossport()) );
 
       m_ossendpoint = new OssEndpoint<Logger>(addrOss, &StatsPcrf::singleton(), &Logger::singleton().audit(), &Logger::singleton(), Options::getossfile());
@@ -266,6 +281,13 @@ void PCRF::uninit()
       delete m_chronos;
    }
 
+   if ( m_endpoint) 
+   {
+      std::cout << "REST server on port [" << Options::getrestport() << "] shutdown" << std::endl;
+      m_endpoint->shutdown();
+      delete m_endpoint;
+      m_endpoint = NULL;
+   }
    if ( m_ossendpoint )
    {
       Logger::system().startup( "%s:%d - interface shutdown", __FILE__, __LINE__ );

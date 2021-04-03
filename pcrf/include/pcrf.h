@@ -77,6 +77,7 @@ private:
    ApnMap m_apns;
    EndpointMap m_endpoints;
    OssEndpoint<Logger> *m_ossendpoint;
+   Pistache::Http::Endpoint *m_endpoint;
 };
 
 #endif // #define __PCRF_H
