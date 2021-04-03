@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd.
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -79,6 +80,19 @@ bool RulesList::exists( Rule *r )
    return find( r ) != m_rules.end();
 }
 
+Rule* RulesList::getRule( std::string& rulename )
+{
+	std::list<Rule*>::iterator it;
+	for ( it = m_rules.begin(); it != m_rules.end(); it++ )
+	{
+		if ( rulename == (*it)->getRuleName() )
+		{
+			return (*it);
+		}
+	}
+	return NULL;
+}
+
 bool RulesList::erase( Rule *r )
 {
    std::list<Rule*>::iterator it = find( r );
@@ -113,6 +127,72 @@ void RulesList::removeGxSession( GxSession *gx )
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+
+RulesReportList::RulesReportList( bool free_on_destroy )
+   : m_free_on_destroy( free_on_destroy )
+{
+}
+
+RulesReportList::~RulesReportList()
+{
+   if ( m_free_on_destroy )
+   {
+      std::list<GxChargingRuleReport*>::iterator it;
+
+      while ( (it = m_rules.begin()) != m_rules.end() )
+      {
+         delete *it;
+         m_rules.erase( it );
+      }
+   }
+}
+
+void RulesReportList::push_back( GxChargingRuleReport *r )
+{
+   m_rules.push_back( r );
+}
+
+bool RulesReportList::exists( GxChargingRuleReport *r )
+{
+   return find( r ) != m_rules.end();
+}
+
+bool RulesReportList::erase( GxChargingRuleReport *r )
+{
+   std::list<GxChargingRuleReport*>::iterator it = find( r );
+   if ( it != m_rules.end() )
+   {
+      m_rules.erase( it );
+      return true;
+   }
+
+   return false;
+}
+
+std::list<GxChargingRuleReport*>::iterator RulesReportList::erase( std::list<GxChargingRuleReport*>::iterator &it )
+{
+   return m_rules.erase( it );
+}
+
+/*
+void RulesReportList::addGxSession( GxSession *gx )
+{
+   for ( auto r : m_rules )
+      if ( r->getRuleTimer() )
+         r->getRuleTimer()->addSession( gx );
+}
+
+void RulesReportList::removeGxSession( GxSession *gx )
+{
+   for ( auto r : m_rules )
+      if ( r->getRuleTimer() )
+         r->getRuleTimer()->removeSession( gx );
+}
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 RuleEvaluator::RuleEvaluator()
 {
 }
@@ -142,13 +222,23 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
       {
          if ( !Options::enableRuleTimers() || (*ruleit)->activeNow() )
          {
-            if ( !gxInstalled.exists( *ruleit ) )
+				if ( (*ruleit)->getDefaultFlag() == false && !m_gxPendingRules.exists( *ruleit ))
+				{
+					addGxPendingRule( *ruleit );
+				}
+            else
+				if ( !gxInstalled.exists( *ruleit ) )
+				{
                addGxInstallRule( *ruleit );
+				}
+				
          }
          else
          {
             if ( gxInstalled.exists( *ruleit ) )
+				{
                addGxRemoveRule( *ruleit );
+				}
          }
 
          //ruleit = rules.getRules().erase( ruleit );
