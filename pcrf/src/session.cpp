@@ -1556,7 +1556,6 @@ void GxIpCan1::sendCCA()
    setStatus( esFailed ); \
    result = false; \
    break;
-   
   
 int GxIpCan1::cleanupSession()
 {

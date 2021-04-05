@@ -19,7 +19,7 @@ SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 DEPENDS := $(OBJECTS:%.o=%.d)
-CFLAGS := -g -pthread -std=c++11 $(PERFORMANCE_TIMING) $(TRACK_EXECUTION) $(MONITOR_PENDING_MESSAGE_LEVEL) $(SECURITY_FLAGS)# -Wall
+CFLAGS := -g -pthread -std=c++14 $(PERFORMANCE_TIMING) $(TRACK_EXECUTION) $(MONITOR_PENDING_MESSAGE_LEVEL) $(SECURITY_FLAGS)# -Wall
 LFLAGS := -g -pthread -lpthread -Wl,-rpath,/usr/local/lib/x86_64-linux-gnu:/usr/local/lib
 LIBS := \
  $(ROOT)/util/lib/libc3po.a \

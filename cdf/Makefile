@@ -9,7 +9,7 @@ SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 DEPENDS := $(OBJECTS:%.o=%.d)
-CFLAGS := -g -pthread -std=c++0x # -Wall
+CFLAGS := -g -pthread -std=c++14 # -Wall
 LFLAGS := -g -pthread -lpthread
 LIBS := \
  ../util/lib/libc3po.a \
