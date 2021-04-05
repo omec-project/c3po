@@ -174,6 +174,7 @@ public:
    }
    void init(size_t thr = 1) {
       auto opts = Pistache::Http::Endpoint::options()
+          .maxRequestSize(16000)
           .threads(thr)
           .flags(Pistache::Tcp::Options::ReuseAddr);
       m_httpendpoint->init(opts);

@@ -31,7 +31,8 @@ GxSession::GxSession( PCRF &pcrf, SessionEvent* current_event )
      m_ipv6len( 0 ),
      m_supported_features( 0 ),
      m_tdf( *this ),
-     m_tssf( *this )
+     m_tssf( *this ),
+	  m_default_rule( NULL )
 {
    memset( &m_ipv4, 0, sizeof( m_ipv4 ) );
    memset( &m_ipv6, 0, sizeof( m_ipv6 ) );
@@ -532,6 +533,17 @@ int GxSessionDefaultRemoveProc::accept( GxSessionState* current_state, gx::ReAut
 }
 
 
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+DefaultRule::DefaultRule()
+{
+}
+
+DefaultRule::~DefaultRule()
+{
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1544,7 +1556,6 @@ void GxIpCan1::sendCCA()
    setStatus( esFailed ); \
    result = false; \
    break;
-   
   
 int GxIpCan1::cleanupSession()
 {
@@ -1657,6 +1668,10 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
          return ValidateErrorCode::calledStationIdMissing ;
       }
 
+		DefaultRule* default_rule = new DefaultRule();
+		Options::getPolicesConfig().getDefaultRule( s, default_rule );
+		//printf( "Default Rule Qci : %d\n", default_rule->getQci() );	
+		getGxSession()->setDefaultRule( default_rule );
 
       getGxSession()->setApn( s );
 
@@ -2444,30 +2459,55 @@ bool GxIpCan1::processPhase3()
 	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USER_LOCATION_CHANGE );
 	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: UE_TIMEZONE_CHANGE );
 	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USAGE_REPORT );
-	
+
+	FDAvp arp( getDict().avpAllocationRetentionPriority() );
+	arp.add( getDict().avpPriorityLevel(), getGxSession()->getDefaultRule()->getPriorityLevel() );
+   arp.add( getDict().avpPreEmptionCapability(), getGxSession()->getDefaultRule()->getPreemptionCapability() );
+   arp.add( getDict().avpPreEmptionVulnerability(), getGxSession()->getDefaultRule()->getPreemptionVulnerability() );
+
    FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
-   std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
-   defBearerQos.addJson(json_t);
-   getCCA().add(defBearerQos);
+	defBearerQos.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
+	defBearerQos.add( arp );
+  // std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
+   //defBearerQos.addJson(json_t);
+   getCCA().add( defBearerQos );
 
 	FDAvp qos_info( getDict().avpQosInformation() );
-	FDAvp arp( getDict().avpAllocationRetentionPriority() );
+	FDAvp def_arp( getDict().avpAllocationRetentionPriority() );
 	//FDAvp caamb( getDict().avpConditionalApnAggregateMaxBitrate() );
 
-	qos_info.add( getDict().avpQosClassIdentifier(), 9 );
+	qos_info.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
 	
-	arp.add( getDict().avpPriorityLevel(), 1 );
-	arp.add( getDict().avpPreEmptionCapability(), 1 );
-	arp.add( getDict().avpPreEmptionVulnerability(), 1 );
+	def_arp.add( getDict().avpPriorityLevel(), getGxSession()->getDefaultRule()->getPriorityLevel() );
+	def_arp.add( getDict().avpPreEmptionCapability(), getGxSession()->getDefaultRule()->getPreemptionCapability() );
+	def_arp.add( getDict().avpPreEmptionVulnerability(), getGxSession()->getDefaultRule()->getPreemptionVulnerability() );
 
-	qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getApnEntry()->getApnAmbrUlVal() );
-	qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getApnEntry()->getApnAmbrDlVal() );
+	qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateUl() );
+	qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
 
-	qos_info.add( arp );
+	qos_info.add( def_arp );
 
 	getCCA().add( qos_info );
 
+
+	FDAvp def_qos_info( getDict().avpQosInformation() );
+	def_qos_info.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
+	def_qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateUl() );
+	def_qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
+	FDAvp cri( getDict().avpChargingRuleInstall() );
+	cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
+	cri.add( getDict().avpChargingRuleDefinition(), getGxSession()->getDefaultRule()->getDefinition() );
+	cri.add( def_qos_info );
+	FDAvp cri_arp( getDict().avpAllocationRetentionPriority() );
+
+	cri_arp.add( getDict().avpPriorityLevel(), getGxSession()->getDefaultRule()->getPriorityLevel() );
+   cri_arp.add( getDict().avpPreEmptionCapability(), getGxSession()->getDefaultRule()->getPreemptionCapability() );
+   cri_arp.add( getDict().avpPreEmptionVulnerability(), getGxSession()->getDefaultRule()->getPreemptionVulnerability() );
+	cri.add( cri_arp );
+	getCCA().add( cri );
+
    // add the rules
+	/*	
    {
       RulesList &irules( getRulesEvaluator().getGxInstallRules() );
       RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
@@ -2497,9 +2537,13 @@ bool GxIpCan1::processPhase3()
          }
 
          if ( crcnt > 0 )
-            getCCA().add( cri );
+			{
+            //getCCA().add( cri );
+			}
          if ( pracnt > 0 )
-            getCCA().add( prai );
+			{
+            //getCCA().add( prai );
+			}
       }
 
       if ( !rrules.empty() )
@@ -2527,11 +2571,17 @@ bool GxIpCan1::processPhase3()
          }
 
          if ( crcnt > 0 )
-            getCCA().add( crr );
+			{
+            //getCCA().add( crr );
+			}
          if ( pracnt > 0 )
-             getCCA().add( prar );
+			{
+             //getCCA().add( prar );
+			}
       }
    }
+	*/
+	
 
    // send the cca
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 

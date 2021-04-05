@@ -177,6 +177,7 @@ bool FDHss::init(hss_config_t * hss_config_p){
    {
       Pistache::Address addr( Pistache::Ipv4::any(), Pistache::Port(Options::getrestport()) );
       auto opts = Pistache::Http::Endpoint::options()
+         .maxRequestSize(16000)
          .threads(1)
          .flags( Pistache::Tcp::Options::ReuseAddr );
 //      .flags( Pistache::Tcp::Options::InstallSignalHandler | Pistache::Tcp::Options::ReuseAddr );

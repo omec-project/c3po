@@ -114,6 +114,7 @@ void CRCRreq::processAnswer( FDMessageAnswer &ans )
 int CRCRcmd::process( FDMessageRequest *req )
 {
 
+   std::cout<<"Received CRCRcmd::process\n";
    int cc_request_type;
    CreditControlRequestExtractor ccr( *req, getDict() );
 
@@ -144,6 +145,7 @@ int CRCRcmd::process( FDMessageRequest *req )
             break;
          }
 
+         std::cout<<"calling ipca1->processPhase1\n";
          if ( !ipcan1->processPhase1() )
          {
             GxSession::teardownSession( "PCRFCRCRcmd::process:INITIAL_REQUEST", ipcan1->getGxSession(), SdSession::srcUnspecifiedReason, StSession::tcDiameterAdministrative );

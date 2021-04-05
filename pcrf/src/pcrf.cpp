@@ -24,6 +24,7 @@
 #include "logger.h"
 #include "chronos.h"
 #include "statpcrf.h"
+#include "resthandler.h"
 
 PCRF::PCRF()
 {
@@ -33,7 +34,8 @@ PCRF::~PCRF()
 {
 }
 
-int gx_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (struct peer_info *)){
+int gx_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (struct peer_info *)) 
+{
 
     if (info == NULL) {
       return EINVAL;
@@ -156,7 +158,6 @@ bool PCRF::init()
       return false;
    }
 
-#if 0
    //
    // initialize the Rx interface
    //
@@ -204,10 +205,20 @@ bool PCRF::init()
       Logger::st().startup( "%s:%d - FDException initializing interface - %s", __FILE__, __LINE__, e.what() );
       return false;
    }
-#endif
 
    try
    {
+      Pistache::Address addr( Pistache::Ipv4::any(), Pistache::Port(Options::getrestport()) );
+      auto opts = Pistache::Http::Endpoint::options()
+         .threads(1)
+         .flags( Pistache::Tcp::Options::ReuseAddr );
+//      .flags( Pistache::Tcp::Options::InstallSignalHandler | Pistache::Tcp::Options::ReuseAddr );
+
+      m_endpoint = new Pistache::Http::Endpoint( addr );
+      m_endpoint->init( opts );
+      m_endpoint->setHandler( Pistache::Http::make_handler<RestHandler>() );
+      m_endpoint->serveThreaded();
+
       Pistache::Address addrOss( Pistache::Ipv4::any(), Pistache::Port(Options::getossport()) );
 
       m_ossendpoint = new OssEndpoint<Logger>(addrOss, &StatsPcrf::singleton(), &Logger::singleton().audit(), &Logger::singleton(), Options::getossfile());
@@ -270,6 +281,13 @@ void PCRF::uninit()
       delete m_chronos;
    }
 
+   if ( m_endpoint) 
+   {
+      std::cout << "REST server on port [" << Options::getrestport() << "] shutdown" << std::endl;
+      m_endpoint->shutdown();
+      delete m_endpoint;
+      m_endpoint = NULL;
+   }
    if ( m_ossendpoint )
    {
       Logger::system().startup( "%s:%d - interface shutdown", __FILE__, __LINE__ );

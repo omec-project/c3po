@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2003-2020, Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -10,6 +11,177 @@
 
 #include <stdint.h>
 #include <string>
+#include <iostream>
+#include <list>
+#include <unordered_map>
+#include <algorithm>
+
+
+class DefaultRule;
+
+class ConfigRule
+{
+public:
+	ConfigRule();
+	~ConfigRule();
+	
+	const std::string &setRuleName( const char *v ) { m_rule_name = v; return getRuleName(); }
+   const std::string &setRuleName( const std::string &v ) { m_rule_name = v; return getRuleName(); }
+   const std::string &getRuleName() const { return m_rule_name; }
+
+	const std::string &setFlowInformation( const char *v ) { m_flow_information = v; return getFlowInformation(); }
+   const std::string &setFlowInformation( const std::string &v ) { m_flow_information = v; return getFlowInformation(); }
+   const std::string &getFlowInformation() const { return m_flow_information; }
+
+
+	const std::string &setDefinition( const char *v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &setDefinition( const std::string &v ) { m_rule_definition = v; return getDefinition(); }
+   const std::string &getDefinition() const { return m_rule_definition; }	
+
+	int getQci() { return m_qci; }
+	int setQci( int v ) { m_qci = v; return getQci(); }	
+
+	int getMaxRequestedBandwidthUl() { return m_max_requested_bandwidth_ul; }
+	int setMaxRequestedBandwidthUl( int v ) { m_max_requested_bandwidth_ul = v; return getMaxRequestedBandwidthUl(); }
+
+	int getMaxRequestedBandwidthDl() { return m_max_requested_bandwidth_dl; }
+   int setMaxRequestedBandwidthDl( int v ) { m_max_requested_bandwidth_dl = v; return getMaxRequestedBandwidthDl(); }
+
+	int getGuaranteedBitrateUl() { return m_guaranteed_bitrate_ul; }
+	int setGuaranteedBitrateUl( int v ) { m_guaranteed_bitrate_ul = v; return getGuaranteedBitrateUl(); }
+
+	int getGuaranteedBitrateDl() { return m_guaranteed_bitrate_dl; }
+   int setGuaranteedBitrateDl( int v ) { m_guaranteed_bitrate_dl = v; return getGuaranteedBitrateDl(); }	
+
+	int getApnAggregateMaxBitrateUl() { return m_apn_aggregate_max_bitrate_ul; }
+	int setApnAggregateMaxBitrateUl( int v ) { m_apn_aggregate_max_bitrate_ul = v; return getApnAggregateMaxBitrateUl(); }
+
+	int getApnAggregateMaxBitrateDl() { return m_apn_aggregate_max_bitrate_dl; }
+   int setApnAggregateMaxBitrateDl( int v ) { m_apn_aggregate_max_bitrate_dl = v; return getApnAggregateMaxBitrateDl(); }
+
+	int getPriorityLevel() { return m_priority_level; }
+	int setPriorityLevel( int v ) { m_priority_level = v; return getPriorityLevel(); }
+	
+	int getPreemptionCapability() { return m_preemption_capability; }
+	int setPreemptionCapability( int v ) { m_preemption_capability = v; return getPreemptionCapability(); }
+
+	int getPreemptionVulnerability() { return m_preemption_vulnerability; }
+	int setPreemptionVulnerability( int v ) { m_preemption_vulnerability = v; return getPreemptionVulnerability(); }
+
+private:
+	std::string m_rule_name;
+	int m_qci;
+	int m_max_requested_bandwidth_ul;
+	int m_max_requested_bandwidth_dl;
+	int m_guaranteed_bitrate_ul;
+	int m_guaranteed_bitrate_dl;
+	int m_apn_aggregate_max_bitrate_ul;
+	int m_apn_aggregate_max_bitrate_dl;
+	std::string m_flow_information;
+	std::string m_rule_definition;
+	int m_priority_level;
+	int m_preemption_capability;
+	int m_preemption_vulnerability;
+};
+
+class ServiceSelection
+{
+public:
+	ServiceSelection();
+	~ServiceSelection();
+	
+	int getQci() { return m_qci; }
+	int getArp() { return m_arp; }
+	int getAmbrUl() { return m_ambr_ul; }
+	int getAmbrDl() { return m_ambr_dl; }
+	int setQci( int v ) { m_qci = v; return getQci(); }
+	int setArp( int v ) { m_arp = v; return getArp(); }
+	int setAmbrUl( int v ) { m_ambr_ul = v; return getAmbrUl(); }
+	int setAmbrDl( int v ) { m_ambr_dl = v; return getAmbrDl(); }
+	const std::string &setServiceName( const char *v ) { m_service_name = v; return getServiceName(); }
+   const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
+	const std::string &getServiceName() const { return m_service_name; }	
+
+	void add_activation_rules_map( int index, std::string v );
+   void remove_activation_rules_map( int index );
+   std::string get_activation_rules_map( int index );
+
+	void add_activation_rules_index_list( int index );
+	void remove_activation_rules_index_list( int index );	
+	std::list<int>& get_activation_rules_index_list();
+
+private:
+	int m_qci;
+	int m_arp;
+	int m_ambr_ul;
+	int m_ambr_dl;
+	std::string m_service_name;
+	std::list<int> m_activation_rules_index_list;
+	std::unordered_map<int, std::string> m_activation_rules_map;
+};
+
+class ServiceProfiles
+{
+public:
+	ServiceProfiles();
+	~ServiceProfiles();
+	const std::string &setServiceName( const char *v ) { m_service_name = v; return getServiceName(); }
+   const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
+
+	const std::string &setServiceType( const char* v ) { m_service_type = v; return getServiceType(); }
+	const std::string &setServiceType( const std::string& v ) { m_service_type = v; return getServiceType(); }
+
+	const std::string &getServiceName() const { return m_service_name; }
+	const std::string &getServiceType() const { return m_service_type; }
+	
+	void add_service_type_list( std::string v );
+	void remove_service_type_list( std::string& v );
+	bool get_service_type_list( std::string v );
+
+	void add_service_type_map( std::string key, std::string val );
+	void remove_service_type_map( std::string& v );
+	std::string get_service_type_map( std::string& v );
+private:	
+	std::string m_service_name; // service_group_name;
+	std::string m_service_type;
+	std::list<std::string> m_service_type_list;
+	std::unordered_map<std::string, std::string> m_service_type_map;
+};
+
+
+class PoliciesConfig
+{
+public:
+	PoliciesConfig();
+	~PoliciesConfig()
+   {
+      for (std::list<ServiceProfiles *> ::iterator it=service_profile_list.begin(); it!=service_profile_list.end(); ++it)
+      {
+         ServiceProfiles *service = *it;
+         delete( service );
+      }
+       
+	}
+	void add_service_group_map( std::string service_name, ServiceProfiles* service_profile );
+	void remove_service_group_map( std::string& service_name );
+	ServiceProfiles* get_service_group_map( std::string& service_name ) const;
+
+	void add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection );
+	void remove_service_selection_map( std::string& service_selection_name );
+	ServiceSelection* get_service_selection_map( std::string& service_selection_name ) const;
+
+	void add_config_rule_map( std::string rule_name, ConfigRule* config_rule );
+	ConfigRule* get_config_rule_map( std::string& rule_name ) const;
+	void remove_config_rule_map( std::string& rule_name );
+
+
+	void getDefaultRule( std::string& apn_name, DefaultRule* default_rule ) const;
+public:
+	std::list<ServiceProfiles*> service_profile_list;
+	std::unordered_map<std::string, ServiceProfiles*> service_group_map;
+	std::unordered_map<std::string, ServiceSelection*> service_selection_map;
+	std::unordered_map<std::string, ConfigRule*> config_rule_map;
+};
 
 class Options
 {
@@ -47,6 +219,10 @@ public:
 
    static const int         &getossport()               { return singleton().m_ossport; }
    static const std::string &getossfile()               { return singleton().m_ossfile; }
+   static const std::string &getrulesfile()               { return singleton().m_rulesfile; }
+   static const PoliciesConfig& getPolicesConfig()            { return *( singleton().m_policies_config ); }
+
+   static const int         &getrestport()              { return singleton().m_restport; }
 
 private:
    enum OptionsSelected {
@@ -75,6 +251,8 @@ private:
      opt_auditlogmaxsize      = 0x00400000,
      opt_ossport              = 0x00800000,
      opt_ossfile              = 0x01000000,
+     opt_rulesfile            = 0x02000000,
+     opt_restport             = 0x04000000
    };
 
    static Options *m_singleton;
@@ -86,8 +264,10 @@ private:
 
    bool parseInputOptions( int argc, char **argv );
    bool parseJson();
+   bool parseSubscriberProfiles( const char* jsonFile );
    bool validateOptions();
 
+   PoliciesConfig* m_policies_config;
    int m_options;
 
    std::string m_jsoncfg;
@@ -120,6 +300,8 @@ private:
 
    int         m_ossport;
    std::string m_ossfile;
+   std::string m_rulesfile;
+   int         m_restport;
 };
 
 #endif // #define __OPTIONS_H

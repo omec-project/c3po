@@ -1,0 +1,27 @@
+diff --git a/include/pistache/router.h b/include/pistache/router.h
+index 7ca53a3..667c665 100644
+--- a/include/pistache/router.h
++++ b/include/pistache/router.h
+@@ -330,8 +330,7 @@ template <typename Request, typename Response>
+ struct BindChecks {
+   constexpr static bool request_check =
+       std::is_const<typename std::remove_reference<Request>::type>::value &&
+-      std::is_lvalue_reference<typename std::remove_cv<Request>::type>::value &&
+-      std::is_same<typename std::decay<Request>::type, Rest::Request>::value;
++      std::is_lvalue_reference<typename std::remove_cv<Request>::type>::value;
+ 
+   constexpr static bool response_check =
+       !std::is_const<typename std::remove_reference<Response>::type>::value &&
+diff --git a/include/pistache/string_logger.h b/include/pistache/string_logger.h
+index a60f88f..3f55ecf 100644
+--- a/include/pistache/string_logger.h
++++ b/include/pistache/string_logger.h
+@@ -15,7 +15,7 @@ namespace Log {
+ 
+ enum class Level {
+   TRACE,
+-  DEBUG,
++  DEBUG1,
+   INFO,
+   WARN,
+   ERROR,
