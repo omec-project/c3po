@@ -177,6 +177,7 @@ bool FDHss::init(hss_config_t * hss_config_p){
    {
       Pistache::Address addr( Pistache::Ipv4::any(), Pistache::Port(Options::getrestport()) );
       auto opts = Pistache::Http::Endpoint::options()
+         .maxRequestSize(16000)
          .threads(1)
          .flags( Pistache::Tcp::Options::ReuseAddr );
 //      .flags( Pistache::Tcp::Options::InstallSignalHandler | Pistache::Tcp::Options::ReuseAddr );
@@ -187,7 +188,6 @@ bool FDHss::init(hss_config_t * hss_config_p){
       m_endpoint->serveThreaded();
 
       Pistache::Address addrOss( Pistache::Ipv4::any(), Pistache::Port(Options::getossport()) );
-
       m_ossendpoint = new OssEndpoint<Logger>(addrOss, &StatsHss::singleton(), &Logger::singleton().audit(), &Logger::singleton(), Options::getossfile());
       m_ossendpoint->init();
       m_ossendpoint->start();

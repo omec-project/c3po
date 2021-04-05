@@ -32,7 +32,10 @@ install_pkg_deps() {
 		m4 \
 		make \
 		memcached \
-		nettle-dev
+		nettle-dev \
+		curl \
+		libcurl4-openssl-dev \
+		wget
 }
 
 DEPS_DIR=${DEPS_DIR:-"$PWD/modules"}
@@ -75,20 +78,27 @@ install_rapidjson() {
 }
 
 install_pistache() {
+	cd /tmp
+	wget https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz 
+	tar -zxvf cmake-3.18.0-Linux-x86_64.tar.gz
 	echo "Installing pistache"
 	cd $DEPS_DIR/pistache
+    echo $PWD
+	cat ../../patches/pistache.patch.1.txt
+	ls -l include/pistache/router.h
+	cat include/pistache/router.h
+	ls -l include/pistache/string_logger.h
+	cat include/pistache/string_logger.h
+	patch -p1 < ../../patches/pistache.patch.1.txt
 	mkdir build && cd build
-	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../
+	/tmp/cmake-3.18.0-Linux-x86_64/bin/cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../
 	make -j $CPUS
 	$SUDO make install
 }
 
 install_prometheus() {
     set -xe 
-    $SUDO apt-get install -y curl libcurl4-openssl-dev wget
     pushd /tmp
-    wget https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz 
-    tar -zxvf cmake-3.18.0-Linux-x86_64.tar.gz
     pushd $DEPS_DIR/prometheus-cpp
     mkdir -p _build && cd _build
     /tmp/cmake-3.18.0-Linux-x86_64/bin/cmake .. -DBUILD_SHARED_LIBS=ON && make -j 4 && $SUDO make install && $SUDO make DESTDIR=`pwd`/deploy install
@@ -104,7 +114,7 @@ install_build_deps() {
 	install_cpp-driver
 	install_rapidjson
 	install_pistache
-    install_prometheus
+	install_prometheus
 }
 
 (return 2>/dev/null) && echo "Sourced" && return

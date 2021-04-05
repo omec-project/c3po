@@ -13,6 +13,7 @@ ARG CPUS
 WORKDIR /c3po
 COPY install_builddeps.sh .
 COPY modules modules
+COPY patches patches 
 
 RUN ./install_builddeps.sh
 RUN rm -rf /c3po-libs && mkdir -p /c3po-libs && \
