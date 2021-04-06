@@ -2495,8 +2495,11 @@ bool GxIpCan1::processPhase3()
 	def_qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateUl() );
 	def_qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
 	FDAvp cri( getDict().avpChargingRuleInstall() );
+	FDAvp crdef( getDict().avpChargingRuleDefinition() );
+	crdef.addJson( getGxSession()->getDefaultRule()->getDefinition() );
 	cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
-	cri.add( getDict().avpChargingRuleDefinition(), getGxSession()->getDefaultRule()->getDefinition() );
+	cri.add( crdef );
+	//cri.add( getDict().avpChargingRuleDefinition(), getGxSession()->getDefaultRule()->getDefinition() );
 	cri.add( def_qos_info );
 	FDAvp cri_arp( getDict().avpAllocationRetentionPriority() );
 
