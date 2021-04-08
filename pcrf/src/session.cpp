@@ -1030,6 +1030,7 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 		case MaxCallDurationTimeout : 
 		{
 			m_reqTimer->stop();
+			printf( "SOHAN : Trigger rar from here to remove the default rule\n" );
 			//m_gxipcan1->cleanupSession();
 			m_gxipcan1->sendRAR( RARTrigger::triggerActivationTimerExpire );
 			break;
