@@ -993,7 +993,7 @@ void TriggerTimer::onTimer( SEventThread::Timer &t)
 				postMessage( RARDefaultRuleRemoveTimeout );
 				break;
 			}
-			case RARTrigger::triggerCallDisconnect : 
+			case RARTrigger::triggerActivationTimerExpire : 
 			{
 				postMessage( MaxCallDurationTimeout );
 				break;
@@ -1030,7 +1030,9 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 		case MaxCallDurationTimeout : 
 		{
 			m_reqTimer->stop();
+			printf( "SOHAN : Trigger rar from here to remove the default rule\n" );
 			//m_gxipcan1->cleanupSession();
+			m_gxipcan1->sendRAR( RARTrigger::triggerActivationTimerExpire );
 			break;
 		}
 	}
@@ -1237,7 +1239,7 @@ int GxIpCan1::rcvdRemoveRAA( gx::ReAuthAnswerExtractor& raa )
 
 int GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 {
-    GxSession *session = NULL;
+   GxSession *session = NULL;
 	Rule *rule;
 	RulesList &irules( getRulesEvaluator().getGxInstallRules() );
 	RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
@@ -1377,6 +1379,18 @@ void GxIpCan1::sendRAR( int triggerValue )
    req->add( getDict().avpDestinationRealm(), getGxSession()->getPcefEndpoint()->getRealm() );
    req->add( getDict().avpDestinationHost(), getGxSession()->getPcefEndpoint()->getHost() );
    req->add( getDict().avpReAuthRequestType(), 0 );
+
+	if( triggerValue == RARTrigger::triggerActivationTimerExpire )
+	{
+		FDAvp cri ( getDict().avpChargingRuleRemove() );
+		FDAvp crdef( getDict().avpChargingRuleDefinition() );
+   	crdef.addJson( getGxSession()->getDefaultRule()->getDefinition() );
+   	cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
+   	cri.add( crdef );
+		req->add( cri );
+		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );
+	}
+	else
 	if ( triggerValue == RARTrigger::triggerRARInstall )
 	{
 		RulesList &arules( getGxSession()->getRules() );
@@ -2277,7 +2291,7 @@ bool GxIpCan1::processPhase1()
 
 
    ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
-	int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal(); 
+	//int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal();
    switch( ret )
    {
       case ValidateErrorCode::contextExists :
@@ -2291,7 +2305,7 @@ bool GxIpCan1::processPhase1()
 				setCurrentProc( NULL );
 			}
          result = true;
-			new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
+			//new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
          break;
        }
        case ValidateErrorCode::success :
@@ -2306,11 +2320,11 @@ bool GxIpCan1::processPhase1()
 	          // we have sent the successful CCA Initial, hence start the timer
              	Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
 				 	int timer = getGxSession()->getApnEntry()->getTimerVal();
-		       	m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
+		       	//m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
 				 }
 	       }
           result = true;
-			 new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
+			 //new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
           break;
        }
        default :
@@ -2584,7 +2598,12 @@ bool GxIpCan1::processPhase3()
       }
    }
 	*/
-	
+	int deactivation_timer = getGxSession()->getDefaultRule()->getDeactivationTimer();
+	if( deactivation_timer != 0 )
+	{
+		printf( "SOHAN : Starting the deactivation timer\n" );
+		new TriggerTimer( this, RARTrigger::triggerActivationTimerExpire, deactivation_timer*1000 );	
+	}
 
    // send the cca
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 

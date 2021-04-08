@@ -104,6 +104,7 @@ void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default
 		{
 			default_rule->setApnAggregateMaxBitrateUl( service_selection->getAmbrUl() );
 			default_rule->setApnAggregateMaxBitrateDl( service_selection->getAmbrDl() );	
+			default_rule->setDeactivationTimer( service_selection->getDeactivationTimer() );
 			std::list<int> activation_rules_index_list = service_selection->get_activation_rules_index_list();
 			for (std::list<int>::iterator it=activation_rules_index_list.begin(); it != activation_rules_index_list.end(); ++it)
 			{
@@ -170,7 +171,7 @@ std::string ServiceProfiles::get_service_type_map( std::string& key )
    return itr->second;	
 }
 
-ServiceSelection::ServiceSelection()
+ServiceSelection::ServiceSelection() : m_deactivation_timer( 0 )
 {
 }
 
@@ -655,6 +656,17 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 								service_selection->add_activation_rules_map( i, activation_rule );	
 							}
 						}
+						else
+						if( strcmp( sub_service_section_itr1->name.GetString(), "deactivate-conditions" ) == 0 )
+						{
+							const RAPIDJSON_NAMESPACE::Value& subServiceDeactivateCondition = subServiceSection["deactivate-conditions"];
+							int timer;
+							if( subServiceDeactivateCondition.HasMember( "timer" ) )
+							{
+								timer = subServiceDeactivateCondition["timer"].GetInt();
+								service_selection->setDeactivationTimer( timer );
+							}
+						}
 					}
 					m_policies_config->add_service_selection_map( service_selection_name, service_selection );
 				}	
@@ -675,7 +687,6 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 						RAPIDJSON_NAMESPACE::StringBuffer buffer;
 						RAPIDJSON_NAMESPACE::Writer<RAPIDJSON_NAMESPACE::StringBuffer> writer( buffer );
 						subRuleDefinition.Accept( writer );
-						//printf( "SOHAN : Definition String : %s\n", buffer.GetString() );
 						config_rule->setDefinition( buffer.GetString() );
 						if( subRuleDefinition.HasMember( "Charging-Rule-Name" ) )
 						{
