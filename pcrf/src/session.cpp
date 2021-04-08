@@ -2603,7 +2603,6 @@ bool GxIpCan1::processPhase3()
 		new TriggerTimer( this, RARTrigger::triggerActivationTimerExpire, deactivation_timer*1000 );	
 	}
 
-   // send the cca
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
