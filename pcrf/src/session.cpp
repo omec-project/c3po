@@ -1030,7 +1030,6 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 		case MaxCallDurationTimeout : 
 		{
 			m_reqTimer->stop();
-			printf( "SOHAN : Trigger rar from here to remove the default rule\n" );
 			//m_gxipcan1->cleanupSession();
 			m_gxipcan1->sendRAR( RARTrigger::triggerActivationTimerExpire );
 			break;
@@ -1382,12 +1381,17 @@ void GxIpCan1::sendRAR( int triggerValue )
 
 	if( triggerValue == RARTrigger::triggerActivationTimerExpire )
 	{
-		FDAvp cri ( getDict().avpChargingRuleRemove() );
-		FDAvp crdef( getDict().avpChargingRuleDefinition() );
-   	crdef.addJson( getGxSession()->getDefaultRule()->getDefinition() );
-   	cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
-   	cri.add( crdef );
-		req->add( cri );
+		if( getGxSession()->getDefaultRule()->getDefaultRuleFlag() == true )
+		{
+			// 3 indicates IP_CAN_SESSION_TERMINATION
+			req->add( getDict().avpSessionReleaseCause(), 3 );
+		}
+		else
+		{
+			FDAvp cri ( getDict().avpChargingRuleRemove() );
+   		cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
+			req->add( cri );
+		}
 		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );
 	}
 	else

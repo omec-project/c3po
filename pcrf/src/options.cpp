@@ -97,6 +97,10 @@ void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default
 	if( service_profile != NULL )
 	{
 		std::string service_type = service_profile->getServiceType();
+		if( strcmp( service_type.c_str(), "default-activate-service" ) == 0 )
+		{
+			default_rule->setDefaultRuleFlag( true );
+		}
 		std::string service_name = service_profile->get_service_type_map( service_type );
 	
 		ServiceSelection* service_selection = get_service_selection_map( service_name );

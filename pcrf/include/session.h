@@ -458,9 +458,13 @@ public:
 	int getDeactivationTimer() { return m_deactivation_timer; }
 	int setDeactivationTimer( int v ) { m_deactivation_timer = v; return getDeactivationTimer(); }
 
+	bool getDefaultRuleFlag() { return m_default_rule_flag; }
+	bool setDefaultRuleFlag( bool v ) { m_default_rule_flag = v; }
+
 private:
 	std::string m_rule_name;
 	std::string m_rule_definition;
+	bool m_default_rule_flag;
 	int m_deactivation_timer;
 	int m_priority_level;
    int m_preemption_capability;
