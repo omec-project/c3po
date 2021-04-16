@@ -94,10 +94,12 @@ public:
 	int getArp() { return m_arp; }
 	int getAmbrUl() { return m_ambr_ul; }
 	int getAmbrDl() { return m_ambr_dl; }
+	int getDeactivationTimer() { return m_deactivation_timer; }
 	int setQci( int v ) { m_qci = v; return getQci(); }
 	int setArp( int v ) { m_arp = v; return getArp(); }
 	int setAmbrUl( int v ) { m_ambr_ul = v; return getAmbrUl(); }
 	int setAmbrDl( int v ) { m_ambr_dl = v; return getAmbrDl(); }
+	int setDeactivationTimer( int v ) { m_deactivation_timer = v; return getDeactivationTimer(); }
 	const std::string &setServiceName( const char *v ) { m_service_name = v; return getServiceName(); }
    const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
 	const std::string &getServiceName() const { return m_service_name; }	
@@ -115,6 +117,7 @@ private:
 	int m_arp;
 	int m_ambr_ul;
 	int m_ambr_dl;
+	int m_deactivation_timer;
 	std::string m_service_name;
 	std::list<int> m_activation_rules_index_list;
 	std::unordered_map<int, std::string> m_activation_rules_map;
