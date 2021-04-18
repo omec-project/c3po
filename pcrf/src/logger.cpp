@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-#define RAPIDJSON_NAMESPACE hssrapidjson
+#define RAPIDJSON_NAMESPACE fdrapidjson
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"

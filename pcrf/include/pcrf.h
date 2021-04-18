@@ -10,10 +10,16 @@
 
 #include <pistache/endpoint.h>
 
+#ifndef RAPIDJSON_NAMESPACE
+#define RAPIDJSON_NAMESPACE fdrapidjson
+#endif
+
+
 #include "gx_impl.h"
 #include "rx_impl.h"
 #include "sd_impl.h"
 #include "st_impl.h"
+
 
 #include "dataaccess.h"
 
@@ -23,7 +29,6 @@
 #include "session.h"
 #include "soss.h"
 #include "logger.h"
-
 class PCRF
 {
 public:
