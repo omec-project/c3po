@@ -16,7 +16,9 @@
 
 #include <memory>
 
+#ifndef RAPIDJSON_NAMESPACE
 #define RAPIDJSON_NAMESPACE fdrapidjson
+#endif
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
 

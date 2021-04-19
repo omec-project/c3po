@@ -17,7 +17,9 @@
 #include "options.h"
 #include "session.h"
 
-#define RAPIDJSON_NAMESPACE pcrfrapidjson
+#ifndef RAPIDJSON_NAMESPACE
+#define RAPIDJSON_NAMESPACE fdrapidjson
+#endif
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
@@ -129,8 +131,11 @@ void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default
 	}
 }
 
-
 ServiceProfiles::ServiceProfiles()
+{
+}
+
+ServiceProfiles::~ServiceProfiles()
 {
 }
 
@@ -290,7 +295,8 @@ void Options::help()
    ;
 }
 
-bool Options::parse( int argc, char **argv ){
+bool Options::parse( int argc, char **argv ) 
+{
 
    bool ret = true;
 
@@ -577,7 +583,22 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
       std::cout << "Error Parsing the Json config file " << std::endl;
       return false;
    }
-   m_policies_config = new PoliciesConfig();
+
+   parseJsonDocP(doc);
+   return true;
+}
+
+bool
+Options::parseJsonDoc(RAPIDJSON_NAMESPACE::Document &doc)
+{
+    return singleton().parseJsonDocP(doc);
+}
+
+bool
+Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
+{
+   std::cout<<"parseJsonDocP \n";
+   PoliciesConfig *temp_config = new PoliciesConfig();
    if( doc.HasMember( "Policies" ) )
    {
 		
@@ -608,7 +629,7 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 						// TODO: Add string list as a 2 type in map
 						service_profile->add_service_type_map( activate_service_name, activate_service_val );
 					}
-					m_policies_config->add_service_group_map( service_group_name, service_profile );
+					temp_config->add_service_group_map( service_group_name, service_profile );
 				}
 			}
 			else
@@ -672,7 +693,7 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 							}
 						}
 					}
-					m_policies_config->add_service_selection_map( service_selection_name, service_selection );
+					temp_config->add_service_selection_map( service_selection_name, service_selection );
 				}	
 			}
 			else
@@ -756,11 +777,16 @@ bool Options::parseSubscriberProfiles( const char* jsonFile )
 							}
 						}
 					}
-					m_policies_config->add_config_rule_map( rule_name, config_rule );
+					temp_config->add_config_rule_map( rule_name, config_rule );
 				}
 			}
 		}
    }
+   std::unique_lock<std::mutex> lck (config_mtx);
+   PoliciesConfig *temp = m_policies_config;
+   m_policies_config = temp_config;
+   delete (temp);
+   return true;
 }
 
 bool Options::validateOptions()

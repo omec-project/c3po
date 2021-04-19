@@ -15,6 +15,16 @@
 #include <list>
 #include <unordered_map>
 #include <algorithm>
+#include <mutex>
+
+#ifndef RAPIDJSON_NAMESPACE
+#define RAPIDJSON_NAMESPACE fdrapidjson
+#endif
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+
 
 
 class DefaultRule;
@@ -222,10 +232,11 @@ public:
 
    static const int         &getossport()               { return singleton().m_ossport; }
    static const std::string &getossfile()               { return singleton().m_ossfile; }
-   static const std::string &getrulesfile()               { return singleton().m_rulesfile; }
-   static const PoliciesConfig& getPolicesConfig()            { return *( singleton().m_policies_config ); }
+   static const std::string &getrulesfile()             { return singleton().m_rulesfile; }
+   static const PoliciesConfig& getPolicesConfig()      { return singleton().getPolicesConfigP();} 
 
    static const int         &getrestport()              { return singleton().m_restport; }
+   static bool parseJsonDoc(fdrapidjson::Document &doc);
 
 private:
    enum OptionsSelected {
@@ -269,6 +280,13 @@ private:
    bool parseJson();
    bool parseSubscriberProfiles( const char* jsonFile );
    bool validateOptions();
+   bool parseJsonDocP(fdrapidjson::Document &doc);
+   const PoliciesConfig& getPolicesConfigP()
+   { 
+        std::unique_lock<std::mutex> lck (config_mtx);
+        return *( singleton().m_policies_config ); 
+   }
+
 
    PoliciesConfig* m_policies_config;
    int m_options;
@@ -305,6 +323,6 @@ private:
    std::string m_ossfile;
    std::string m_rulesfile;
    int         m_restport;
+   std::mutex  config_mtx; 
 };
-
 #endif // #define __OPTIONS_H

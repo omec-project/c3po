@@ -18,7 +18,7 @@
 #include "stime.h"
 #include "sstats.h"
 
-#define RAPIDJSON_NAMESPACE fdrapidjson
+//#define RAPIDJSON_NAMESPACE fdrapidjson
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
 
