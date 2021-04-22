@@ -884,7 +884,7 @@ public:
 
    void sendCCA();
    int validate( gx::CreditControlRequestExtractor& ccr );
-   int cleanupSession();
+   int cleanupSession( bool terminate );
 
 	GxSessionState* getCurrentState() { getGxSession()->getCurrentState(); }
 	void setCurrentState( GxSessionState* current_state) { getGxSession()->setCurrentState( current_state ); }
