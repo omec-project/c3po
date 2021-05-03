@@ -318,7 +318,7 @@ int GxSessionActivePendingState::visit( GxSessionValidateProc* current_proc, gx:
     ipcan1 = dynamic_cast<GxIpCan1*> ( event );
     if ( ipcan1 )
     {
-		 ret = ipcan1->cleanupSession();
+		 ret = ipcan1->cleanupSession( true );
        ret = ipcan1->validate( ccr );
     }
 	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
@@ -418,8 +418,6 @@ int GxSessionModifyPendingState::visit( GxSessionDefaultRemoveProc* current_proc
 	if ( ipcan1 != NULL )
 	{
 		result = ipcan1->rcvdDefaultRemoveRAA( raa );
-		// remove the session as we have rcvd the RAA for removing default rules.
-		result = ipcan1->cleanupSession();
 	}
 	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
 	return result;
@@ -1328,7 +1326,7 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 				setCurrentState( NULL );
          	// this is defaultRemoveProc so we need to destroy the GxSession because the default rules have been removed in pcef
          	// PCRF initiated IP-Can Session Termination
-				cleanupSession();
+				cleanupSession( false );
          	GxSession::teardownSession( "PCRFCRCRcmd::process:TERMINATION_REQUEST", getGxSession(), SdSession::srcIpCanSessionTermination, StSession::tcDiameterLogout );
          	GxIpCan1::release( this );
       	}
@@ -1575,7 +1573,7 @@ void GxIpCan1::sendCCA()
    result = false; \
    break;
   
-int GxIpCan1::cleanupSession()
+int GxIpCan1::cleanupSession( bool terminate )
 {
     printf("%s:%d\n", __FUNCTION__,__LINE__);
 	 // delete the Subscriber table which will internally delete SubscriberApn table.
@@ -1601,7 +1599,10 @@ int GxIpCan1::cleanupSession()
     	 {
           getPCRF().dataaccess().deleteSession( *prevSession );
     	 }
-       GxSessionMap::getInstance().eraseSession( prevSession->getImsi(), prevSession->getApn() );
+		 if( terminate == true )
+		 {
+          GxSessionMap::getInstance().eraseSession( prevSession->getImsi(), prevSession->getApn() );
+		 }
 	 }
     return ValidateErrorCode::success;
 }
