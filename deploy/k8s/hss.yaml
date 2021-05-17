@@ -1,0 +1,264 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hss
+data:
+  acl.conf: |
+    ALLOW_OLD_TLS   *.cluster.local
+  hss.conf: |
+    Identity = "HSS_IDENTITY";
+    Realm = "HSS_REALM";
+    TLS_Cred = "CONF_DIR/HSS_HOST.cert.pem", "CONF_DIR/HSS_HOST.key.pem";
+    TLS_CA = "CONF_DIR/cacert.pem";
+    No_SCTP;
+    Prefer_TCP;
+    No_IPv6;
+    SCTP_streams = 3;
+    NoRelay;
+    AppServThreads = 4;
+    Port = 3868;
+    SecPort = 5868;
+    LoadExtension = "/usr/local/lib/freeDiameter/acl_wl.fdx" : "CONF_DIR/acl.conf";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_3gpp2_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_draftload_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_etsi283034_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc4004_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc4006bis_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc4072_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc4590_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc5447_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc5580_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc5777_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc5778_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc6734_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc6942_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc7155_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc7683_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_rfc7944_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29061_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29128_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29154_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29173_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29212_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29214_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29215_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29217_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29229_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29272_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29273_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29329_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29336_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29337_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29338_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29343_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29344_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29345_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29368_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts29468_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_ts32299_avps.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_S6as6d.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_S6t.fdx";
+    LoadExtension = "/usr/local/lib/freeDiameter/dict_S6c.fdx";
+  hss.json: |
+    {"common": {
+        "fdcfg": "CONF_DIR/hss.conf",
+        "originhost": "HSS_IDENTITY",
+        "originrealm": "HSS_REALM"
+    },
+    "hss": {
+        "gtwhost": "*",
+        "gtwport" : 9080,
+        "restport" : 9081,
+        "ossport" : 9082,
+        "casssrv": "HSSDB_ADDR",
+        "cassusr": "root",
+        "casspwd": "root",
+        "cassdb" : "vhss",
+        "casscoreconnections" : 2,
+        "cassmaxconnections" : 8,
+        "cassioqueuesize" : 32768,
+        "cassiothreads" : 2,
+        "randv"  : true,
+        "optkey" : "63bfa50ee6523365ff14c1f45f88737d",
+        "reloadkey"  : true,
+        "logsize": 20,
+        "lognumber": 5,
+        "logname": "LOGS_DIR/hss.log",
+        "logqsize": 8192,
+        "statlogsize": 20,
+        "statlognumber": 5,
+        "statlogname": "LOGS_DIR/hss_stat.log",
+        "auditlogsize": 20,
+        "auditlognumber": 5,
+        "auditlogname": "LOGS_DIR/hss_audit.log",
+        "statfreq": 2000,
+        "numworkers": 4,
+        "concurrent": 10,
+        "ossfile": "CONF_DIR/oss.json"
+    }
+    }
+  oss.json: |
+    {
+      "option": {
+        "id": "url",
+        "type": "string"
+      },
+      "services": [
+        {
+          "id": "logger",
+          "commands": [
+            {
+              "id": "describe_loggers"
+            },
+            {
+              "id": "set_logger_level",
+              "options": [
+                {
+                  "id": "name",
+                  "type": "string"
+                },
+                {
+                  "id": "level",
+                  "type": "integer"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stats",
+          "commands": [
+            {
+              "id": "describe_stats_frequency"
+            },
+            {
+              "id": "describe_stats_live"
+            },
+            {
+              "id": "set_stats_frequency",
+              "options": [
+                {
+                  "id": "frequency",
+                  "type": "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  launch.sh: |
+    #!/bin/bash -x
+
+    CONF_DIR="/opt/c3po/hss/conf"
+    LOGS_DIR="/opt/c3po/hss/logs"
+    mkdir -p $CONF_DIR $LOGS_DIR
+
+    cp /etc/hss/conf/{acl.conf,hss.json,hss.conf,oss.json} $CONF_DIR
+
+    HSS_HOST=$(hostname)
+    HSS_DOMAIN=$(dnsdomainname)
+
+    # from hss.json
+    sed -i "s!HSS_IDENTITY!$HSS_HOST.$HSS_DOMAIN!g" $CONF_DIR/hss.json
+    sed -i "s!HSS_REALM!$HSS_DOMAIN!g" $CONF_DIR/hss.json
+    sed -i "s!HSSDB_ADDR!$HSSDB_ADDR!g" $CONF_DIR/hss.json
+    sed -i "s!CONF_DIR!$CONF_DIR!g" $CONF_DIR/hss.json
+    sed -i "s!LOGS_DIR!$LOGS_DIR!g" $CONF_DIR/hss.json
+
+    # from hss.conf
+    sed -i "s!HSS_IDENTITY!$HSS_HOST.$HSS_DOMAIN!g" $CONF_DIR/hss.conf
+    sed -i "s!HSS_REALM!$HSS_DOMAIN!g" $CONF_DIR/hss.conf
+    sed -i "s!HSS_HOST!$HSS_HOST!g" $CONF_DIR/hss.conf
+    sed -i "s!CONF_DIR!$CONF_DIR!g" $CONF_DIR/hss.conf
+    cat $CONF_DIR/{hss.json,hss.conf}
+
+    # If necessary, calculate the OPc value for each UE (User Equipment).
+    #./bin/hss -j conf/hss.json --onlyloadkey
+    cd $CONF_DIR
+    make_certs.sh $(hostname) $(dnsdomainname)
+    cd ..
+    # finally, launch
+    hss -j $CONF_DIR/hss.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hss
+spec:
+  selector:
+    app: hss
+  clusterIP: None
+  ports:
+  - name: s6a
+    port: 3868
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hss
+  labels:
+    app: hss
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hss
+  serviceName: "hss"
+  template:
+    metadata:
+      labels:
+        app: hss
+    spec:
+      initContainers:
+      - name: init-db
+        image: krsna1729/c3po-hssdb
+        imagePullPolicy: Always
+        command: [ "bash", "-xc"]
+        args:
+        - until nslookup $HSSDB_ADDR; do echo "waiting for hssdb"; sleep 2; done;
+          until cqlsh --file /opt/c3po/hssdb/oai_db.cql $HSSDB_ADDR; do echo "provisioning hssdb"; sleep 2; done;
+          until data_provisioning_users.sh 208014567891200 1122334455 apn1 465B5CE8B199B49FAA5F0A2EE238A6BC 10 $HSSDB_ADDR $MME_HOST.$MME_REALM $MME_REALM;
+          do echo "setting up users"; sleep 2; done;
+          until data_provisioning_mme.sh 1 19136246000 $MME_HOST.$MME_REALM $MME_REALM 1 $HSSDB_ADDR; do echo "setting up mme"; sleep 2; done;
+          until data_provisioning_mme.sh 1 19136246000 smsrouter.test3gpp.net test3gpp.net 0 $HSSDB_ADDR; do echo "setting up smsrouter"; sleep 2; done;
+        env:
+        - name: HSSDB_ADDR
+          value: hssdb
+        - name: MME_HOST
+          value: mme-0
+        - name: MME_REALM
+          value: mme.default.svc.cluster.local
+      containers:
+      - name: hss
+        image: krsna1729/c3po-hss
+        imagePullPolicy: Always
+        stdin: true
+        tty: true
+        env:
+        - name: HSSDB_ADDR
+          value: hssdb
+        - name: MME_IDENTITY
+          value: mme-0.mme.default.svc.cluster.local
+        command: ["bash", "-c", "/opt/c3po/hss/launch.sh; sleep 3600"]
+        resources:
+          limits:
+            cpu: 3
+            memory: 1Gi
+        volumeMounts:
+        - name: hss-script
+          mountPath: /opt/c3po/hss/launch.sh
+          subPath: launch.sh
+        - name: hss-config
+          mountPath: /etc/hss/conf
+      volumes:
+      - name: hss-script
+        configMap:
+          name: hss
+          defaultMode: 493
+      - name: hss-config
+        configMap:
+          name: hss
+          defaultMode: 420
