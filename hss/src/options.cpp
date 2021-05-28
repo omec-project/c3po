@@ -290,7 +290,7 @@ bool Options::parseJson(){
       m_prom_port = 9089;
       if(hssSection.HasMember("prom_port")){
          if(!hssSection["prom_port"].IsInt()) { std::cout << "Error parsing json value: [prom_port]" << std::endl; return false; }
-         m_prom_port = hssSection["verifyroamingsubscribers"].GetInt();
+         m_prom_port = hssSection["prom_port"].GetInt();
       }
  
    }

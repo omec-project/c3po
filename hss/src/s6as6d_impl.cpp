@@ -134,7 +134,7 @@ void fdJsonError( const char *err )
 Application::Application( DataAccess &dbobj, bool verify_roaming)
    : ApplicationBase()
    , m_cmd_uplr( *this )
-   //, m_cmd_calr( *this )
+   , m_cmd_calr( *this )
    , m_cmd_auir( *this )
    //, m_cmd_insdr( *this )
    //, m_cmd_desdr( *this )
@@ -157,8 +157,8 @@ void Application::registerHandlers()
    Logger::s6as6d().startup("Registering s6as6d command handlers");
    Logger::s6as6d().startup("Registering UPLR command handler");
    registerHandler( m_cmd_uplr );
-   //std::cout << "Registering CALR command handler" << std::endl;
-   //registerHandler( m_cmd_calr );
+   std::cout << "Registering CALR command handler" << std::endl;
+   registerHandler( m_cmd_calr );
    Logger::s6as6d().startup("Registering AUIR command handler");
    registerHandler( m_cmd_auir );
    //std::cout << "Registering INSDR command handler" << std::endl;
@@ -237,11 +237,11 @@ int UPLRcmd::process( FDMessageRequest *req )
 // CALR Request (req) Command member functions
 
 // Sends a CALR Request to the corresponding Peer
-bool Application::sendCALRreq(FDPeer &peer)
+bool Application::sendCALRreq(FDPeer &peer, std::string &imsi, std::string &mmehost_info, std::string &mmerealm_info)
 {
    //TODO - This code may be modified based on specific
    //       processing needs to send the CALR Command
-   CALRreq *s = createCALRreq( peer );
+   CALRreq *s = createCALRreq( peer, imsi, mmehost_info, mmerealm_info );
 
    try
    {
@@ -264,13 +264,24 @@ bool Application::sendCALRreq(FDPeer &peer)
 }
 
 // A factory for CALR reuqests
-CALRreq *Application::createCALRreq(FDPeer &peer)
+CALRreq *Application::createCALRreq(FDPeer &peer, std::string &imsi, std::string &mmehost_info, std::string &mmerealm_info)
 {
    //  creates the CALRreq object
    CALRreq *s = new CALRreq( *this );
 
    //TODO - Code must be added to correctly
    //       populate the CALR request object
+
+   s->add(getDict().avpSessionId(), s->getSessionId());
+   s->add(getDict().avpAuthSessionState(), 1);
+   s->addOrigin();
+   s->add(getDict().avpUserName(), imsi);
+   s->add(getDict().avpDestinationHost(), mmehost_info);
+   s->add(getDict().avpDestinationRealm(), mmerealm_info);
+   s->add(getDict().avpCancellationType(), 4);
+   s->add(getDict().avpClrFlags(), 3);
+
+   Logger::system().startup("Testing with CLR");
 
    // return the newly created request object
    return s;
@@ -282,6 +293,26 @@ void CALRreq::processAnswer( FDMessageAnswer &ans )
 // TODO - This code must be implemented IF the application
 // receives Answers for this command, i.e. it sends the
 // CALR Command
+
+   CancelLocationAnswerExtractor cla(ans, getApplication().getDict());
+
+    uint32_t vendor_code = 0;
+    uint32_t cla_result_code = 0;
+
+//check the global status from the CLA response
+    if (cla.result_code.get(cla_result_code)) {
+        StatsHss::singleton().registerStatResult(stat_hss_cir, 0, cla_result_code);
+    } else {
+        cla.experimental_result.vendor_id.get(vendor_code);
+        cla.experimental_result.experimental_result_code.get(cla_result_code);
+        StatsHss::singleton().registerStatResult(stat_hss_cir, vendor_code, cla_result_code);
+    }
+
+    if (cla_result_code == DIAMETER_SUCCESS) {
+        printf("Result code of CLR: Diamter success\n\n");
+    } else {
+        printf("Result code of CLR: %d\n\n", cla_result_code);
+    }
 }
 
 // CALR Command (cmd) member function
@@ -1418,6 +1449,63 @@ void ULRProcessor::phase1()
    m_ulr.origin_host.get( m_new_info.mmehost );
    m_ulr.origin_realm.get( m_new_info.mmerealm );
 
+   //testing with Cancel location request
+
+   std::string mmehost_info, mmerealm_info;
+   bool result;
+   result = m_app.dataaccess().getMmeInfo(m_new_info.imsi.c_str(), mmehost_info, mmerealm_info);
+   if (result) {
+       atomic_inc_fetch(m_dbissued);
+
+       if (!mmehost_info.empty() && !mmerealm_info.empty()) {
+       if (m_new_info.mmehost != mmehost_info) {
+       FDPeer *pre_mme = new FDPeer(mmehost_info);
+       std::cout<<"***********Old mme:"<<mmehost_info<<" New mme:"<<m_new_info.mmehost<<"*************"<<std::endl;
+
+       bool mme_reachable = (pre_mme->getState() == PSOpen);
+
+       if (!mme_reachable) {
+           printf("****************Application::sendCALRRreq::MME_DOWN: %s\n\n", mmehost_info.c_str());
+           return;
+       } else {
+
+           result = m_app.sendCALRreq(*pre_mme, m_new_info.imsi, mmehost_info, mmerealm_info);
+	   if (result) {
+
+              int32_t mme_id;
+
+              result = m_app.dataaccess().getMmeIdFromHost(m_new_info.mmehost, mme_id);
+              if (result) {
+                 atomic_inc_fetch(m_dbissued);
+                 std::cout<<"New MME id: "<<mme_id<<std::endl;
+              }
+
+              result = m_app.dataaccess().updateMmeData(m_new_info.imsi.c_str(), m_new_info.mmehost, m_new_info.mmerealm, mme_id);
+              if (result) {
+                 atomic_inc_fetch(m_dbissued);
+              }
+	   } else {
+                      //TODO return the result code as diameter error since CLR is not
+                      //being sent to the previous MME
+
+                      FDAvp er(m_dict.avpExperimentalResult());
+                      er.add(m_dict.avpVendorId(), VENDOR_3GPP);
+                      er.add(m_dict.avpExperimentalResultCode(), DIAMETER_UNABLE_TO_COMPLY);
+                      m_ans.add(er);
+                      m_ans.send();
+                      StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_UNABLE_TO_COMPLY);
+                      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE,{ { "result_code", "unable_to_send_clr" } });
+
+                      printf("***************Could not send the CLR request to MME*****************\n\n");
+                      m_nextphase = ULRSTATE_PHASEFINAL;
+                      return;
+                    }
+                }
+            }
+        }
+    }
+    //testing end
+
 #ifdef PERFORMANCE_TIMING
    {
       uint64_t uimsi;
@@ -1433,8 +1521,6 @@ void ULRProcessor::phase1()
    //
    // issue initial database queries
    //
-
-   bool result;
 
    m_nextphase = ULRSTATE_PHASE2;
 
