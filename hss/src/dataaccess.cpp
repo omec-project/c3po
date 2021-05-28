@@ -826,6 +826,67 @@ bool DataAccess::insertUserImsi( const ImsiEntity &ie, CassFutureCallback cb, vo
    return true;
 }
 
+bool DataAccess::updateMmeData( const char *imsi, std::string &mmehost_info, std::string &mmerealm_info, int32_t &mme_id )
+{
+   std::stringstream ss;
+   ss << "UPDATE vhss.users_imsi SET ";
+   ss << "mmehost='" << mmehost_info << "',";
+   ss << "mmerealm='" << mmerealm_info << "',";
+   ss << "mmeidentity_idmmeidentity=" << mme_id << " ";
+   ss << "WHERE imsi='" << imsi << "';";
+
+   Logger::system().debug(ss.str());
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+      throw DAException(
+         SUtility::string_format( "DataAcces::%s - Error %d executing [%s]",
+               __func__, future.errorCode(), ss.str().c_str() )
+      );
+
+   return true;
+}
+
+bool DataAccess::getMmeInfoData( SCassFuture &future, std::string &mmehost_info, std::string &mmerealm_info )
+{
+   if ( future.errorCode() != CASS_OK ) {
+      throw DAException(
+            SUtility::string_format( "DataAccess::%s - Error %d executing getMmeInfo()",
+                  __func__, future.errorCode() )
+      );
+   }
+
+   SCassResult res = future.result();
+
+   SCassRow row = res.firstRow();
+
+   if ( row.valid() )
+   {
+      GET_EVENT_DATA( row, mmehost, mmehost_info );
+      GET_EVENT_DATA( row, mmerealm, mmerealm_info );
+      return true;
+   }
+
+   return false;
+}
+
+bool DataAccess::getMmeInfo ( const char *imsi, std::string &mmehost_info, std::string &mmerealm_info)
+{
+   std::stringstream ss;
+
+   ss << "SELECT mmehost, mmerealm FROM users_imsi where imsi = '"
+      << imsi << "' ;" ;
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   return getMmeInfoData( future, mmehost_info, mmerealm_info );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1318,6 +1379,21 @@ bool DataAccess::getMmeIdFromHost ( std::string& host, int32_t &mmeid, CassFutur
 
    if (cb)
       return future.setCallback( cb, data );
+
+   return getMmeIdFromHostData( future, mmeid );
+}
+
+bool DataAccess::getMmeIdFromHost ( std::string& host, int32_t &mmeid )
+{
+   std::stringstream ss;
+
+   ss << "SELECT idmmeidentity FROM vhss.mmeidentity_host WHERE mmehost='"
+      << host << "';" ;
+   Logger::system().debug(ss.str());
+
+   SCassStatement stmt( ss.str() );
+
+   SCassFuture future = m_db.execute( stmt );
 
    return getMmeIdFromHostData( future, mmeid );
 }

@@ -54,7 +54,7 @@ public:
     // Parameters for sendXXXreq, if present below, may be changed
     // based upon processing needs
     bool sendUPLRreq(FDPeer &peer);
-    bool sendCALRreq(FDPeer &peer);
+    bool sendCALRreq(FDPeer &peer, std::string &imsi, std::string &mmehost_info, std::string &mmerealm_info);
     bool sendAUIRreq(FDPeer &peer);
     int  sendINSDRreq(s6t::MonitoringEventConfigurationExtractorList &cir_monevtcfg,
                       std::string& imsi, FDMessageRequest *cir_req, EvenStatusMap *evt_map,
@@ -68,7 +68,7 @@ public:
 private:
     void registerHandlers();
     UPLRcmd m_cmd_uplr;
-    //CALRcmd m_cmd_calr;
+    CALRcmd m_cmd_calr;
     AUIRcmd m_cmd_auir;
     //INSDRcmd m_cmd_insdr;
     //DESDRcmd m_cmd_desdr;
@@ -78,7 +78,7 @@ private:
     // the parameters for createXXXreq, if present below, may be
     // changed based processing needs
     UPLRreq *createUPLRreq(FDPeer &peer);
-    CALRreq *createCALRreq(FDPeer &peer);
+    CALRreq *createCALRreq(FDPeer &peer, std::string &imsi, std::string &mmehost_info, std::string &mmerealm_info);
     AUIRreq *createAUIRreq(FDPeer &peer);
     INSDRreq *createINSDRreq(s6t::MonitoringEventConfigurationExtractorList &cir_monevtcfg,
                             std::string& imsi, FDMessageRequest *cir_req, EvenStatusMap *evt_map,

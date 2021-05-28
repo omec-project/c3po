@@ -256,6 +256,12 @@ public:
    bool getImsiInfo ( const char *imsi, DAImsiInfo &info, CassFutureCallback cb, void *data );
    bool getImsiInfo ( const std::string &imsi, DAImsiInfo &info, CassFutureCallback cb, void *data ) { return getImsiInfo( imsi.c_str(), info, cb, data ); }
 
+   bool getMmeInfoData( SCassFuture &future, std::string &mmehost_info, std::string &mmerealm_info );
+   bool getMmeInfo ( const char *imsi, std::string &mmehost_info, std::string &mmerealm_info);
+   bool getMmeInfo ( const std::string &imsi, std::string &mmehost_info, std::string &mmerealm_info ) { return getMmeInfo( imsi.c_str(), mmehost_info, mmerealm_info ); }
+
+   bool updateMmeData( const char *imsi, std::string &mmehost_info, std::string &mmerealm_info, int32_t &mme_id);
+
    bool insertUserImsi(const ImsiEntity &ie, CassFutureCallback cb, void *data);
 
    bool getEventIdsFromMsisdnData( SCassFuture &future, DAEventIdList &el );
@@ -282,6 +288,8 @@ public:
    bool getMmeIdentity ( std::string &mme_id, DAMmeIdentity& mmeid );
    bool getMmeIdentity ( int32_t mme_id, DAMmeIdentity& mmeid );
 
+   bool getMmeIdFromHost ( std::string& host, int32_t &mmeid );
+   
    bool getLatestIdentity(const char *table_name, int64_t &id, CassFutureCallback cb, void *data);
    bool getLatestIdentityData(SCassFuture &future, int64_t &id);
 
