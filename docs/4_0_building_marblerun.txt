@@ -1,0 +1,121 @@
+--------------------------------------------------------------------------------
+The document provides detailed steps to build Marblerun and related components.
+It also provides steps to modify and build the Open Enclave's enclave-side 
+plug-in to verify the identity of a specific Quote Verification Enclave(QvE).
+--------------------------------------------------------------------------------
+
+Note: 
+    Following commit IDs are used for the purpose of this document.
+    1) Marblerun    : 60a0096674c23d6affc51a32b5c27af72648ef1a
+    2) EdgelessRT   : 6d59f26814fcb91a45df8103d1528af9fbbb1e7c
+    3) Open Enclave : 73562b6adff016c2dd94bc792f1bd695531085ac
+    
+    Please find important links at the end of the document.
+
+Prerequisites: 
+    1) It is expected that Intel SGX Driver, SDK, PSW and DCAP components are 
+       already installed following the Linux install guide.
+    2) Graphene is already installed following the "2_0_integrating_hss_with_graphene_sgx.txt"
+       document.
+
+A] In brief,
+    
+    1) Marblerun depends on EdgelessRT which internally uses Open Enclave.
+    2) Open Enclave uses Intel SGX QvE and libsgx_dcap_quoteverify.so but it 
+       does not directly use libsgx_dcap_tvl.so that verifies the identity of 
+       the Quote Verification Enclave.
+    3) Open Enclave SDK ports libsgx_dcap_tvl.so in to enclave-side plug-in. 
+       Refer link [3].
+    4) This plug-in has some hard-coded values to verify the identity of the QvE. 
+       Refer link [3].
+       These values can be found below and may need to be modified according to 
+       a specific QvE:
+           a)  "g_expected_root_certificate_key" in "openenclave/common/sgx/quote.c"
+           b)  "_trusted_root_key_pem" in "openenclave/common/sgx/tcbinfo.c"
+           c)  "g_qve_mrsigner" in openenclave/common/sgx/verifier.c 
+    5) To bring the above changes in effect, it is required to rebuild the Open
+       Enclave plug-in, install it and then rebuild the Marblerun.
+    
+
+B] Building Marblerun and related components.
+
+    B.1] Installing EdgelessRT binary
+    
+         $ wget https://github.com/edgelesssys/edgelessrt/releases/download/v0.2.3/edgelessrt_0.2.3_amd64.deb
+         $ sudo apt install ./edgelessrt_0.2.3_amd64.deb build-essential libssl-dev
+         $ sudo snap install cmake --classic
+        
+    B.2] [Optional] Clone the EdgelessRT repository to test the hello world 
+         sample app.
+         
+         $ git clone https://github.com/edgelesssys/edgelessrt.git
+         $ cd edgelessrt/samples/helloworld
+         
+         Then follow steps at link [8]. 
+         Also link [3] can be helpful if any issues occur while running the 
+         sample app.
+         
+    B.3] Building Marblerun
+        
+         Clone the marblerun repository [9] and follow link [10] to build the
+         Marblerun Coordinator and Marble test applications. Please refer link
+         [3] and section B.4 if any issues occur during the build process and 
+         while running the Coordinator and Marble test applications.   
+     
+    B.4] Modifying and building the Open Enclave's enclave-side plug-in. 
+    
+         Important :
+         This change is only needed if the Marble test application, when 
+         launched, complains about "OE_QUOTE_VERIFICATION_ERROR".
+         
+         OE_QUOTE_VERIFICATION_ERROR may occur due to, 
+         
+         1) Mismatch between the actual Intel root certificate's public key 
+            and the public key hard-coded inside the Open Enclave plug-in.
+    
+         2) Mismatch between the MRSIGNER of the platform's QvE and the MRSIGNER
+            hard-coded inside the Open Enclave plug-in 
+            
+            
+         Follow the instructions below to resolve the issue.
+    
+         $ git clone --recursive https://github.com/openenclave/openenclave.git
+         $ cd openenclave
+         $ mkdir build && cd build
+         $ cmake -G "Unix Makefiles" ..
+         $ cd ../ 
+            
+            Compare the hard-coded values of the following variables against the
+            actual values and change them if needed.
+         
+            1) "g_expected_root_certificate_key" in "./common/sgx/quote.c"
+                This should reflect the Intel root certificate's public key.
+            
+            2) "_trusted_root_key_pem" in "./common/sgx/tcbinfo.c .
+                This should reflect the Intel root certificate's public key.
+                
+            3) "g_qve_mrsigner" in the openenclave/common/sgx/verifier.c
+                This should reflect the MRSIGNER of the platform's QvE.
+               
+         $ cd ./build/enclave/ && make
+         $ cd ../.
+         $ cp ./output/lib/openenclave/enclave/liboeenclave.a /opt/edgelessrt/lib/openenclave/enclave/
+         
+         Then go to the Marblerun repository and rebuild Marblerun, Coordinator
+         and the Marble test applications following section B.3
+        
+        
+C] Important links
+
+    [1] https://www.marblerun.sh/docs/introduction/
+    [2] https://www.marblerun.sh/docs/getting-started/concepts/
+    [3] https://github.com/edgelesssys/marblerun/issues/147
+    [4] https://github.com/openenclave/openenclave/blob/master/docs/GettingStartedDocs/Contributors/building_oe_sdk.md
+    [5] https://github.com/openenclave/openenclave/blob/master/docs/GettingStartedDocs/Contributors/SGX1FLCGettingStarted.md
+    [6] https://github.com/openenclave/openenclave/blob/master/docs/DesignDocs/SGX_QuoteVerify_Integration.md
+    [7] https://github.com/edgelesssys/edgelessrt#quick-start
+    [8] https://github.com/edgelesssys/edgelessrt/tree/master/samples/helloworld
+    [9] https://github.com/edgelesssys/marblerun.git
+   [10] https://github.com/edgelesssys/marblerun/blob/master/BUILD.md
+   [11] https://github.com/edgelesssys/marblerun/issues/168
+   

@@ -24,11 +24,14 @@
 #include "stdbool.h"
 
 typedef struct hss_config_s {
+  char *dbms_type;
+
+  char *redis_server;
+  int   redis_port;
   char *cassandra_server;
   char *cassandra_user;
   char *cassandra_password;
-  char *cassandra_database;
-
+  char *database_name;
 
   char *operator_key;
   unsigned char operator_key_bin[16];

@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -133,6 +134,7 @@ int main(int argc, char **argv)
    /*
    std::cout << "Options::jsonConfig            : " << Options::getjsonConfig()            << std::endl;
    std::cout << "Options::diameterconfiguration : " << Options::getdiameterconfiguration() << std::endl;
+   std::cout << "Options::dbmstype              : " << Options::getdbmstype()              << std::endl;
    std::cout << "Options::cassserver            : " << Options::getcassserver()            << std::endl;
    std::cout << "Options::cassuser              : " << Options::getcassuser()              << std::endl;
    std::cout << "Options::casspwd               : " << Options::getcasspwd()               << std::endl;
@@ -161,7 +163,10 @@ int main(int argc, char **argv)
 
    random_init();
 
-   fdHss.initdb(&hss_config);
+   if ( !fdHss.initdb(&hss_config) ) {
+      Logger::system().startup( "Failed to execute initdb(). Exiting" );
+		return 0;
+   }
 
    if( Options::getonlyloadkey() ){
       fdHss.updateOpcKeys( (uint8_t *) hss_config.operator_key_bin );

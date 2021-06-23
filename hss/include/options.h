@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -24,7 +25,8 @@ public:
    static bool parseInputOptions( int argc, char **argv );
    static bool parseJson();
    static bool validateOptions();
-
+   static bool isDbmsTypeRedis()                         { return m_dbmstype == "redis"; }
+   static bool isDbmsTypeCassandra()                     { return m_dbmstype == "cassandra"; }
    static const int logMaxSize()                         { return m_logmaxsize; }
    static const int logNumberFiles()                     { return m_lognbrfiles; }
    static const std::string &logFilename()               { return m_logfilename; }
@@ -41,10 +43,18 @@ public:
 
    static const std::string &getjsonConfig()             { return m_jsoncfg; }
    static const std::string &getdiameterconfiguration()  { return m_diameterconfiguration; }
+   static const std::string &getdbmstype()               { return m_dbmstype; }
+   static const std::string &getredisserver()            { return m_redisserver; }
+   static const int &getredisport()                      { return m_redisport; }
+   static const unsigned &getredismaxconnections()       { return m_redismaxconnections; }
+   static const bool &getredistls()                      { return m_redis_tls; }
+   static const std::string &getredistlscert()           { return m_redistlscert; }
+   static const std::string &getredistlskey()            { return m_redistlskey; }
+   static const std::string &getredistlscacert()         { return m_redistlscacert; }
    static const std::string &getcassserver()             { return m_cassserver; }
    static const std::string &getcassuser()               { return m_cassuser; }
    static const std::string &getcasspwd()                { return m_casspwd; }
-   static const std::string &getcassdb()                 { return m_cassdb; }
+   static const std::string &getdbname()                 { return m_dbname; }
    static const unsigned &getcasscoreconnections()       { return m_casscoreconnections; }
    static const unsigned &getcassmaxconnections()        { return m_cassmaxconnections; }
    static const unsigned &getcassioqueuesize()           { return m_cassioqueuesize; }
@@ -76,7 +86,7 @@ private:
      cassserver                        = 0x04,
      cassuser                          = 0x08,
      casspwd                           = 0x10,
-     cassdb                            = 0x20,
+     dbname                            = 0x20,
      randvector                        = 0x40,
      optkey                            = 0x80,
      reloadkey                         = 0x100,
@@ -98,7 +108,10 @@ private:
      auditlognbrfiles                  = 0x1000000,
      auditlogmaxsize                   = 0x2000000,
      ossport                           = 0x4000000,
-     ossfile                           = 0x8000000
+     ossfile                           = 0x8000000,
+     dbmstype                          = 0x10000000,
+     redisserver                       = 0x20000000,
+     redisport                         = 0x40000000,
    };
 
    static void help();
@@ -123,10 +136,18 @@ private:
    static std::string m_jsoncfg;
    static std::string m_diameterconfiguration;
 
+   static std::string m_dbmstype;
+   static std::string m_redisserver;
+   static int         m_redisport;
+   static unsigned    m_redismaxconnections;
+   static bool        m_redis_tls;
+   static std::string m_redistlscert;
+   static std::string m_redistlskey;
+   static std::string m_redistlscacert;
    static std::string m_cassserver;
    static std::string m_cassuser;
    static std::string m_casspwd;
-   static std::string m_cassdb;
+   static std::string m_dbname;
    static unsigned    m_casscoreconnections;
    static unsigned    m_cassmaxconnections;
    static unsigned    m_cassioqueuesize;
@@ -144,8 +165,8 @@ private:
    static std::string m_synchauts;
    static int         m_numworkers;
    static int         m_concurrent;
-   static bool        m_verify_roaming; 
-   static short int   m_prom_port; // prometheus port 
+   static bool        m_verify_roaming;
+   static short int   m_prom_port; // prometheus port
 
 };
 
