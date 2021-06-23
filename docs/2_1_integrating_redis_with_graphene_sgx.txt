@@ -1,0 +1,48 @@
+--------------------------------------------------------------------------------
+This document provides steps for enabling Redis to run inside a Graphene instance
+in SGX mode
+--------------------------------------------------------------------------------
+
+Note: The steps in this document are mentioned with respect to the Graphene 
+commit id "2dcd9e625fee2760eda90e81ae33ef273437a4e5".
+
+A) Build and Install Graphene in SGX mode. Refer section A and B of 
+    2_0_integrating_hss_with_graphene_sgx.txt
+
+B) Change directory to <Path to cloned Graphene directory>/Examples/redis/
+
+C) Build Redis Server 
+	
+    C.1) With TLS disabled
+    
+        $ make SGX=1 
+
+    C.2) With TLS enabled
+    
+        C.2.1) Open src/redis.conf and configure the following options 
+		
+            1) tls-cert-file <Redis Server TLS Certificate file path>
+                Redis server will present this certificate to its client for 
+                authentication
+            
+            2) tls-key-file" <Redis server private key file>
+            
+            3) tls-ca-cert-file <CA certificate file path> 
+                Redis server will use this certificate as a trust root to 
+                authenticate the client certificate(during mTLS when client 
+                authentication is enabled)
+                
+        C.2.2) Mark src/redis.conf as a trusted file in redis-server.manifest.template
+	
+        C.2.3) Building Redis server with TLS enabled
+            
+            $ make SGX=1 BUILD_TLS=yes
+	
+D) Run Redis Server
+    D.1) With TLS disabled
+        
+        $ SGX=1 ./pal_loader ./redis-server --port 6380 --save '' --protected-mode no
+			
+    D.2) With TLS enabled
+		
+        $ SGX=1 ./pal_loader ./redis-server src/redis.conf --tls-port 6379 --port 0  --save '' --protected-mode no

@@ -22,3 +22,9 @@
 [submodule "modules/prometheus-cpp"]
 	path = modules/prometheus-cpp
 	url = https://github.com/jupp0r/prometheus-cpp
+[submodule "modules/hiredis"]
+	path = modules/hiredis
+	url = https://github.com/redis/hiredis
+[submodule "modules/redis-plus-plus"]
+	path = modules/redis-plus-plus
+	url = https://github.com/sewenew/redis-plus-plus

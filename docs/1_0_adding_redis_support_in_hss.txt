@@ -1,0 +1,145 @@
+--------------------------------------------------------------------------------
+This document provides steps to enable HSS to use Redis as a database 
+--------------------------------------------------------------------------------
+
+A] Build and Installation
+
+
+    A.1] HSS and other required components
+    
+        $ git clone --recursive -b sgx-secured-hss-db https://github.com/omec-project/c3po.git
+        $ cd c3po
+        $ ./install_builddeps.sh
+        $ run ./install.sh 
+            Note : execute options 1 to 5 from install.sh. Once the above steps 
+            are successfully executed, if you wish to modify the HSS source code, 
+            only use step 5 from "install.sh" to compile the source code.
+		  
+    A.2] Redis.
+    
+        $ sudo add-apt-repository ppa:redislabs/redis
+        $ sudo apt-get update
+        $ sudo apt-get install redis
+
+--------------------------------------------------------------------------------
+				
+B] Configuration
+    B.1) Change directory to Secured HSS Redis repository. Open hss/conf/hss.conf 
+        and provide correct values for the following configuration parameters.
+        Note: Please read the comments mentioned above each configuration 
+        parameter in the hss.conf file for detailed explanation.
+        
+        1) Identity (eg. "hss.test3gpp.net")
+        2) Realm (eg. "test3gpp.net")
+        3) ListenOn
+		
+    B.2) Open hss/conf/hss.json and provide provide correct values for the 
+        following configuration parameters.
+        
+        1) originhost
+            This should be same as the "Identity" parameter in the hss.conf
+
+        2) originrealm
+            This should be same as the "Realm" parameter in the hss.conf. If 
+            "Realm" is not specified than the value should be part of the 
+            "Identity" after the first dot.
+
+        3) dbmstype
+            Set it to "redis" to use Redis as Database.
+
+        4) redissrv
+            Set the Redis server's IP address.
+
+        5) redisport
+            Set Redis server's port
+
+        6) redismaxconnections
+            Set Maximum number of connections in the Redis connection pool. 
+            Connection pool helps HSS in establishing multiple simultaneous 
+            connections with the Redis server.
+	
+        Following parameters help HSS in establishing secured connection with 
+        Redis using TLS
+
+        7) redis_tls
+            Set "true" to enable TLS, "false" otherwise
+
+        8) redistlscert <certificate file path>
+            TLS certificate that the HSS will present to the Redis server. (Used
+            during mTLS when Redis server wishes to authenticate its clients)
+
+        9) redistlskey <private key file path>
+            Private key file.
+
+       10) redistlscacert
+            The CA certificate that HSS will use as a trust-root to authenticate
+            the certificate presented by the Redis server.
+				
+    B.3) Perform following steps to generate Diameter certificates required by 
+        the diameter framework.
+        
+        $ cd hss/conf/
+        $ ./bin/make_certs.sh <diameter_host> <diameter_realm>
+        
+        Note: <diameter_host> should only be the string before the first dot
+        in the "Identity" parameter(hss.conf). For example, if Identity is 
+        "hss.test3gpp.net", then the command should be,
+        
+        $ ../bin/make_certs.sh hss test3gpp.net
+			  
+    B.4) Redis Server configuration:
+
+        B.4.1] Open /etc/redis/redis.conf and modify following configuration 
+        parameters
+            1) bind 
+                Add an IP address that can be used to connect the Redis server 
+                from a different host. Point it to loopback address otherwise.
+
+            2) protected-mode
+                Set it to no for the clients to connect from a different host.
+                
+        B.4.2] Restart Redis server to bring the configuration changes in effect
+            $ systemctl restart redis-server
+
+--------------------------------------------------------------------------------
+
+C] Populating Redis DB (server) with dummy data.
+
+    C.1] Go to the root of Secured HSS Redis repository. 
+        Open db_docs/redis_data_provisioning.py and search for 
+        "redisClient = redis.StrictRedis". Modify the following parameters.
+	
+        1) host=<Redis server IP address>
+
+        2) port=<Redis server port> 
+        
+        For a secured connection (TLS) with the Redis server, set the following 
+        parameters
+
+        3) ssl=True
+
+        4) ssl_certificate=<path to ssl certificate file>
+            Note : The Redis client will present this certificate to the Redis 
+            server (During mTLS when the Redis server wishes to authenticate its
+            clients)
+
+        5) ssl_key=<path to the private key file>
+
+        6) ssl_ca_certs=<path to the CA certificate file>
+            Note : The Redis client will this certificate as a trust-root to 
+            authenticate/trust the certificate presented by the Redis server.
+
+    C.2] Run the script pupulate Redis database with dummy data.
+        $ python3 db_docs/redis_data_provisioning.py
+	   
+--------------------------------------------------------------------------------
+
+D] Running HSS
+
+    From the root of repository run the below mentioned commands.
+
+    $ cd hss/
+    $ ./bin/hss -j conf/hss.json
+	
+
+

@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -13,6 +14,7 @@
 #include <set>
 #include "fd.h"
 #include "dataaccess.h"
+#include "redis_dataaccess.h"
 #include "sthread.h"
 #include "stimer.h"
 #include "stime.h"
@@ -153,7 +155,7 @@ public:
    s6t::Application     *gets6tApp()      { return m_s6tapp; }
    s6as6d::Application  *gets6as6dApp()   { return m_s6aapp; }
    s6c::Application     *gets6cApp()      { return m_s6capp; }
-   DataAccess           &getDb()          { return m_dbobj;  }
+   DataAccess           &getDb()          { return *mp_dbobj;  }
    WorkerManager        &getWorkMgr()     { return m_wrkmgr; }
    HSSWorkerQueue       &getWorkerQueue() { return m_workerqueue; }
 
@@ -167,7 +169,7 @@ private:
    s6as6d::Application *m_s6aapp;
    s6c::Application *m_s6capp;
    FDPeerList m_mme_peers;
-   DataAccess m_dbobj;
+   DataAccess *mp_dbobj = nullptr;
    Pistache::Http::Endpoint *m_endpoint;
    OssEndpoint<Logger> *m_ossendpoint;
    WorkerManager m_wrkmgr;

@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -130,6 +131,14 @@ void SStats::onInit(){
    m_elapsedtimer.Start();
 
 }
+
+void SStats::onInitUsingSimulatedTimer(){
+   m_idletimer.setInterval( m_interval );
+   m_idletimer.setOneShot( false );
+   initSimulatedTimer( m_idletimer );
+   m_elapsedtimer.Start();
+}
+
 void SStats::onQuit(){
    if(m_logElapsed){
       stime_t elapsed = m_elapsedtimer.MilliSeconds();
@@ -187,10 +196,15 @@ void SStats::dispatch( SEventThreadMessage &msg )
       resetStats();
    }
    else if ( msg.getId() == STAT_UPDATE_INTERVAL ) {
-      m_idletimer.stop();
-      m_interval = ((UpdateStatInterval&)msg).getInterval();
-      m_idletimer.setInterval( ((UpdateStatInterval&)msg).getInterval() );
-      m_idletimer.start();
+		if (m_idletimer.isSimulatedTimerRunning()){
+          m_idletimer.setInterval( ((UpdateStatInterval&)msg).getInterval() );
+		}
+		else{
+			m_idletimer.stop();
+			m_interval = ((UpdateStatInterval&)msg).getInterval();
+			m_idletimer.setInterval( ((UpdateStatInterval&)msg).getInterval() );
+			m_idletimer.start();
+		}
    }
    else{
       dispatchDerived(msg);

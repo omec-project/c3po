@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -40,10 +41,18 @@ std::string Options::m_auditlogfilename;
 std::string Options::m_jsoncfg;
 std::string Options::m_diameterconfiguration;
 
+std::string Options::m_dbmstype;
+std::string Options::m_redisserver;
+int	    Options::m_redisport;
+unsigned    Options::m_redismaxconnections;
+bool	    Options::m_redis_tls;
+std::string Options::m_redistlscert;
+std::string Options::m_redistlskey;
+std::string Options::m_redistlscacert;
 std::string Options::m_cassserver;
 std::string Options::m_cassuser;
 std::string Options::m_casspwd;
-std::string Options::m_cassdb;
+std::string Options::m_dbname;
 unsigned    Options::m_casscoreconnections = 1;
 unsigned    Options::m_cassmaxconnections = 2;
 unsigned    Options::m_cassioqueuesize = 8192;
@@ -65,6 +74,7 @@ uint32_t    Options::m_statsfrequency;
 bool        Options::m_verify_roaming;
 short int   Options::m_prom_port;
 
+
 void Options::help()
 {
    std::cout << std::endl
@@ -76,7 +86,7 @@ void Options::help()
              << "  -s, --casssrv host           Cassandra server." << std::endl
              << "  -u, --cassusr user           Cassandra user." << std::endl
              << "  -p, --casspwd password       Cassandra password." << std::endl
-             << "  -d, --cassdb db              Cassandra database name." << std::endl
+             << "  -d, --dbname db              database name." << std::endl
              << "      --casscoreconnections num   Core # Cassandra connections per host." << std::endl
              << "      --cassmaxconnections num    Max # Cassandra connections per host." << std::endl
              << "      --cassioqueuesize size   Cassandra I/O queue size." << std::endl
@@ -138,6 +148,45 @@ bool Options::parseJson(){
    }
    if(doc.HasMember("hss")){
       const RAPIDJSON_NAMESPACE::Value& hssSection = doc["hss"];
+      if(!(options & dbmstype) && hssSection.HasMember("dbmstype")){
+         if(!hssSection["dbmstype"].IsString()) { std::cout << "Error parsing json value: [dbmstype]" << std::endl; return false; }
+         m_dbmstype = hssSection["dbmstype"].GetString();
+         options |= dbmstype;
+      }
+      if(!(options & redisserver) && hssSection.HasMember("redissrv")){
+         if(!hssSection["redissrv"].IsString()) { std::cout << "Error parsing json value: [redisserver]" << std::endl; return false; }
+         m_redisserver = hssSection["redissrv"].GetString();
+         options |= redisserver;
+      }
+      if(!(options & redisport) && hssSection.HasMember("redisport")){
+         if(!hssSection["redisport"].IsInt()) { std::cout << "Error parsing json value: [redisport]" << std::endl; return false; }
+         m_redisport = hssSection["redisport"].GetInt();
+         options |= redisport;
+      }
+      if(hssSection.HasMember("redismaxconnections")){
+         if(!hssSection["redismaxconnections"].IsUint()) { std::cout << "Error parsing json value: [redismaxconnections]" << std::endl; 		return false; }
+         m_redismaxconnections = hssSection["redismaxconnections"].GetUint();
+      }
+      if(hssSection.HasMember("redis_tls")){
+         if(!hssSection["redis_tls"].IsBool()) { std::cout << "Error parsing json value: [redis_tls]" << std::endl; return false; }
+         m_redis_tls = hssSection["redis_tls"].GetBool();
+      }
+      if(hssSection.HasMember("redistlscert")){
+         if(!hssSection["redistlscert"].IsString()) { std::cout << "Error parsing json value: [redistlscert]" << std::endl; 
+		 return false; }
+         m_redistlscert = hssSection["redistlscert"].GetString();
+      }
+      if(hssSection.HasMember("redistlskey")){
+         if(!hssSection["redistlscert"].IsString()) { std::cout << "Error parsing json value: [redistlskey]" << std::endl;
+		 return false; }
+         m_redistlskey = hssSection["redistlskey"].GetString();
+      }
+      if(hssSection.HasMember("redistlscacert")){
+         if(!hssSection["redistlscacert"].IsString()) { std::cout << "Error parsing json value: [redistlscacert]" << std::endl;
+		 return false; }
+         m_redistlscacert = hssSection["redistlscacert"].GetString();
+      }
+
       if(!(options & cassserver) && hssSection.HasMember("casssrv")){
          if(!hssSection["casssrv"].IsString()) { std::cout << "Error parsing json value: [cassserver]" << std::endl; return false; }
          m_cassserver = hssSection["casssrv"].GetString();
@@ -153,10 +202,10 @@ bool Options::parseJson(){
          m_casspwd = hssSection["casspwd"].GetString();
          options |= casspwd;
       }
-      if(!(options & cassdb) && hssSection.HasMember("cassdb")){
-         if(!hssSection["cassdb"].IsString()) { std::cout << "Error parsing json value: [cassdb]" << std::endl; return false; }
-         m_cassdb = hssSection["cassdb"].GetString();
-         options |= cassdb;
+      if(!(options & dbname) && hssSection.HasMember("dbname")){
+         if(!hssSection["dbname"].IsString()) { std::cout << "Error parsing json value: [dbname]" << std::endl; return false; }
+         m_dbname = hssSection["dbname"].GetString();
+         options |= dbname;
       }
       if(hssSection.HasMember("casscoreconnections")){
          if(!hssSection["casscoreconnections"].IsInt()) { std::cout << "Error parsing json value: [casscoreconnections]" << std::endl; return false; }
@@ -290,9 +339,9 @@ bool Options::parseJson(){
       m_prom_port = 9089;
       if(hssSection.HasMember("prom_port")){
          if(!hssSection["prom_port"].IsInt()) { std::cout << "Error parsing json value: [prom_port]" << std::endl; return false; }
-         m_prom_port = hssSection["verifyroamingsubscribers"].GetInt();
+         m_prom_port = hssSection["prom_port"].GetInt();
       }
- 
+
    }
 
    return true;
@@ -302,10 +351,12 @@ bool Options::validateOptions(){
 
    return (
             (options & diameterconfiguration)
+         && (options & dbmstype)
+         && (options & redisserver)
          && (options & cassserver)
          && (options & cassuser)
          && (options & casspwd)
-         && (options & cassdb)
+         && (options & dbname)
          && (options & optkey)
          && (options & gtwport)
          && (options & gtwhost)
@@ -342,7 +393,7 @@ bool Options::parseInputOptions( int argc, char **argv )
       { "casssrv",         required_argument,  NULL, 's' },
       { "cassusr",         required_argument,  NULL, 'u' },
       { "casspwd",         required_argument,  NULL, 'p' },
-      { "cassdb",          required_argument,  NULL, 'd' },
+      { "dbname",          required_argument,  NULL, 'd' },
 
       { "randv",           no_argument,        NULL, 'r' },
       { "optkey",          required_argument,  NULL, 'o' },
@@ -386,7 +437,7 @@ bool Options::parseInputOptions( int argc, char **argv )
          case 's': { m_cassserver = optarg;                    options |= cassserver;              break; }
          case 'u': { m_cassuser = optarg;                      options |= cassuser;                break; }
          case 'p': { m_casspwd = optarg;                       options |= casspwd;                 break; }
-         case 'd': { m_cassdb = optarg;                        options |= cassdb;                  break; }
+         case 'd': { m_dbname = optarg;                        options |= dbname;                  break; }
          case 'r': { m_randvector = true;                      options |= randvector;              break; }
          case 'o': { m_optkey = true;                          options |= optkey;                  break; }
          case 'i': { m_reloadkey = true;                       options |= reloadkey;               break; }
@@ -453,10 +504,12 @@ bool Options::parseInputOptions( int argc, char **argv )
 void Options::fillhssconfig(hss_config_t *hss_config_p) 
 {
 
+   hss_config_p->dbms_type             = strdup(m_dbmstype.c_str());
+   hss_config_p->redis_server          = strdup(m_redisserver.c_str());
    hss_config_p->cassandra_server      = strdup(m_cassserver.c_str());
    hss_config_p->cassandra_user        = strdup(m_cassuser.c_str());
    hss_config_p->cassandra_password    = strdup(m_casspwd.c_str());
-   hss_config_p->cassandra_database    = strdup(m_cassdb.c_str());
+   hss_config_p->database_name         = strdup(m_dbname.c_str());
    hss_config_p->operator_key          = strdup(m_optkey.c_str());
    hss_config_p->freediameter_config   = strdup(m_diameterconfiguration.c_str());
 
@@ -478,6 +531,9 @@ void Options::fillhssconfig(hss_config_t *hss_config_p)
      }
      hss_config_p->valid_op = 1;
    }
+
+   /*Redis port */
+   hss_config_p->redis_port = m_redisport;
 
    if(m_randvector) {
       hss_config_p->random = (char*)"true";

@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -200,6 +201,7 @@ public :
    SStats(bool logElapsed, StatSerializationMode serializ_mode, StatSerializationEngine engine);
    virtual ~SStats();
    void onInit();
+   void onInitUsingSimulatedTimer();
    void onQuit();
    void onTimer( SEventThread::Timer &t );
    void setInterval(long interval) { m_interval = interval; }

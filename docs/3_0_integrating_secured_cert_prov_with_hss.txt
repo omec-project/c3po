@@ -1,0 +1,229 @@
+--------------------------------------------------------------------------------
+This document provide steps to integrate Graphene Secured Certificate 
+Provisioning flow with HSS.
+--------------------------------------------------------------------------------
+
+
+A] Build Graphene
+
+    A.1] Ensure that Intel SGX DCAP driver and Intel SGX SDK/PSW is installed
+    
+    A.2] Ensure that the Graphene SGX driver is installed by executing the 
+        following command
+        
+        lsmod | grep gsgx  	
+        
+        Above command should list gsgx, otherwise refer section A of 
+        2_0_integrating_hss_with_graphene_sgx.txt to install it.
+	
+    A.3] Execute the following commands
+    
+        # Clone the Graphene repository that holds the Secured Certificate 
+        Provisioning flow
+        $ git clone -b feature_certificate_provisioning_flow https://github.com/GSLabDev/graphene.git
+	   
+        $ cd graphene
+		
+        $ openssl genrsa -3 -out Pal/src/host/Linux-SGX/signer/enclave-key.pem 3072
+    
+        $ sudo apt-get install -y \
+    build-essential autoconf gawk bison wget python3 libcurl4-openssl-dev \
+    python3-protobuf libprotobuf-c-dev protobuf-c-compiler python3-pip
+	
+        $ python3 -m pip install toml>=0.10
+        
+        # Note: following step will take time
+        $ make
+        
+        $ ISGX_DRIVER_PATH=<path-to-sgx-driver-source> make SGX=1
+        eg. ISGX_DRIVER_PATH=/usr/src/sgx-1.36.2/ make SGX=1
+        
+        
+B] Build Secured Certificate Provisioning library
+	
+    Note: Please read "Certificate Provisioning Library" section in 
+    <Graphene Directory>/Pal/src/host/Linux-SGX/tools/README.rst to understand 
+    the role of the library. The following command will build the 
+    libcert_prov_attest.so
+    
+    # From the root of Graphene directory cloned in step A run the following
+    command
+    $ cd Pal/src/host/Linux-SGX/tools/ra-tls && make dcap
+        
+C] Building Secured Certificate Provisioning Server (Verifier)
+	
+    # From the root of Graphene directory cloned in step A run the commands 
+    mentioned below
+    
+    $ cd Examples/ra-tls-secret-prov/
+    
+    Note: Please read the "README.md" file to understand the roles of Certificate 
+    Provisioning server, client. Also refer the secured_cert_provisioning.png
+    image that explains the Secured Certificate Provisioning flow in brief.
+    
+    $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./libs
+    
+    $ make app dcap files/input.txt
+		
+D] Setting up a local CA that will sign Certificate Signing Requests (CSRs)
+    received from the Certificate Provisioning clients.
+    
+    $ cd <Graphene Directory>/Examples/ra-tls-secret-prov/ca/
+    
+    Follow the steps mentioned in the README.md file.
+   
+E] Running the Secured Certificate Provisioning Server
+    Note : Ensure that the CA is up and running. Refer Section D
+    
+    # From the root of Graphene directory cloned in step A run the commands 
+    mentioned below
+	
+    $ cd Examples/ra-tls-secret-prov/
+    $ RA_TLS_ALLOW_OUTDATED_TCB_INSECURE=1 ./cert_prov_server
+    
+F] Integrating the Secured Certificate Provisioning flow with HSS
+    
+    Note: Make sure that HSS and required components are already built and 
+    installed following the 1_0_adding_redis_support_in_hss.txt document.
+
+    From the root of Secured HSS-Redis Repository/directory run the commands 
+    mentioned below
+    
+    F.1] Copy test CA certs from Graphene directory
+        
+        $ cp <path to Graphene repository>/Examples/ra-tls-secret-prov/certs/test-ca-sha256.crt hss/conf/
+    
+    F.2] Open graphene/hss/hss.Makefile and make the following changes
+    
+        1) Modify the "GRAPHENEDIR" variable to point to the Graphene repository
+        cloned in section A.3
+        
+        2) Comment the following line
+        
+            "all: hss.manifest.sgx hss.sig hss.token"
+            
+        3) Uncomment the following line
+        
+            "all: libcert_prov_attest.so hss.manifest.sgx hss.sig hss.token"
+            
+    F.3] Open graphene/hss/hss.manifest.template
+  
+        1) Uncomment all the configuration directives under the "Secured 
+        Certificate Provisioning" section.
+            Note: Refer Annex A to understand the role of the directives.
+            
+    F.4] Open hss/conf/hss.json and set the following options
+        
+        1) redistlscert   : "/provisioned_certs/provisioned_ca_sign_cert.crt"
+        2) redistlskey    : "/provisioned_certs/provisioned_priv_key.pem"
+        3) redistlscacert : "/provisioned_certs/provisioned_ca_cert.crt"
+        
+        Note: The file names "provisioned_ca_sign_cert.crt", 
+        "provisioned_priv_key.pem" and "provisioned_ca_cert.crt" are as per the 
+        Secured Certificate Provisioning Library and can not be changed.
+        However the directory in which the certificate files will be stored by 
+        library can be configured using the hss.manifest.template (refer Annex A)
+        and the above three options should reflect the same.
+            
+    F.5] Run option 6 from the install.sh.
+    
+    F.6] Running HSS inside Graphene with the Secured Certificate Provisioning 
+        Flow
+        
+        Note: Make sure that the local CA and the Verifier is up and running
+        following section D and E
+        
+        From the root of Secured HSS-Redis Repository/directory run the commands 
+        mentioned below
+    
+        $ cd graphene/hss
+        $ SGX=1 ./pal_loader ./hss -j conf/hss.json
+  
+        Note: The client side Secured Certificate Provisioning flow will be 
+        executed as a part of the preloaded libcert_prov_attest.so library before
+        the HSS is launched.
+        
+        
+G] Annex A
+    
+    This sections explains the directives and its values that are expected to be
+    set inside the Graphene application manifest file to enable the Secured 
+    Certificate Provisioning Flow. 
+    Also refer https://graphene.readthedocs.io/en/latest/manifest-syntax.html#
+    and https://graphene.readthedocs.io/en/latest/attestation.html
+    for detailed description of the directives.
+      
+    G.1) Passing environment variables securely to the Graphene instance.
+        
+        loader.env.<Environment Variable>
+            
+        1) loader.env.LD_PRELOAD
+            shared objects pointed by LD_PRELOAD are loaded before any other
+            binary is loaded.
+            Set its value to point to the Secured Certificate Provisioning 
+            library(libcert_prov_attest.so).
+        
+        2) loader.env.SECRET_PROVISION_CONSTRUCTOR
+            Set its value to 1/true/TRUE to execute certificate provisioning
+            logic before the application starts.
+        
+        3) loader.env.SECRET_PROVISION_CA_CHAIN_PATH
+            Path to the CA certificate that will be used as a trust root to
+            authenticate the certificate received from the verifier while 
+            establishing an RA-TLS session with it. Refer section F.1.
+            
+        4) loader.env.SECRET_PROVISION_SERVERS
+            Name/IP address and port of the Verifier to connect to.
+            
+        5) loader.env.SECRET_PROVISION_PUB_PRIV_KEY_COMBINED
+            Tells the certificate provisioning library whether or not to also 
+            write the public key in the file that holds the private key.
+            set it to "false" or "true" as per the need.
+            
+        6) loader.env.SECRET_PROVISION_SUBJECT_NAME
+            Subject name to be used in the Certificate Signing Request (CSR)
+            sent to the verifier and therefore in the CA signed certificate 
+            provisioned by the verifier.
+            
+        7) loader.env.VERIFIER_PROVISIONED_CERT_DIR
+            Directory where the certificate provisioning library will store the
+            provisioned certificates(CA signed and CA certificate) along with 
+            the corresponding private key. 
+            Note: This value should be same as the "fs.mount.provisionedcerts.path"
+            directive".
+            
+    G.2] Enabling Remote Attesation 
+        
+        1) sgx.remote_attestation
+            Set it to 1 to enable remote attestation
+            
+        2) sgx.ra_client_spid
+            Set it "" (empty) to indicate DCAP based attestation.
+            
+    G.3] Enabling tmpfs File system. 
+    
+        1) fs.mount.provisionedcerts.type
+            set it to "tmpfs" to ensure that the secrets in this FS are only 
+            visible to the Graphene instance and the application running inside 
+            it and not to the outside world.
+        
+        2) fs.mount.provisionedcerts.path
+            Directory where the certificate provisioning library will store the
+            provisioned certificates(CA signed and CA certificate) along with 
+            the corresponding private key. 
+            Note: loader.env.VERIFIER_PROVISIONED_CERT_DIR should also hold the 
+            same value
+            
+        3) fs.mount.provisionedcerts.uri
+            Set it to "" as it is ignored when the FS type is "tmpfs".
+        
+    G.4) Defining trusted files.
+            
+        sgx.trusted_files.<identifier> = "file:<file path>"
+    
+        Mark the files provided under "loader.env.SECRET_PROVISION_CA_CHAIN_PATH"
+        and "loader.env.LD_PRELOAD" directives as trusted files using the above
+        format.
+        
+    
+    

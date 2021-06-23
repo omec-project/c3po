@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -184,11 +185,15 @@ public:
    bool phaseReady(int phase, uint32_t adjustment=0);
    void triggerNextPhase();
    static void processNextPhase(ULRProcessor *pthis);
+   static void processNextPhaseSynch(ULRProcessor *pthis);
 
-   void phase1();
+   void phase1(bool synch);
+   void phase1dbsynch();
+   void phase1dbpipe();
+   void phase1dbasynch();
    void phase2();
    void phase3();
-   void phase4();
+   void phase4(bool synch);
    void phase5();
 
    int getNextPhase() { return m_nextphase; }
@@ -199,6 +204,7 @@ private:
    static void on_ulr_callback(CassFuture *f, void *data);
 
    void getEvents();
+   void getEventsSynch();
 
    void getImsiInfo(SCassFuture &future);
    void getExternalIds(SCassFuture &future);
@@ -301,9 +307,10 @@ public:
    bool phaseReady(int phase, uint32_t adjustment=0);
    void triggerNextPhase();
    static void processNextPhase(AIRProcessor *pthis);
+   static void processNextPhaseSynch(AIRProcessor *pthis);
 
-   void phase1();
-   void phase2();
+   void phase1(bool synch);
+   void phase2(bool synch);
    void phase3();
 
    int getNextPhase() { return m_nextphase; }

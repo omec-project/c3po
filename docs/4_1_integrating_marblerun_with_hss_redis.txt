@@ -1,0 +1,230 @@
+--------------------------------------------------------------------------------
+This documents provides steps to integrate HSS and Redis Server with Marblerun
+--------------------------------------------------------------------------------
+
+
+Prerequisites:
+    1) Marblerun is successfully built along with its prerequisites following 
+       the "4_0_building_marblerun.txt" file. 
+       Marblerun commit ID : 60a0096674c23d6affc51a32b5c27af72648ef1a
+       
+    2) HSS is successfully built and configured to work with Graphene following 
+       the 2_0_integrating_hss_with_graphene_sgx.txt file.
+    
+    3) Redis server is successfully built and configured to work with Graphene 
+       following the 2_1_integrating_redis_with_graphene_sgx.txt file.
+
+
+A] Setup
+    A.1] Create a folder named "graphene_hss_redis" under <marblerun repo>/samples/
+    A.2] Run the following commands
+    
+        $ cd <marblerun repo>/samples/graphene_hss_redis/
+        
+        create a symlink to HSS and Redis server runtimes. Alternatively, 
+        one can copy them to the current directory.
+        
+        $ ln -s <hss repo>/graphene/hss hssdir
+        $ ln -s <Graphene repo>/Examples/redis redisdir
+
+    A.3] Download the "premain-graphene".
+        
+        Run the following command from both the hssdir and redisdir directories
+        
+        wget https://github.com/edgelesssys/marblerun/releases/download/v0.3.2/premain-graphene
+        
+B) Configuration
+
+    From the <marblerun repo>/samples/graphene_hss_redis/ directory perform the
+    following steps
+    
+    B.1] Create manifest.json (Marblerun manifest file) with the following
+        contents. Refer <link> to understand the role of Marblerun manifest file.
+        
+    -------------------------------Start of file--------------------------------
+        {
+            "Packages": {
+                "backend": {
+                    "Debug": true,
+                    "SignerID": "219ec7fc40444de060814f9a55600e550012c4a9c8d4fbe108704c4c14857e97",
+                    "ProductID": 0,
+                    "SecurityVersion": 0
+                }
+            },
+            "Marbles": {
+                "hss-main": {
+                    "Package": "backend",
+                    "Parameters": {
+                        "Argv": [
+                            "./hss",
+                            "-j",
+                            "./conf/hss.json"
+                        ],
+                        "Files": {
+                            "/dev/attestation/protected_files_key": "{{ hex .Marblerun.SealKey }}",
+                            "hss.crt": "{{ pem .Marblerun.MarbleCert.Cert }}",
+                            "hss.key": "{{ pem .Marblerun.MarbleCert.Private }}",
+                            "ca.crt": "{{ pem .Marblerun.RootCA.Cert }}"
+                        }
+                    }
+                },
+                "redis-main": {
+                    "Package": "backend",
+                    "Parameters": {
+                        "Argv": [
+                            "./redis-server",
+                            "./redis.conf"
+                        ],
+                        "Files": {
+                            "/dev/attestation/protected_files_key": "{{ hex .Marblerun.SealKey }}",
+                            "redis.conf": "protected-mode no\ntls-port 6379\nport 0\ntls-cert-file redis.crt\ntls-key-file redis.key\ntls-ca-cert-file ca.crt\ntls-auth-clients no\nsave ''\nloglevel debug",
+                            "redis.crt": "{{ pem .Marblerun.MarbleCert.Cert }}",
+                            "redis.key": "{{ pem .Marblerun.MarbleCert.Private }}",
+                            "ca.crt": "{{ pem .Marblerun.RootCA.Cert }}"
+                        }
+                    }
+                }
+            }
+        }
+    -------------------------------End of file--------------------------------
+
+    B.2] Modify "hssdir/hss.manifest.template" to add the following
+    
+        Note: If the directives are already present, then modify them to reflect
+        the following values.
+    
+        libos.entrypoint = "file:premain-graphene"          
+        sgx.trusted_files.premain = "file:premain-graphene" 
+                                                            
+        # argv0 needs to contain the name of your executable
+        loader.argv0_override = "hss"                       
+                                                            
+        loader.insecure__use_host_env = 1                   
+                                                            
+        sgx.allowed_files.uuid = "file:uuid"                
+                                                            
+        sgx.remote_attestation = 1  
+        
+        sgx.protected_files.cert = "file:hss.crt"
+        sgx.protected_files.privkey = "file:hss.key"
+        sgx.protected_files.cacert = "file:ca.crt"
+        
+        # Mark your executable as "trusted"
+        sgx.trusted_files.hss = "file:./hss"
+        
+    B.3] Modify "redisdir/redis-server.manifest.template" to add the following
+    
+        Refer to the directives mentioned in section B.1. Make sure to modify 
+        the name of the executable and certificates wherever required.
+        
+    B.4] Modify "hssdir/conf/hss.json" to set the following options
+    
+        1) redistlscert   : "hss.crt"
+        2) redistlskey    : "hss.key"
+        3) redistlscacert : "ca.crt"
+    
+        
+C] Build
+
+    From the <marblerun repo>/samples/graphene_hss_redis/ directory perform the
+    following steps,
+
+    C.1] Building HSS
+        
+        $ cd hssdir
+        $ make clean -f hss.Makefile
+        $ make SGX=1 -f hss.Makefile
+        
+    C.2] Building Redis server
+        
+        $ cd redisdir
+        $ make clean
+            
+            note : if Redis server was previously built without TLS enabled then run
+            "$ make distclean" instead of "$ make clean"
+                
+        $ make SGX=1 BUILD_TLS=yes
+        
+    C.3] Storing the MRSIGNER of HSS and Redis in Marblerun manifest file.
+    
+        Copy the value of "mr_signer" which can be found at the end of the build
+        log of HSS and Redis and paste it in front of the "SignerID" option in
+        the manifest.json file (Refer section B.1)
+    
+        
+D] Running the Marbles along with the Marblerun Coordinator.
+
+    D.1] Running the Marblerun Coordinator.
+        (Also refer https://www.marblerun.sh/docs/deployment/standalone/ )
+        
+        From the root of the marblerun repository run the following command
+        
+        Note: The Coordinator's state is sealed to $PWD/marblerun-coordinator-data/sealed_data.
+        If you want a fresh restart remove this file first: 
+            $ rm $PWD/marblerun-coordinator-data/sealed_data.
+        
+        $ erthost build/coordinator-enclave.signed
+        
+    D.2] Uploading the Marblerun manifest file to the Coordinator.
+    
+        $ cd <marblerun repo>/samples/graphene_hss_redis/
+        $ curl -k --data-binary @manifest.json https://localhost:4433/manifest
+         
+    D.3] Launching HSS as a marble
+    
+        $ cd <marblerun repo>/samples/graphene_hss_redis/hssdir
+        $ EDG_MARBLE_TYPE=hss-main EDG_MARBLE_COORDINATOR_ADDR=localhost:2001 EDG_MARBLE_UUID_FILE=uuid EDG_MARBLE_DNS_NAMES=localhost SGX=1 ./pal_loader ./hss
+        
+    D.4] Launching Redis server as a marble
+        
+        $ cd <marblerun repo>/samples/graphene_hss_redis/redisdir
+        $ EDG_MARBLE_TYPE=redis-main EDG_MARBLE_COORDINATOR_ADDR=localhost:2001 EDG_MARBLE_UUID_FILE=uuid EDG_MARBLE_DNS_NAMES=localhost SGX=1 ./pal_loader ./redis-server
+        
+        
+    Notes: 
+            1) Relaunching Marbles(HSS and Redis) will require you to first 
+               manually delete the certificates and private key provisioned by
+               the Coordinator.
+               
+            2) With the marblerun commit used in this document, when a marble 
+               tries to establish a TLS/mTLS session with another marble, it 
+               fails to trust the root of the TLS certificate presented by 
+               another marble. A detailed explanation of the issue can be found
+               at : https://github.com/edgelesssys/marblerun/issues/175
+
+               As a work around one can download the entire certificate chain 
+               using "era" using the following commands. Then configure HSS
+               (hss.json) and Redis to use the downloaded certificate chain as 
+               trusted CA certificate. For redis, you can configure it in the 
+               Marblerun manifest.json file(search for "tls-ca-cert-file").
+               Remember to also mark the certificate chain as "trusted" in the 
+               Graphene manifest files of HSS and Redis and then re-build HSS 
+               and Redis (refer section C)
+        
+                # Downloading Era
+        
+                    $ sudo wget -O /usr/local/bin/era https://github.com/edgelesssys/era/releases/latest/download/era
+                    $ sudo chmod +x /usr/local/bin/era
+        
+                # Downloading the entire certificate chain from the coordinator using era
+        
+                    era -c coordinator-era.json -h localhost:4433 -output-chain marblerun-chain.pem -output-root marblerun-root.pem -output-intermediate marblerun-intermedite.pem -skip-quote
+    
+    
+E] Important links
+    
+    [1] https://github.com/edgelesssys/marblerun/issues/175
+    [2] https://www.marblerun.sh/docs/building-services/graphene/
+    [3] https://www.marblerun.sh/docs/deployment/standalone/
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    

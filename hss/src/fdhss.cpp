@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -81,11 +82,16 @@ FDHss::~FDHss() {
       delete m_s6capp;
       m_s6capp = NULL;
    }
+   if(NULL != mp_dbobj){
+      delete mp_dbobj;
+      mp_dbobj = NULL;
+   }
+
 }
 
 bool FDHss::isMmeValid(std::string &mmehost) {
    int32_t mmeid(0);
-   return m_dbobj.getMmeIdFromHost(mmehost, mmeid, NULL, NULL);
+   return mp_dbobj->getMmeIdFromHost(mmehost, mmeid, NULL, NULL);
 }
 
 int FDHss::s6a_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (struct peer_info *)){
@@ -115,8 +121,28 @@ int FDHss::s6a_peer_validate ( struct peer_info *info, int *auth, int (**cb2) (s
 }
 
 bool FDHss::initdb(hss_config_t * hss_config_p){
-   m_dbobj.connect(hss_config_p->cassandra_server);
-   return true;
+    try
+    {
+	mp_dbobj = DataAccess::createDataAccessObj(hss_config_p->dbms_type);
+	if(!mp_dbobj) {
+		return false;
+	}
+
+	if ( Options::isDbmsTypeRedis() ) {
+		mp_dbobj->connect(hss_config_p->redis_server, hss_config_p->redis_port,
+						hss_config_p->database_name);
+	}
+	else if ( Options::isDbmsTypeCassandra() ) {
+		mp_dbobj->connect(hss_config_p->cassandra_server);
+	}
+    }
+    catch (...)
+    {
+	Logger::system().startup( "Caught exception while creating DataAccess object." );
+	return false;
+    }
+
+    return true;
 }
 
 bool FDHss::init(hss_config_t * hss_config_p){
@@ -130,13 +156,18 @@ bool FDHss::init(hss_config_t * hss_config_p){
          return false;
       }
 
-      std::cout << "Connecting to cassandra host: " << hss_config_p->cassandra_server << std::endl;
-      //init the casssandra object with the parsed object
+      // This is checked here to avoid a call to getifaddrs which is not
+      // supported in graphene.
+      if(FD_IS_LIST_EMPTY(&fd_g_config->cnf_endpoints)){
+      	std::cout << "\nError: Please use \"ListenOn\" parameter in the configuration."
+			" This information is required to generate the CER/CEA messages.\n";
+	return false;
+      }
 
-      // start s6a Application 
-      m_s6tapp = new s6t::Application(m_dbobj);
-      m_s6aapp = new s6as6d::Application(m_dbobj,hss_config_p->verify_roaming);
-      m_s6capp = new s6c::Application(m_dbobj);
+      // start s6a Application
+      m_s6tapp = new s6t::Application(*mp_dbobj);
+      m_s6aapp = new s6as6d::Application(*mp_dbobj,hss_config_p->verify_roaming);
+      m_s6capp = new s6c::Application(*mp_dbobj);
 
       // advertise support for the accounting application
       FDDictionaryEntryVendor vnd3gpp( m_s6tapp->getDict().app() );
@@ -221,7 +252,7 @@ bool FDHss::init(hss_config_t * hss_config_p){
 
 void FDHss::updateOpcKeys(const uint8_t opP[16])
 {
-   m_dbobj.checkOpcKeys(opP);
+   mp_dbobj->checkOpcKeys(opP);
 }
 
 void FDHss::shutdown()
@@ -329,7 +360,7 @@ bool FDHss::synchFix()
    if (!parsehex(Options::getsynchauts().c_str(), auts, -1))
       return false;
 
-   if (!m_dbobj.getImsiSec(Options::getsynchimsi(), imsisec, NULL, NULL))
+   if (!mp_dbobj->getImsiSec(Options::getsynchimsi(), imsisec, NULL, NULL))
       return false;
 
    sqn = sqn_ms_derive_cpp (imsisec.opc, imsisec.key, auts, imsisec.rand);
@@ -346,7 +377,7 @@ bool FDHss::synchFix()
      eu.u64 += 32;
      U64_TO_SQN(eu, sqn);
 
-     result = m_dbobj.updateRandSqn(Options::getsynchimsi(), rand, sqn, false, NULL, NULL);
+     result = mp_dbobj->updateRandSqn(Options::getsynchimsi(), rand, sqn, false, NULL, NULL);
 
      free (sqn);
    }
@@ -362,7 +393,7 @@ bool FDHss::synchFix()
 void FDHss::sendRIR_ChangeImsiImeiSvAssn(ImsiImeiData &data)
 {
    DAEventList evt_list;
-   m_dbobj.getEventsFromImsi(data.imsi, evt_list );
+   mp_dbobj->getEventsFromImsi(data.imsi, evt_list );
 
    for( DAEventList::iterator it_evt = evt_list.begin() ; it_evt != evt_list.end(); ++ it_evt )
    {
@@ -419,7 +450,7 @@ s->dump();
 
 void FDHss::poppulate_IMSIs(const ImsiEntity &ie)
 {
-    m_dbobj.insertUserImsi(ie, NULL, NULL);
+    mp_dbobj->insertUserImsi(ie, NULL, NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -489,8 +520,9 @@ RIRBuilder::~RIRBuilder(){
 void RIRBuilder::onInit(){
    m_idletimer.setInterval( m_interval );
    m_idletimer.setOneShot( false );
-   initTimer( m_idletimer );
-   m_idletimer.start();
+   //initTimer( m_idletimer );
+   //m_idletimer.start();
+   initSimulatedTimer( m_idletimer );
 }
 void RIRBuilder::onQuit(){
 }

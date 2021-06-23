@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -20,6 +21,7 @@
 #include "statshss.h"
 #include "util.h"
 #include "hssStatsPromClient.h"
+#include "options.h"
 
 #include <iomanip>
 extern "C" {
@@ -293,7 +295,7 @@ int CALRcmd::process( FDMessageRequest *req )
 // receives the CALR command.
    return -1;
 }
- 
+
 // AUIR Request (req) Command member functions
 
 
@@ -667,7 +669,7 @@ int INSDRcmd::process( FDMessageRequest *req )
 // receives the INSDR command.
    return -1;
 }
- 
+
 // DESDR Request (req) Command member functions
 
 
@@ -728,7 +730,7 @@ int DESDRcmd::process( FDMessageRequest *req )
 // receives the DESDR command.
    return -1;
 }
- 
+
 // PUUR Request (req) Command member functions
 
 
@@ -863,7 +865,7 @@ int PUURcmd::process( FDMessageRequest *req )
    ans.send();
    return 0;
 }
- 
+
 // RER Request (req) Command member functions
 
 
@@ -924,7 +926,7 @@ int RERcmd::process( FDMessageRequest *req )
 // receives the RER command.
    return -1;
 }
- 
+
 
 }
 
@@ -946,7 +948,14 @@ void ULRStateProcessor::process()
    if (!m_processor)
       return;
 
-   ULRProcessor::processNextPhase(m_processor);
+    if(Options::isDbmsTypeRedis()) 
+    {
+        ULRProcessor::processNextPhaseSynch(m_processor);
+    }
+    else if (Options::isDbmsTypeCassandra()) 
+    {
+        ULRProcessor::processNextPhase(m_processor);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1156,7 +1165,7 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
             case ULRSTATE_PHASE1:
             {
                hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_UPDATE_LOCATION_REQUEST);
-               pthis->phase1();
+               pthis->phase1(false);
                break;
             }
             case ULRSTATE_PHASE2:
@@ -1171,7 +1180,7 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
             }
             case ULRSTATE_PHASE4:
             {
-               pthis->phase4();
+               pthis->phase4(false);
                break;
             }
             case ULRSTATE_PHASE5:
@@ -1205,6 +1214,80 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
    }
 }
 
+void ULRProcessor::processNextPhaseSynch(ULRProcessor *pthis)
+{
+    ULRProcessor *deleteProc = NULL;
+#ifdef TRACK_EXECUTION
+    const char *phases[] = {
+            "ULRSTATE_PHASEFINAL",
+            "ULRSTATE_PHASE1",
+            "ULRSTATE_PHASE2",
+            "ULRSTATE_PHASE3",
+            "ULRSTATE_PHASE4",
+            "ULRSTATE_PHASE5",
+            "UNKNOWN"
+    };
+#endif
+
+    while (pthis) {
+
+#ifdef TRACK_EXECUTION
+    printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phases[pthis->m_nextphase - ULRSTATE_BASE]);
+#endif
+        switch (pthis->m_nextphase)
+        {
+            case ULRSTATE_PHASE1:
+            {
+                hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_UPDATE_LOCATION_REQUEST);
+                pthis->phase1(true);
+                break;
+            }
+            case ULRSTATE_PHASE2:
+            {
+                pthis->phase2();
+                break;
+            }
+            case ULRSTATE_PHASE3:
+            {
+                pthis->phase3();
+                break;
+            }
+            case ULRSTATE_PHASE4:
+            {
+                pthis->phase4(true);
+                break;
+            }
+            case ULRSTATE_PHASE5:
+            {
+                pthis->phase5();
+                break;
+            }
+            case ULRSTATE_PHASEFINAL:
+            {
+                deleteProc = pthis;
+                pthis = NULL;
+                break;
+            }
+            default:
+            {
+                Logger::s6as6d().warn("Unrecognized ULRSTATE (%u)", pthis->m_nextphase);
+                pthis = NULL;
+                break;
+            }
+        }
+
+    }
+
+    if (deleteProc)
+    {
+        delete deleteProc;
+        deleteProc = NULL;
+        fdHss.getWorkerQueue().finishProcessor();
+        fdHss.getWorkerQueue().startProcessor();
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void ULRProcessor::getImsiInfo(SCassFuture &future)
@@ -1217,7 +1300,7 @@ void ULRProcessor::getExternalIds(SCassFuture &future)
 {
    bool success = m_app.dataaccess().getExtIdsFromImsiData( future, m_extIdLst );
    DB_OP_COMPLETE(ULRDB_GET_EXT_IDS, m_dbexecuted, m_dbresult, success);
-
+    
    if (success)
    {
       bool first = true;
@@ -1234,7 +1317,7 @@ void ULRProcessor::getExternalIds(SCassFuture &future)
 
       atomic_inc_fetch(m_dbissued);
       success = m_app.dataaccess().getEventIdsFromExtIds(ss.str(), m_evtIdLst,
-            on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTIDS_EXTIDS, *this));
+            (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTIDS_EXTIDS, *this));
       if (!success)
       {
          DB_OP_COMPLETE(ULRDB_GET_EVNTIDS_EXTIDS, m_dbexecuted, m_dbresult, false);
@@ -1330,7 +1413,7 @@ void ULRProcessor::getEvents()
          // issue the query
          atomic_inc_fetch(m_dbissued);
          success = m_app.dataaccess().getEvents(scef_id.c_str(), scef_ref_ids, m_evtLst,
-               on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTS_EVNTIDS, *this));
+               (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTS_EVNTIDS, *this));
          if (!success)
          {
             DB_OP_COMPLETE(ULRDB_GET_EVNTS_EVNTIDS, m_dbexecuted, m_dbresult, false);
@@ -1350,13 +1433,53 @@ void ULRProcessor::getEvents()
    {
       atomic_inc_fetch(m_dbissued);
       success = m_app.dataaccess().getEvents(scef_id.c_str(), scef_ref_ids, m_evtLst,
-            on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTS_EVNTIDS, *this));
+            (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTS_EVNTIDS, *this));
       if (!success)
       {
          DB_OP_COMPLETE(ULRDB_GET_EVNTS_EVNTIDS, m_dbexecuted, m_dbresult, false);
          atomic_dec_fetch(m_dbissued);
       }
    }
+}
+
+void ULRProcessor::getEventsSynch()
+{
+    bool success = false;
+    std::string scef_id = "";
+    std::list<uint32_t> scef_ref_ids;
+
+    if (m_evtIdLst.size() == 0)
+    {
+        return;
+    }
+
+    // sort the event id list
+    m_evtIdLst.sort(DAEventIdList::compare);
+
+    for (auto it = m_evtIdLst.begin(); it != m_evtIdLst.end(); ++it)
+    {
+        if (scef_id != (*it)->scef_id && scef_ref_ids.size() > 0)
+        {
+            // issue the query
+            success = m_app.dataaccess().getEvents(scef_id.c_str(), scef_ref_ids, m_evtLst, NULL, NULL);
+            if (!success)
+            {
+                return;
+            }
+
+            // set for the next scef_id
+            scef_ref_ids.clear();
+            scef_id = (*it)->scef_id;
+        }
+
+        scef_ref_ids.push_back((*it)->scef_ref_id);
+    }
+
+    if (scef_ref_ids.size() > 0)
+    {
+        m_app.dataaccess().getEvents(scef_id.c_str(), scef_ref_ids, m_evtLst, NULL, NULL);
+    }
+
 }
 
 void ULRProcessor::getEvents(SCassFuture &future)
@@ -1392,7 +1515,7 @@ void ULRProcessor::getMmeIdentity(SCassFuture &future)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ULRProcessor::phase1()
+void ULRProcessor::phase1(bool synch)
 {
    uint32_t u32;
 #ifdef PERFORMANCE_TIMING
@@ -1430,75 +1553,173 @@ void ULRProcessor::phase1()
 
    ULR_TIMER_SET(ulr2, m_perf_timer);
 
-   //
-   // issue initial database queries
-   //
-
-   bool result;
-
-   m_nextphase = ULRSTATE_PHASE2;
-
-   result = m_app.dataaccess().getImsiInfo(m_new_info.imsi.c_str(), m_orig_info,
-         on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_IMSI_INFO, *this));
-
-   if (result)
+   if(synch)
    {
-      atomic_inc_fetch(m_dbissued);
-      result = m_app.dataaccess().getExtIdsFromImsi(m_new_info.imsi.c_str(), m_extIdLst,
-            on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EXT_IDS, *this));
-      if (!result)
-      {
-         DB_OP_COMPLETE(ULRDB_GET_EXT_IDS, m_dbexecuted, m_dbresult, result);
-         DB_OP_COMPLETE(ULRDB_GET_EVNTIDS_EXTIDS, m_dbexecuted, m_dbresult, result);
-         DB_OP_COMPLETE(ULRDB_GET_EVNTS_EVNTIDS, m_dbexecuted, m_dbresult, result);
-         atomic_dec_fetch(m_dbissued);
-      }
+      /* Use phase1dbsynch() to access redisdb without the pipelining feature. */
+      //phase1dbsynch();
+      phase1dbpipe();
    }
    else
    {
-      DB_OP_COMPLETE(ULRDB_GET_IMSI_INFO, m_dbexecuted, m_dbresult, result);
+      phase1dbasynch();
    }
+}
 
-   if (result)
-   {
-      atomic_inc_fetch(m_dbissued);
-      result = m_app.dataaccess().getEventIdsFromMsisdn(m_new_info.msisdn, m_evtIdLst,
-            on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTIDS_MSISDN, *this));
-      if (!result)
-      {
-         DB_OP_COMPLETE(ULRDB_GET_EVNTIDS_MSISDN, m_dbexecuted, m_dbresult, result);
-         DB_OP_COMPLETE(ULRDB_GET_EVNTS_EVNTIDS, m_dbexecuted, m_dbresult, result);
-         atomic_dec_fetch(m_dbissued);
-      }
-   }
+///////////////////////////////////////////////////////////////////////////////
 
-   if (result)
-   {
-      atomic_inc_fetch(m_dbissued);
-      result = m_app.dataaccess().getMmeIdFromHost(m_new_info.mmehost, m_mmeidentity,
-            on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_MMEID_HOST, *this));
-      if (!result)
-      {
-         DB_OP_COMPLETE(ULRDB_GET_MMEID_HOST, m_dbexecuted, m_dbresult, result);
-         atomic_dec_fetch(m_dbissued);
-      }
-   }
+void ULRProcessor::phase1dbasynch()
+{
+    bool result;
 
-   if (result)
-   {
-      atomic_inc_fetch(m_dbissued);
-   }
-   else
-   {
-      FDAvp er ( m_dict.avpExperimentalResult() );
-      er.add( m_dict.avpVendorId(),  VENDOR_3GPP);
-      er.add( m_dict.avpExperimentalResultCode(),  DIAMETER_ERROR_USER_UNKNOWN);
-      m_ans.add(er);
-      m_ans.send();
-      StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_USER_UNKNOWN);
-      hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {{"result_code","user_unknown1"}});
-      m_nextphase = ULRSTATE_PHASEFINAL;
-   }
+    m_nextphase = ULRSTATE_PHASE2;
+
+    result = m_app.dataaccess().getImsiInfo(m_new_info.imsi.c_str(), m_orig_info,
+            (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_IMSI_INFO, *this));
+
+    if (result)
+    {
+        atomic_inc_fetch(m_dbissued);
+        result = m_app.dataaccess().getExtIdsFromImsi(m_new_info.imsi.c_str(), m_extIdLst,
+          (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EXT_IDS, *this));
+        if (!result)
+        {
+            DB_OP_COMPLETE(ULRDB_GET_EXT_IDS, m_dbexecuted, m_dbresult, result);
+            DB_OP_COMPLETE(ULRDB_GET_EVNTIDS_EXTIDS, m_dbexecuted, m_dbresult, result);
+            DB_OP_COMPLETE(ULRDB_GET_EVNTS_EVNTIDS, m_dbexecuted, m_dbresult, result);
+            atomic_dec_fetch(m_dbissued);
+        }
+    }
+    else
+    {
+        DB_OP_COMPLETE(ULRDB_GET_IMSI_INFO, m_dbexecuted, m_dbresult, result);
+    }
+
+    if (result)
+    {
+        atomic_inc_fetch(m_dbissued);
+        result = m_app.dataaccess().getEventIdsFromMsisdn(m_new_info.msisdn, m_evtIdLst,
+                (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_EVNTIDS_MSISDN, *this));
+        if (!result)
+        {
+            DB_OP_COMPLETE(ULRDB_GET_EVNTIDS_MSISDN, m_dbexecuted, m_dbresult, result);
+            DB_OP_COMPLETE(ULRDB_GET_EVNTS_EVNTIDS, m_dbexecuted, m_dbresult, result);
+            atomic_dec_fetch(m_dbissued);
+        }
+    }
+
+    if (result)
+    {
+        atomic_inc_fetch(m_dbissued);
+        result = m_app.dataaccess().getMmeIdFromHost(m_new_info.mmehost, m_mmeidentity,
+                (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_GET_MMEID_HOST, *this));
+        if (!result)
+        {
+            DB_OP_COMPLETE(ULRDB_GET_MMEID_HOST, m_dbexecuted, m_dbresult, result);
+            atomic_dec_fetch(m_dbissued);
+        }
+    }
+
+    if (result)
+    {
+        atomic_inc_fetch(m_dbissued);
+    }
+    else
+    {
+        FDAvp er ( m_dict.avpExperimentalResult() );
+        er.add( m_dict.avpVendorId(),  VENDOR_3GPP);
+        er.add( m_dict.avpExperimentalResultCode(),  DIAMETER_ERROR_USER_UNKNOWN);
+        m_ans.add(er);
+        m_ans.send();
+        StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_USER_UNKNOWN);
+        hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {
+                    {"result_code","user_unknown1"}});
+        m_nextphase = ULRSTATE_PHASEFINAL;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+void ULRProcessor::phase1dbpipe()
+{
+    bool result;
+    m_nextphase = ULRSTATE_PHASE2;
+    result = m_app.dataaccess().executeQueryUsingPipe(m_new_info.imsi.c_str(), m_orig_info, m_extIdLst, m_evtIdLst, m_evtLst,
+                m_new_info.mmehost, m_mmeidentity, m_new_info.msisdn);
+    if(m_mmeidentity == -1)
+    {
+        m_dbresult &= ~ULRDB_GET_MMEID_HOST;
+    }
+    else 
+    {
+        m_dbresult |= ULRDB_GET_MMEID_HOST;
+    }
+    if (!result)
+    {
+        FDAvp er ( m_dict.avpExperimentalResult() );
+        er.add( m_dict.avpVendorId(),  VENDOR_3GPP);
+        er.add( m_dict.avpExperimentalResultCode(),  DIAMETER_ERROR_USER_UNKNOWN);
+        m_ans.add(er);
+        m_ans.send();
+        StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_USER_UNKNOWN);
+        hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {
+                    {"result_code","user_unknown1"}});
+        m_nextphase = ULRSTATE_PHASEFINAL;
+    }
+}
+
+void ULRProcessor::phase1dbsynch()
+{
+    bool result;
+
+    m_nextphase = ULRSTATE_PHASE2;
+
+    result = m_app.dataaccess().getImsiInfo(m_new_info.imsi.c_str(), m_orig_info, NULL, NULL);
+    DB_OP_COMPLETE_RESULT(m_dbresult, ULRDB_GET_IMSI_INFO, result);
+    if (result)
+    {
+        result = m_app.dataaccess().getExtIdsFromImsi(m_new_info.imsi.c_str(), m_extIdLst, NULL, NULL);
+        if (result)
+        {
+            result = m_app.dataaccess().getEventIdsFromExtIds(m_extIdLst, m_evtIdLst, NULL, NULL);
+        }
+    }
+
+    if (result)
+    {
+        result = m_app.dataaccess().getEventIdsFromMsisdn(m_new_info.msisdn, m_evtIdLst, NULL, NULL);
+        if (result)
+        {
+            getEventsSynch();
+        }
+    }
+
+    if (result)
+    {
+        bool result = m_app.dataaccess().getMmeIdFromHost(m_new_info.mmehost, m_mmeidentity, NULL, NULL);
+        if(!result)
+        {
+                m_dbresult &= ~ULRDB_GET_MMEID_HOST;
+        }
+        else
+        {
+            m_dbresult |= ULRDB_GET_MMEID_HOST;
+        }
+    }
+
+    if (!result)
+    {
+        FDAvp er ( m_dict.avpExperimentalResult() );
+        er.add( m_dict.avpVendorId(),  VENDOR_3GPP);
+        er.add( m_dict.avpExperimentalResultCode(),  DIAMETER_ERROR_USER_UNKNOWN);
+        m_ans.add(er);
+        m_ans.send();
+        StatsHss::singleton().registerStatResult(stat_hss_ulr, VENDOR_3GPP, DIAMETER_ERROR_USER_UNKNOWN);
+        hssStats::Instance()->increment(hssStatsCounter::MME_MSG_TX_S6A_UPDATE_LOCATION_ANSWER_FAILURE, {
+                    {"result_code","user_unknown1"}});
+        m_nextphase = ULRSTATE_PHASEFINAL;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1508,7 +1729,7 @@ void ULRProcessor::phase2()
    std::string s;
    uint32_t u32;
 
-   if (!(m_dbresult & ULRDB_GET_IMSI_INFO))
+   if (!Options::isDbmsTypeRedis() && !(m_dbresult & ULRDB_GET_IMSI_INFO))
    {
       FDAvp er ( m_dict.avpExperimentalResult() );
       er.add( m_dict.avpVendorId(),  VENDOR_3GPP);
@@ -1724,7 +1945,7 @@ void ULRProcessor::phase2()
       }
    }
 
-   if((m_orig_info.supported_features.length() > 0) && 
+   if((m_orig_info.supported_features.length() > 0) &&
        fdJsonAddAvps(m_orig_info.supported_features.c_str(), m_ans.getMsg(), &s6as6d::display_error_message) != 0)
    {
         std::cout<<"Error in adding supported features\n";
@@ -1841,7 +2062,7 @@ void ULRProcessor::phase3()
    m_nextphase = ULRSTATE_PHASE4;
 }
 
-void ULRProcessor::phase4()
+void ULRProcessor::phase4( bool synch )
 {
    m_nextphase = ULRSTATE_PHASE5;
 
@@ -1855,14 +2076,26 @@ void ULRProcessor::phase4()
    m_new_info.mme_id = m_mmeidentity;
 
    atomic_inc_fetch(m_dbissued);
-   bool success = m_app.dataaccess().updateLocation(m_new_info, m_present_flags, m_mmeidentity,
-         on_ulr_callback, new ULRDatabaseAction(ULRDB_UPDATE_IMSI, *this));
-   if (!success)
-   {
-      DB_OP_COMPLETE(ULRDB_UPDATE_IMSI, m_dbexecuted, m_dbresult, false);
-      atomic_dec_fetch(m_dbissued);
-      m_nextphase = ULRSTATE_PHASEFINAL;
-   }
+    if(synch)
+    {
+        bool success = m_app.dataaccess().updateLocation(m_new_info, m_present_flags, m_mmeidentity, NULL, NULL);
+        if (!success)
+        {
+            Logger::s6as6d().error( "DataAccess::%s - Error executing updateImsiInfo()", __func__);
+            m_nextphase = ULRSTATE_PHASEFINAL;
+        }
+    }
+    else
+    {
+         bool success = m_app.dataaccess().updateLocation(m_new_info, m_present_flags, m_mmeidentity,
+            (DataAccessCallback)on_ulr_callback, new ULRDatabaseAction(ULRDB_UPDATE_IMSI, *this));
+        if (!success)
+        {
+            DB_OP_COMPLETE(ULRDB_UPDATE_IMSI, m_dbexecuted, m_dbresult, false);
+            atomic_dec_fetch(m_dbissued);
+            m_nextphase = ULRSTATE_PHASEFINAL;
+        }
+    }
 }
 
 void ULRProcessor::phase5()
@@ -1888,7 +2121,14 @@ void AIRStateProcessor::process()
    if (!m_processor)
       return;
 
-   AIRProcessor::processNextPhase(m_processor);
+   if(Options::isDbmsTypeRedis()) 
+   {
+      AIRProcessor::processNextPhaseSynch(m_processor);
+   }
+   else if (Options::isDbmsTypeCassandra()) 
+   {
+      AIRProcessor::processNextPhase(m_processor);
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2046,12 +2286,12 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
             case AIRSTATE_PHASE1:
             {
                hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_AUTH_INFO_REQUEST);
-               pthis->phase1();
+               pthis->phase1(false);
                break;
             }
             case AIRSTATE_PHASE2:
             {
-               pthis->phase2();
+               pthis->phase2(false);
                break;
             }
             case AIRSTATE_PHASE3:
@@ -2084,6 +2324,65 @@ printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phase
    }
 }
 
+void AIRProcessor::processNextPhaseSynch(AIRProcessor *pthis)
+{
+    AIRProcessor *deleteProc = NULL;
+#ifdef TRACK_EXECUTION
+    static const char *phases[] = {
+        "AIRSTATE_PHASEFINAL",
+        "AIRSTATE_PHASE1",
+        "AIRSTATE_PHASE2",
+        "AIRSTATE_PHASE3",
+        "UNKNOWN"
+    };
+#endif
+
+    while (pthis) {
+#ifdef TRACK_EXECUTION
+        printf("%lld,%s,%p,%s\n",STIMER_GET_CURRENT_TIME,__PRETTY_FUNCTION__,pthis,phases[pthis->m_nextphase - AIRSTATE_BASE]);
+#endif
+        switch (pthis->m_nextphase)
+        {
+            case AIRSTATE_PHASE1:
+            {
+                hssStats::Instance()->increment(hssStatsCounter::MME_MSG_RX_S6A_AUTH_INFO_REQUEST);
+                pthis->phase1(true);
+                break;
+            }
+            case AIRSTATE_PHASE2:
+            {
+                pthis->phase2(true);
+                break;
+            }
+            case AIRSTATE_PHASE3:
+            {
+                pthis->phase3();
+                break;
+            }
+            case AIRSTATE_PHASEFINAL:
+            {
+                deleteProc = pthis;
+                pthis = NULL;
+                break;
+            }
+            default:
+            {
+                Logger::s6as6d().warn("Unrecognized AIRSTATE (%u)", pthis->m_nextphase);
+                pthis = NULL;
+                break;
+            }
+        }
+
+     }
+
+    if (deleteProc)
+    {
+        delete deleteProc;
+        fdHss.getWorkerQueue().finishProcessor();
+        fdHss.getWorkerQueue().startProcessor();
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void AIRProcessor::getImsiSec(SCassFuture &future)
@@ -2106,7 +2405,7 @@ void AIRProcessor::updateImsi(SCassFuture &future)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AIRProcessor::phase1()
+void AIRProcessor::phase1(bool synch)
 {
    uint32_t u32;
 
@@ -2184,7 +2483,7 @@ void AIRProcessor::phase1()
    {
       if(m_plmn_len == 3 )
       {
-         if ((m_app.roaming_access_control() == true) && 
+         if ((m_app.roaming_access_control() == true) &&
             apply_access_restriction ((char*)m_imsi.c_str(), m_plmn_id) != 0)
          {
             FDAvp er ( m_dict.avpExperimentalResult() );
@@ -2220,12 +2519,23 @@ void AIRProcessor::phase1()
 
    m_nextphase = AIRSTATE_PHASE2;
 
-   if (m_app.dataaccess().getImsiSec(m_imsi, m_sec,
-         on_air_callback, new AIRDatabaseAction(AIRDB_GET_IMSI_SEC, *this)))
-   {
-      atomic_inc_fetch(m_dbissued);
-   }
-   else
+    bool result = false;
+    if (synch)
+    {
+        result = m_app.dataaccess().getImsiSec(m_imsi, m_sec, NULL, NULL);
+        DB_OP_COMPLETE_RESULT(m_dbresult, AIRDB_GET_IMSI_SEC, result);
+    }
+    else
+    {
+        result = m_app.dataaccess().getImsiSec(m_imsi, m_sec,
+                        (DataAccessCallback)on_air_callback, new AIRDatabaseAction(AIRDB_GET_IMSI_SEC, *this));
+        if (result)
+        {
+            atomic_inc_fetch(m_dbissued);
+        }
+    }
+
+    if (!result)
    {
       FDAvp er (m_dict.avpExperimentalResult());
       er.add(m_dict.avpVendorId(),  VENDOR_3GPP);
@@ -2238,7 +2548,7 @@ void AIRProcessor::phase1()
    }
 }
 
-void AIRProcessor::phase2()
+void AIRProcessor::phase2(bool synch)
 {
    if (!(m_dbresult & AIRDB_GET_IMSI_SEC))
    {
@@ -2305,13 +2615,27 @@ void AIRProcessor::phase2()
 
    m_nextphase = AIRSTATE_PHASE3;
 
+   bool result = false;
    // combine the rand and sqn updates into a single database update
-   if (m_app.dataaccess().updateRandSqn(m_imsi, m_vector[m_num_vectors-1].rand, m_sec.sqn, true,
-         on_air_callback, new AIRDatabaseAction(AIRDB_UPDATE_IMSI, *this)))
+   if (synch)
    {
-      atomic_inc_fetch(m_dbissued);
+       result = m_app.dataaccess().updateRandSqn(m_imsi, m_vector[m_num_vectors-1].rand, m_sec.sqn, true, NULL, NULL);
+       DB_OP_COMPLETE(AIRDB_UPDATE_IMSI, m_dbexecuted, m_dbresult, result);
+       if (!result)
+       {
+           Logger::system().warn("AIRProcessor::%s - Error while executing updateRandSqn()", __func__);
+       }
    }
    else
+   {
+       result = m_app.dataaccess().updateRandSqn(m_imsi, m_vector[m_num_vectors-1].rand, m_sec.sqn, true,
+               (DataAccessCallback)on_air_callback, new AIRDatabaseAction(AIRDB_UPDATE_IMSI, *this));
+       if (result)
+       {
+           atomic_inc_fetch(m_dbissued);
+       }
+   }
+   if (!result)
    {
       m_nextphase = AIRSTATE_PHASEFINAL;
    }

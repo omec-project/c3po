@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -112,6 +113,7 @@ public:
 
    protected:
       void init(SEventThread* pThread);
+      void initTimerSimulationThread(SEventThread* pThread);
 
    public:
       Timer();
@@ -125,6 +127,8 @@ public:
       void setInterval(long interval) { m_interval = interval; }
       void setOneShot(bool oneshot) { m_oneshot = oneshot; }
       long getId() { return m_id; }
+      long getInterval() { return m_interval; }
+      bool isSimulatedTimerRunning() { return m_isSimulatedTimerRunning; }
 
    private:
       static long m_nextid;
@@ -135,6 +139,10 @@ public:
       long m_interval;
       timer_t m_timer;
       static void _timerHandler(int signo, siginfo_t *pinfo, void *pcontext);
+
+      pthread_t m_timerSimulationThreadId;
+      bool m_isSimulatedTimerRunning;
+      static void * _timerSimulationThreadProc(void *arg);
    };
 
    class TimerHandler
@@ -168,6 +176,7 @@ public:
    void suspend();
 
    void initTimer( SEventThread::Timer &t );
+   void initSimulatedTimer( SEventThread::Timer &t );
 
    //
    // these methods are executed by the SEventThread internals in the thread context

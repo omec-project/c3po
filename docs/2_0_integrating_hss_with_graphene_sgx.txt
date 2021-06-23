@@ -1,0 +1,115 @@
+--------------------------------------------------------------------------------
+This document provides steps for enabling HSS to run inside a Graphene instance
+in SGX mode
+--------------------------------------------------------------------------------
+
+
+
+Note: The steps in this document are mentioned with respect to the Graphene 
+commit id "2dcd9e625fee2760eda90e81ae33ef273437a4e5".
+
+Prerequisites:
+    1) HSS is already built referring to "1_0_adding_redis_support_in_hss.txt". 
+    2) Intel SGX SDK/PSW and Intel SGX driver are installed.
+
+--------------------------------------------------------------------------------
+
+A] Installing Graphene SGX Driver.
+    Graphene SGX driver simply enables the FSBBASE instruction in the user
+    space.
+	
+    $ git clone https://github.com/oscarlab/graphene-sgx-driver
+    $ cd graphene-sgx-driver
+
+    Note: Following command will ask for directory path of sgx driver code. 
+    (provide the required path suitable to the installed SGX driver(dcap or non 
+    dcap) Refer the comments mentioned in the link_sgx_driver.py for more 
+    information. In most cases it can be found under 
+    "/usr/src/sgx-<driver version>/"
+    
+    $ make
+    $ sudo insmod gsgx.ko
+    $ lsmod | grep gsgx
+        Note: The above command should list gsgx.
+
+--------------------------------------------------------------------------------
+	
+B] Installing Graphene with SGX support.
+	
+    B.1] Ensure that Intel SGX is enabled on your platform:
+
+        $ lsmod | grep sgx
+        $ ps ax | grep [a]esm_service
+        
+        Note : The first command should list isgx (or sgx) and the second 
+        command should list the process status of aesm_service.
+
+    B.2] Run the below mentioned commands 
+    
+        $ git clone https://github.com/oscarlab/graphene.git
+        $ cd graphene
+        $ git checkout 2dcd9e625fee2760eda90e81ae33ef273437a4e5
+        $ openssl genrsa -3 -out Pal/src/host/Linux-SGX/signer/enclave-key.pem 3072
+    
+        $ sudo apt-get install -y \
+    build-essential autoconf gawk bison wget python3 libcurl4-openssl-dev \
+    python3-protobuf libprotobuf-c-dev protobuf-c-compiler python3-pip
+	
+        $ python3 -m pip install toml>=0.10
+        
+        Note: following step will take time
+        $ make
+        
+        $ ISGX_DRIVER_PATH=<path-to-sgx-driver-source> make SGX=1
+        eg. ISGX_DRIVER_PATH=/usr/src/sgx-1.36.2/ make SGX=1
+		
+--------------------------------------------------------------------------------	
+
+	
+C] Enabling HSS to execute within Graphene in SGX mode.
+
+    C.1] Change directory to the Secured HSS Redis repository
+		
+        Note: A Graphene application requires a manifest file which provides the
+        necessary configuration for launching the Graphene instance. Please find
+        the preconfigured Graphene manifest file for HSS at 
+        graphene/hss/hss.manifest.template. 
+        Refer to https://graphene.readthedocs.io/en/latest/manifest-syntax.html 
+        for understanding the manifest configuration parameters.
+   
+    C.2] Open graphene/hss/hss.Makefile
+   
+        Modify the "GRAPHENEDIR" variable to point to the Graphene repository 
+        cloned in section B.2
+   
+    C.3] Build HSS for Graphene SGX
+	  
+        Note: Execute only option 6 from the below script. Remember that option 
+        1 to 5 are already executed previously during building HSS
+        
+        $ ./install.sh   
+
+   
+    C.4] Run HSS in Graphene (SGX mode)
+		
+        $ cd graphene/hss/
+        $ SGX=1 ./pal_loader ./hss -j conf/hss.json
+        
+        Note: While launching the Graphene instance, if it complains about 
+        "untrusted" or a missing library, please make sure that the mentioned 
+        library is installed and specified as "sgx.trusted_files" in the 
+        hss.manifest.template file.
+    
+		
+		
+		
+   
+		   
+		   
+		
+		
+		
+		
+		
+
+
