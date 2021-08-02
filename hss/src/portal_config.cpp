@@ -290,3 +290,74 @@ parse_json_doc(RAPIDJSON_NAMESPACE::Document &doc)
     }    
     return config;
 }
+
+newPortalConfig *
+parse_hss_json_doc(RAPIDJSON_NAMESPACE::Document &doc)
+{
+    newPortalConfig *config = new (newPortalConfig);
+
+    if(doc.HasMember("start-imsi")) 
+    {
+        config->from_imsi= doc["start-imsi"].GetInt64(); 
+    }
+
+    if(doc.HasMember("end-imsi")) 
+    {
+        config->to_imsi= doc["start-imsi"].GetInt64(); 
+    }
+
+    if(doc.HasMember("Opc"))
+    {
+        config->opc = doc["Opc"].GetString();
+    }
+
+    if(doc.HasMember("Key"))
+    {
+        config->key = doc["Key"].GetString();
+    }
+
+    if(doc.HasMember("Sqn"))
+    {
+        config->sqn = doc["Sqn"].GetInt64();
+    }
+
+
+    if(doc.HasMember("ambr-down"))
+    {
+        config->apn_ambr_dl = doc["ambr-down"].GetInt();
+    }
+
+    if(doc.HasMember("ambr-up"))
+    {
+        config->apn_ambr_ul = doc["ambr-up"].GetInt();
+    }
+
+    std::cout<<" Opc - "<<config->opc <<" key - "<<config->key
+        <<" sqn - "<<config->sqn<<std::endl;
+
+    if(doc.HasMember("apn-profiles"))
+    {
+        const RAPIDJSON_NAMESPACE::Value& apnProfileSection = doc["apn-profiles"];
+        for (RAPIDJSON_NAMESPACE::Value::ConstMemberIterator itr = apnProfileSection.MemberBegin(); itr != apnProfileSection.MemberEnd(); ++itr)
+        {
+            std::string key = itr->name.GetString();
+            if(itr->value.IsObject())
+            {
+                std::cout<<"\tAPN profile "<< key.c_str()<<" is Object"<<std::endl; 
+                apn_profile *apn_prof = new (apn_profile);
+                apn_prof->apn_profile_name = key;
+                const RAPIDJSON_NAMESPACE::Value& apnSection = itr->value; 
+                if(apnSection.HasMember("apn-name")) {
+                    apn_prof->apn_name = apnSection["apn-name"].GetString();
+                    std::cout<<"\t\tAPN name["<<apn_prof->apn_name<<"]"<<std::endl;
+                    apn_prof->apn_name_length = apn_prof->apn_name.length();
+                    std::cout<<"\t\tAPN name after encode ["<<apn_prof->apn_name<<"]"<<std::endl;
+                }
+                config->apn_profile_list.push_back(apn_prof);
+                std::cout<<std::endl;
+            }
+        }
+    }
+     
+    return config;
+}

@@ -220,7 +220,45 @@ class portalConfig
         std::list<security_profile*> security_profile_list;
 };
 
+class newPortalConfig
+{
+    public:
+        newPortalConfig() {;}
+        ~newPortalConfig()
+        {
+            for (std::list<apn_profile*>::iterator it=apn_profile_list.begin(); it!=apn_profile_list.end(); ++it)
+            {
+                apn_profile *apn=*it;
+                delete apn;
+            }
+        }
+
+        apn_profile* get_apn_profile(const std::string name)
+        {
+            for (std::list<apn_profile*>::iterator it=apn_profile_list.begin(); it!=apn_profile_list.end(); ++it)
+            {
+                apn_profile *apn=*it;
+                if(apn->apn_profile_name.compare(name) == 0)
+                    return apn; 
+            }
+            return nullptr;
+        }
+
+    public:
+        std::string key;
+        std::string opc;
+        uint64_t    sqn;
+        uint64_t    from_imsi;
+        uint64_t    to_imsi;
+        uint32_t    apn_ambr_ul;
+        uint32_t    apn_ambr_dl;
+        uint32_t    qci;
+        uint32_t    arp;
+        std::list<apn_profile *> apn_profile_list;
+};
+
 extern "C" {
     portalConfig *parse_json_doc(RAPIDJSON_NAMESPACE::Document &doc);
+    newPortalConfig *parse_hss_json_doc(RAPIDJSON_NAMESPACE::Document &doc);
 }
 #endif
