@@ -1611,7 +1611,7 @@ int GxIpCan1::cleanupSession( bool terminate )
 int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
 {
     printf("%s %d \n",__FUNCTION__,__LINE__);
-   std::string s;
+    std::string s;
 	std::string r;
     bool result = true;
     
@@ -1687,12 +1687,12 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
          return ValidateErrorCode::calledStationIdMissing ;
       }
 
-		DefaultRule* default_rule = new DefaultRule();
-		Options::getPolicesConfig().getDefaultRule( s, default_rule );
-		//printf( "Default Rule Qci : %d\n", default_rule->getQci() );	
-		getGxSession()->setDefaultRule( default_rule );
+	  DefaultRule* default_rule = new DefaultRule();
+	  Options::getPolicesConfig().getDefaultRule( s, default_rule );
+	  getGxSession()->setDefaultRule( default_rule );
 
       getGxSession()->setApn( s );
+      std::cout<<"gxSession Apn "<<getGxSession()->getApn()<< ", s = "<<s<<std::endl;
 
       //
       // return if the APN is invalid
@@ -1707,6 +1707,77 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
          return ValidateErrorCode::calledStationIdEmpty ;
       }
 
+      {
+          Apn *apn = NULL;
+          if (!getPCRF().getApn( getGxSession()->getApn(), apn ) )
+          {
+            std::string apnName(getGxSession()->getApn());
+	        ServiceProfiles* service_profile = 	Options::getPolicesConfig().get_service_group_map(apnName);
+            if(service_profile != NULL)
+            {
+                Apn *apn = new Apn();
+                apn->setApn(getGxSession()->getApn());
+                apn->setFailOnUninstallableRule(true);
+                apn->setAutoCreateSubscriber(true);
+                apn->setMembershipValue("rule_name"); // What should be base ?
+                apn->setDomain ("onf");
+                apn->setSySubscriptionId("");
+                apn->setSyRequired(false);
+                apn->setDefaultBearerCtlMode(2);
+                apn->setForceDefaultBearerCtlMode(true);
+                apn->setTimerVal( 100000);
+                apn->setMaxCallTimerVal(4000000);
+		        std::string default_service_key_name( "default-activate-service" );
+		        std::string default_activate_service_val = service_profile->get_service_type_map( default_service_key_name );
+                // let;s get default service 
+		        ServiceSelection* service_default = Options::getPolicesConfig().get_service_selection_map( default_activate_service_val );
+		        if( service_default != NULL )
+		        {
+                    apn->setApnAmbrUlVal(service_default->getAmbrUl());
+                    apn->setApnAmbrDlVal(service_default->getAmbrDl());
+                }
+
+                // check if any on demand service is required 
+		        std::string service_name ( "on-demand-activate-service" );
+		        std::string service_ondemand_val = service_profile->get_service_type_map(service_name);
+		        ServiceSelection* service_ondemand = Options::getPolicesConfig().get_service_selection_map( service_ondemand_val);
+                apn->setDedicatedBearerCreation(false);
+		        if( service_ondemand != NULL )
+		        {
+                    apn->setDedicatedBearerCreation(true);
+                }
+                
+                auto itr = service_default->get_activation_rules_list().begin();
+                for (; itr != service_default->get_activation_rules_list().end(); itr++ ) 
+                {
+                  std::string rule_name = *itr;
+                  // Now let's add rules for this APN (i.e. service) 
+                  Rule *rule = nullptr;
+                  auto ruleit = getPCRF().getRuleMap().find(rule_name);
+                  if (ruleit  == getPCRF().getRuleMap().end())
+                  {
+	                ConfigRule * default_rule = Options::getPolicesConfig().get_config_rule_map(rule_name);
+
+                    rule = new Rule();
+                    rule->setRuleName(rule_name);
+                    rule->setBaseName(rule_name);
+                    rule->setType("CHARGING");
+                    rule->setDefinition (default_rule->getDefinition());
+                    rule->setTimeOfDay("");
+                    rule->setUsageMonitoringInfo("");
+                    rule->setSyRequired(false);
+                    rule->setTimeMask(0);
+                    rule->setFeatureMask(0);
+                    rule->setDefaultFlag(true);
+                  } else {
+                      rule = ruleit->second;
+                  }
+                  apn->addComputedRule(rule );
+                }
+                getPCRF().getApnMap().insert( std::pair<std::string,Apn*>( apn->getApn(), apn ) );
+            }
+          }
+      }
 
       //
       // lookup the APN and return if it does not exist

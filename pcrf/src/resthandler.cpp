@@ -20,11 +20,7 @@
 
 void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Http::ResponseWriter response)
 {
-   std::cout << request.resource() << std::endl;
-   std::cout << request.method() << std::endl;
-   std::cout << request.body() << std::endl;
 
-   std::cout <<"Compare resources\n"<<std::endl;
    if (request.resource() == "/v1/config/policies") {
       std::cout<<"hitting config policy resource "<<request.body()<<std::endl;
       switch(request.method()) {
@@ -59,6 +55,9 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
         }
       }
    } else {
+      std::cout << request.resource() << std::endl;
+      std::cout << request.method() << std::endl;
+      std::cout << request.body() << std::endl;
       std::stringstream ss;
       ss << "Unrecognized resource [" << request.resource() << "]";
       response.send(Pistache::Http::Code::Bad_Request, ss.str() );

@@ -108,11 +108,10 @@ void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default
 			default_rule->setApnAggregateMaxBitrateUl( service_selection->getAmbrUl() );
 			default_rule->setApnAggregateMaxBitrateDl( service_selection->getAmbrDl() );	
 			default_rule->setDeactivationTimer( service_selection->getDeactivationTimer() );
-			std::list<int> activation_rules_index_list = service_selection->get_activation_rules_index_list();
-			for (std::list<int>::iterator it=activation_rules_index_list.begin(); it != activation_rules_index_list.end(); ++it)
+			for (std::list<std::string>::iterator it = service_selection->get_activation_rules_list().begin();
+                     it != service_selection->get_activation_rules_list().end(); ++it)
 			{
-    			int index = *it;
-				std::string activation_rule_name = service_selection->get_activation_rules_map( index );
+				std::string activation_rule_name = *it;
 				ConfigRule* config_rule = get_config_rule_map( activation_rule_name );
 				if( config_rule != NULL )
 				{
@@ -172,7 +171,7 @@ std::string ServiceProfiles::get_service_type_map( std::string& key )
 	auto itr = m_service_type_map.find( key );
    if( itr == m_service_type_map.end() )
    {
-      return NULL;
+      return std::string("");
    }
    return itr->second;	
 }
@@ -185,53 +184,21 @@ ServiceSelection::~ServiceSelection()
 {
 }
 
-void ServiceSelection::add_activation_rules_index_list( int index )
+std::list<std::string>& ServiceSelection::get_activation_rules_list()
 {
-	m_activation_rules_index_list.push_back( index );
+	return m_activation_rules_list;
 }
 
-void ServiceSelection::remove_activation_rules_index_list( int index )
-{
-	m_activation_rules_index_list.remove( index );
-}
-
-std::list<int>& ServiceSelection::get_activation_rules_index_list()
-{
-	return m_activation_rules_index_list;
-}
-
-void ServiceSelection::add_activation_rules_map( int index, std::string v )
+void ServiceSelection::add_activation_rules(std::string v)
 {
 	
-   //m_activation_rules_list.push_back( v );
-	m_activation_rules_map[index] = v;
+   m_activation_rules_list.push_back(v);
 	
 }
 
-void ServiceSelection::remove_activation_rules_map( int index )
+void ServiceSelection::remove_activation_rules(std::string v)
 {
-  // m_activation_rules_list.remove( v );
-	m_activation_rules_map.erase( index );
-}
-
-std::string ServiceSelection::get_activation_rules_map( int index )
-{
-	/*
-   std::list<std::string>::iterator it;
-   it = std::find( m_activation_rules_list.begin(), m_activation_rules_list.end(), v );
-   if( it != m_activation_rules_list.end() )
-   {
-      return true;
-   }
-   return false;
-	*/
-
-	auto itr = m_activation_rules_map.find( index );
-   if( itr == m_activation_rules_map.end() )
-   {
-      return "";
-   }
-   return itr->second;
+    m_activation_rules_list.remove( v );
 }
 
 ConfigRule::ConfigRule()
@@ -629,57 +596,44 @@ Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
 					temp_config->add_service_group_map( service_group_name, service_profile );
 				}
 			}
-			else
-			if( strcmp( service_group_name.c_str(), "services" ) == 0 )
+			else if( strcmp( service_group_name.c_str(), "services" ) == 0 )
 			{
 				const RAPIDJSON_NAMESPACE::Value& subServiceSelection = service_policies_itr->value;
 				for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_selection_itr = subServiceSelection.MemberBegin(); sub_service_selection_itr != subServiceSelection.MemberEnd(); ++sub_service_selection_itr )
             {
-					ServiceSelection* service_selection = new ServiceSelection();
-					std::string service_selection_name = sub_service_selection_itr->name.GetString();
-               service_selection->setServiceName( service_selection_name );
-               const RAPIDJSON_NAMESPACE::Value& subServiceSection = sub_service_selection_itr->value;
-					
+			    ServiceSelection* service_selection = new ServiceSelection();
+			    std::string service_selection_name = sub_service_selection_itr->name.GetString();
+                service_selection->setServiceName( service_selection_name );
+                const RAPIDJSON_NAMESPACE::Value& subServiceSection = sub_service_selection_itr->value;
                for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_section_itr1 = subServiceSection.MemberBegin(); sub_service_section_itr1 != subServiceSection.MemberEnd(); ++sub_service_section_itr1 )
                {
-						if( strcmp( service_selection_name.c_str(), "video-non-gbr-1" ) == 0 )
-						{
-							continue;
-						}
-						
 						if( strcmp( sub_service_section_itr1->name.GetString(), "qci" ) == 0 )
 						{
 							service_selection->setQci( sub_service_section_itr1->value.GetInt() );
 						}
-						else
-						if( strcmp( sub_service_section_itr1->name.GetString(), "arp" ) == 0 )
+						else if( strcmp( sub_service_section_itr1->name.GetString(), "arp" ) == 0 )
 						{
 							service_selection->setArp( sub_service_section_itr1->value.GetInt() );	
 						}
-						else
-						if( strcmp( sub_service_section_itr1->name.GetString(), "AMBR_DL" ) == 0 )
+						else if( strcmp( sub_service_section_itr1->name.GetString(), "AMBR_DL" ) == 0 )
 						{
 							service_selection->setAmbrDl( subServiceSection["AMBR_DL"].GetInt() );	
 						}
-						else
-						if( strcmp( sub_service_section_itr1->name.GetString(), "AMBR_UL" ) == 0 )
+						else if( strcmp( sub_service_section_itr1->name.GetString(), "AMBR_UL" ) == 0 )
 						{
 							service_selection->setAmbrUl( subServiceSection["AMBR_UL"].GetInt() );
 						}
-						else
-						if( strcmp( sub_service_section_itr1->name.GetString(), "service-activation-rules" ) == 0 )
+						else if( strcmp( sub_service_section_itr1->name.GetString(), "service-activation-rules" ) == 0 )
 						{
 							std::string activation_rule;
 							const RAPIDJSON_NAMESPACE::Value& subServiceActivationRules = subServiceSection["service-activation-rules"];
 							for( uint32_t i = 0; i < sub_service_section_itr1->value.Size(); i++ )
 							{
 								activation_rule =  sub_service_section_itr1->value[i].GetString();	
-								service_selection->add_activation_rules_index_list( i );
-								service_selection->add_activation_rules_map( i, activation_rule );	
+								service_selection->add_activation_rules(activation_rule );
 							}
 						}
-						else
-						if( strcmp( sub_service_section_itr1->name.GetString(), "deactivate-conditions" ) == 0 )
+						else if( strcmp( sub_service_section_itr1->name.GetString(), "deactivate-conditions" ) == 0 )
 						{
 							const RAPIDJSON_NAMESPACE::Value& subServiceDeactivateCondition = subServiceSection["deactivate-conditions"];
 							int timer;
@@ -693,88 +647,87 @@ Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
 					temp_config->add_service_selection_map( service_selection_name, service_selection );
 				}	
 			}
-			else
-			if( strcmp( service_group_name.c_str(), "rules" ) == 0 )
+			else if( strcmp( service_group_name.c_str(), "rules" ) == 0 )
 			{
 				const RAPIDJSON_NAMESPACE::Value& subRule = service_policies_itr->value;
-            for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_itr = subRule.MemberBegin(); sub_rule_itr != subRule.MemberEnd(); ++sub_rule_itr )
-            {
-					std::string rule_name = sub_rule_itr->name.GetString();
-					ConfigRule* config_rule = new ConfigRule();
+                for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_itr = subRule.MemberBegin(); sub_rule_itr != subRule.MemberEnd(); ++sub_rule_itr )
+                {
+				    std::string rule_name = sub_rule_itr->name.GetString();
+				    ConfigRule* config_rule = new ConfigRule();
 
-					const RAPIDJSON_NAMESPACE::Value& subRuleObject = sub_rule_itr->value;
-            	for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_selection_itr = subRuleObject.MemberBegin(); sub_rule_selection_itr != subRuleObject.MemberEnd(); ++sub_rule_selection_itr )
-            	{	
-						const RAPIDJSON_NAMESPACE::Value& subRuleDefinition = sub_rule_selection_itr->value;
-						RAPIDJSON_NAMESPACE::StringBuffer buffer;
-						RAPIDJSON_NAMESPACE::Writer<RAPIDJSON_NAMESPACE::StringBuffer> writer( buffer );
-						subRuleDefinition.Accept( writer );
-						config_rule->setDefinition( buffer.GetString() );
-						if( subRuleDefinition.HasMember( "Charging-Rule-Name" ) )
-						{
-							std::string rule_name = subRuleDefinition["Charging-Rule-Name"].GetString();
-							config_rule->setRuleName( rule_name );
-						}
-						if( subRuleDefinition.HasMember( "QoS-Information" ) )
-						{
-							const RAPIDJSON_NAMESPACE::Value& qosInformation = subRuleDefinition["QoS-Information"];
-							if( qosInformation.HasMember( "QoS-Class-Identifier" ) )
-							{
-								int qci = qosInformation["QoS-Class-Identifier"].GetInt();
-								config_rule->setQci( qci );
-							}
-							if( qosInformation.HasMember( "Max-Requested-Bandwidth-UL" ) )
-							{
-								int max_requested_bandwidth_ul = qosInformation["Max-Requested-Bandwidth-UL"].GetInt();
-								config_rule->setMaxRequestedBandwidthUl( max_requested_bandwidth_ul );
-							}
-							if( qosInformation.HasMember( "Max-Requested-Bandwidth-DL" ) )
-							{
-								int max_requested_bandwidth_dl = qosInformation["Max-Requested-Bandwidth-DL"].GetInt();
-								config_rule->setMaxRequestedBandwidthDl( max_requested_bandwidth_dl );
-							}
-							if( qosInformation.HasMember( "Guaranteed-Bitrate-UL" ) )
-							{
-								int guaranteed_bitrate_ul = qosInformation["Guaranteed-Bitrate-UL"].GetInt();
-								config_rule->setGuaranteedBitrateUl( guaranteed_bitrate_ul );
-							}
-							if( qosInformation.HasMember( "Guaranteed-Bitrate-DL" ) )
-							{
-								int guaranteed_bitrate_dl = qosInformation["Guaranteed-Bitrate-DL"].GetInt();
-								config_rule->setGuaranteedBitrateDl( guaranteed_bitrate_dl );
-							}
-							if( qosInformation.HasMember( "Allocation-Retention-Priority" ) )
-							{
-								const RAPIDJSON_NAMESPACE::Value& arp = qosInformation["Allocation-Retention-Priority"];
-								if( arp.HasMember( "Priority-Level" ) )
-								{
-									int priority_level = arp["Priority-Level"].GetInt();
-									config_rule->setPriorityLevel( priority_level );
-								}
-								if( arp.HasMember( "Pre-emption-Capability" ) ) 
-								{
-									int preemption_capability = arp["Pre-emption-Capability"].GetInt();
-									config_rule->setPreemptionCapability( preemption_capability );
-								}
-								if( arp.HasMember( "Pre-emption-Vulnerability" ) )
-								{
-									int preemption_vulnerability = arp["Pre-emption-Vulnerability"].GetInt();
-									config_rule->setPreemptionVulnerability( preemption_vulnerability );
-								}
-							}
-							if( qosInformation.HasMember( "APN-Aggregate-Max-Bitrate-UL" ) )
-							{
-								int aggregate_max_bitrate_ul = qosInformation["APN-Aggregate-Max-Bitrate-UL"].GetInt();
-								config_rule->setApnAggregateMaxBitrateUl( aggregate_max_bitrate_ul );
-							} 
-							if( qosInformation.HasMember( "APN-Aggregate-Max-Bitrate-DL" ) )
-							{
-								int aggregate_max_bitrate_dl = qosInformation["APN-Aggregate-Max-Bitrate-DL"].GetInt();
-								config_rule->setApnAggregateMaxBitrateDl( aggregate_max_bitrate_dl );
-							}
-						}
-					}
-					temp_config->add_config_rule_map( rule_name, config_rule );
+				    const RAPIDJSON_NAMESPACE::Value& subRuleObject = sub_rule_itr->value;
+            	    for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_rule_selection_itr = subRuleObject.MemberBegin(); sub_rule_selection_itr != subRuleObject.MemberEnd(); ++sub_rule_selection_itr )
+            	    {	
+				    	const RAPIDJSON_NAMESPACE::Value& subRuleDefinition = sub_rule_selection_itr->value;
+				    	RAPIDJSON_NAMESPACE::StringBuffer buffer;
+				    	RAPIDJSON_NAMESPACE::Writer<RAPIDJSON_NAMESPACE::StringBuffer> writer( buffer );
+				    	subRuleDefinition.Accept( writer );
+				    	config_rule->setDefinition( buffer.GetString() );
+				    	if( subRuleDefinition.HasMember( "Charging-Rule-Name" ) )
+				    	{
+				    		std::string rule_name = subRuleDefinition["Charging-Rule-Name"].GetString();
+				    		config_rule->setRuleName( rule_name );
+				    	}
+				    	if( subRuleDefinition.HasMember( "QoS-Information" ) )
+				    	{
+				    		const RAPIDJSON_NAMESPACE::Value& qosInformation = subRuleDefinition["QoS-Information"];
+				    		if( qosInformation.HasMember( "QoS-Class-Identifier" ) )
+				    		{
+				    			int qci = qosInformation["QoS-Class-Identifier"].GetInt();
+				    			config_rule->setQci( qci );
+				    		}
+				    		if( qosInformation.HasMember( "Max-Requested-Bandwidth-UL" ) )
+				    		{
+				    			int max_requested_bandwidth_ul = qosInformation["Max-Requested-Bandwidth-UL"].GetInt();
+				    			config_rule->setMaxRequestedBandwidthUl( max_requested_bandwidth_ul );
+				    		}
+				    		if( qosInformation.HasMember( "Max-Requested-Bandwidth-DL" ) )
+				    		{
+				    			int max_requested_bandwidth_dl = qosInformation["Max-Requested-Bandwidth-DL"].GetInt();
+				    			config_rule->setMaxRequestedBandwidthDl( max_requested_bandwidth_dl );
+				    		}
+				    		if( qosInformation.HasMember( "Guaranteed-Bitrate-UL" ) )
+				    		{
+				    			int guaranteed_bitrate_ul = qosInformation["Guaranteed-Bitrate-UL"].GetInt();
+				    			config_rule->setGuaranteedBitrateUl( guaranteed_bitrate_ul );
+				    		}
+				    		if( qosInformation.HasMember( "Guaranteed-Bitrate-DL" ) )
+				    		{
+				    			int guaranteed_bitrate_dl = qosInformation["Guaranteed-Bitrate-DL"].GetInt();
+				    			config_rule->setGuaranteedBitrateDl( guaranteed_bitrate_dl );
+				    		}
+				    		if( qosInformation.HasMember( "Allocation-Retention-Priority" ) )
+				    		{
+				    			const RAPIDJSON_NAMESPACE::Value& arp = qosInformation["Allocation-Retention-Priority"];
+				    			if( arp.HasMember( "Priority-Level" ) )
+				    			{
+				    				int priority_level = arp["Priority-Level"].GetInt();
+				    				config_rule->setPriorityLevel( priority_level );
+				    			}
+				    			if( arp.HasMember( "Pre-emption-Capability" ) ) 
+				    			{
+				    				int preemption_capability = arp["Pre-emption-Capability"].GetInt();
+				    				config_rule->setPreemptionCapability( preemption_capability );
+				    			}
+				    			if( arp.HasMember( "Pre-emption-Vulnerability" ) )
+				    			{
+				    				int preemption_vulnerability = arp["Pre-emption-Vulnerability"].GetInt();
+				    				config_rule->setPreemptionVulnerability( preemption_vulnerability );
+				    			}
+				    		}
+				    		if( qosInformation.HasMember( "APN-Aggregate-Max-Bitrate-UL" ) )
+				    		{
+				    			int aggregate_max_bitrate_ul = qosInformation["APN-Aggregate-Max-Bitrate-UL"].GetInt();
+				    			config_rule->setApnAggregateMaxBitrateUl( aggregate_max_bitrate_ul );
+				    		} 
+				    		if( qosInformation.HasMember( "APN-Aggregate-Max-Bitrate-DL" ) )
+				    		{
+				    			int aggregate_max_bitrate_dl = qosInformation["APN-Aggregate-Max-Bitrate-DL"].GetInt();
+				    			config_rule->setApnAggregateMaxBitrateDl( aggregate_max_bitrate_dl );
+				    		}
+				    	}
+				    }
+				    temp_config->add_config_rule_map( rule_name, config_rule );
 				}
 			}
 		}
@@ -814,4 +767,3 @@ bool Options::validateOptions()
       && ( m_options & opt_ossfile )
       && ( m_options & opt_rulesfile );
 }
-
