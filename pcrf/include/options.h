@@ -111,16 +111,12 @@ public:
 	int setAmbrDl( int v ) { m_ambr_dl = v; return getAmbrDl(); }
 	int setDeactivationTimer( int v ) { m_deactivation_timer = v; return getDeactivationTimer(); }
 	const std::string &setServiceName( const char *v ) { m_service_name = v; return getServiceName(); }
-   const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
+	const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
 	const std::string &getServiceName() const { return m_service_name; }	
 
-	void add_activation_rules_map( int index, std::string v );
-   void remove_activation_rules_map( int index );
-   std::string get_activation_rules_map( int index );
-
-	void add_activation_rules_index_list( int index );
-	void remove_activation_rules_index_list( int index );	
-	std::list<int>& get_activation_rules_index_list();
+	void add_activation_rules(std::string v );
+	void remove_activation_rules(std::string v);
+	std::list<std::string>& get_activation_rules_list();
 
 private:
 	int m_qci;
@@ -129,8 +125,7 @@ private:
 	int m_ambr_dl;
 	int m_deactivation_timer;
 	std::string m_service_name;
-	std::list<int> m_activation_rules_index_list;
-	std::unordered_map<int, std::string> m_activation_rules_map;
+	std::list<std::string> m_activation_rules_list;
 };
 
 class ServiceProfiles

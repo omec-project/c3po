@@ -49,9 +49,11 @@ public:
 
    bool getRule( const std::string &rulename, Rule* &rule ) { return m_rules.getRule( rulename, rule ); }
    bool getRule( const char *rulename, Rule* &rule ) { std::string s(rulename); return m_rules.getRule( s, rule ); }
+   RulesMap& getRuleMap() { return m_rules; }
 
    bool getApn( const std::string &apn, Apn* &papn ) { return m_apns.getApn( apn, papn ); }
    bool getApn( const char *apn, Apn* &papn ) { std::string s(apn); return m_apns.getApn( s, papn ); }
+   ApnMap& getApnMap() { return m_apns;}
 
    bool getEndpoint( const std::string &endpoint, Endpoint* &pendpoint ) { return m_endpoints.getEndpoint( endpoint, pendpoint ); }
    bool getEndpoint( const char *endpoint, Endpoint* &pendpoint ) { std::string s(endpoint); return m_endpoints.getEndpoint( s, pendpoint ); }

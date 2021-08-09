@@ -612,7 +612,7 @@ private:
    StSession m_tssf;
    RulesList m_rules;
    RulesList m_installed;
-	RulesReportList m_rulesreport;
+   RulesReportList m_rulesreport;
    Subscriber m_subscriber;
 };
 

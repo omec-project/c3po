@@ -128,7 +128,7 @@ bool DataAccess::getRules( RulesMap &rules )
 
          if ( (ruleit = rules.find(r->getRuleName())) != rules.end() )
          {
-            // found the apn so must be a duplicate
+            // found the rule so must be a duplicate
             Logger::system().error( "DataAccess::%s:%d - duplicate Rule [%s] while loading",
                   __func__, __LINE__, s.c_str() );
             result = false;
