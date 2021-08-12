@@ -20,8 +20,16 @@
 
 void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Http::ResponseWriter response)
 {
+   static bool needConfig = true;
 
-   if (request.resource() == "/v1/config/policies") {
+   if (request.resource() == "/v1/config-check") {
+     if (needConfig == true) {
+        response.send(Pistache::Http::Code::Not_Found);
+        needConfig = false;
+     } else {
+        response.send(Pistache::Http::Code::Ok);
+     }
+   } else if (request.resource() == "/v1/config/policies") {
       std::cout<<"hitting config policy resource "<<request.body()<<std::endl;
       switch(request.method()) {
         case Pistache::Http::Method::Post: {
