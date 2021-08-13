@@ -18,11 +18,7 @@
 
 void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Http::ResponseWriter response)
 {
-   std::cout << request.resource() << std::endl;
-   std::cout << request.method() << std::endl;
-   std::cout << request.body() << std::endl;
    static bool needConfig = true;
-
    if (request.resource() == "/v2/config-check") {
      if (needConfig == true) {
         response.send(Pistache::Http::Code::Not_Found);
@@ -148,7 +144,7 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
                               objMip.SetObject();
                               RAPIDJSON_NAMESPACE::Value addr(RAPIDJSON_NAMESPACE::kArrayType);
                               addr.PushBack("0.0.0.0", allocator);
-                              objMip.AddMember("MIP6-Home-Agent-Address", addr, allocator);
+                              objMip.AddMember("MIP-Home-Agent-Address", addr, allocator);
                               objApnConf.AddMember("MIP6-Agent-Info", objMip, allocator);
                           }
 
@@ -308,7 +304,7 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
                               objMip.SetObject();
                               RAPIDJSON_NAMESPACE::Value addr(RAPIDJSON_NAMESPACE::kArrayType);
                               addr.PushBack("0.0.0.0", allocator);
-                              objMip.AddMember("MIP6-Home-Agent-Address", addr, allocator);
+                              objMip.AddMember("MIP-Home-Agent-Address", addr, allocator);
                               objApnConf.AddMember("MIP6-Agent-Info", objMip, allocator);
                           }
 
@@ -361,6 +357,9 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
 
       fdHss.sendRIR_ChangeImsiImeiSvAssn(data);
    } else {
+      std::cout << request.resource() << std::endl;
+      std::cout << request.method() << std::endl;
+      std::cout << request.body() << std::endl;
       std::stringstream ss;
       ss << "Unrecognized resource [" << request.resource() << "]";
       response.send(Pistache::Http::Code::Bad_Request, ss.str() );
