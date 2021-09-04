@@ -74,8 +74,8 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
                 {
                     RAPIDJSON_NAMESPACE::Value objAmbr;
                     objAmbr.SetObject();
-                    objAmbr.AddMember("Max-Requested-Bandwidth-UL", config->apn_ambr_dl, allocator);
-                    objAmbr.AddMember("Max-Requested-Bandwidth-DL", config->apn_ambr_ul, allocator);
+                    objAmbr.AddMember("Max-Requested-Bandwidth-UL", config->apn_ambr_ul, allocator);
+                    objAmbr.AddMember("Max-Requested-Bandwidth-DL", config->apn_ambr_dl, allocator);
                     objValue.AddMember("AMBR", objAmbr, allocator);
                 }
 
@@ -117,8 +117,8 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
                           {
                               RAPIDJSON_NAMESPACE::Value objAmbr;
                               objAmbr.SetObject();
-                              objAmbr.AddMember("Max-Requested-Bandwidth-UL", config->apn_ambr_dl, allocator);
-                              objAmbr.AddMember("Max-Requested-Bandwidth-DL", config->apn_ambr_ul, allocator);
+                              objAmbr.AddMember("Max-Requested-Bandwidth-UL", config->apn_ambr_ul, allocator);
+                              objAmbr.AddMember("Max-Requested-Bandwidth-DL", config->apn_ambr_dl, allocator);
                               objApnConf.AddMember("AMBR", objAmbr, allocator);
                           }
 
@@ -236,8 +236,8 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
                 {
                     RAPIDJSON_NAMESPACE::Value objAmbr;
                     objAmbr.SetObject();
-                    objAmbr.AddMember("Max-Requested-Bandwidth-UL", qos_prof->apn_ambr_dl, allocator);
-                    objAmbr.AddMember("Max-Requested-Bandwidth-DL", qos_prof->apn_ambr_ul, allocator);
+                    objAmbr.AddMember("Max-Requested-Bandwidth-UL", qos_prof->apn_ambr_ul, allocator);
+                    objAmbr.AddMember("Max-Requested-Bandwidth-DL", qos_prof->apn_ambr_dl, allocator);
                     objValue.AddMember("AMBR", objAmbr, allocator);
                 }
 
@@ -277,8 +277,8 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
                           {
                               RAPIDJSON_NAMESPACE::Value objAmbr;
                               objAmbr.SetObject();
-                              objAmbr.AddMember("Max-Requested-Bandwidth-UL", qos_prof->apn_ambr_dl, allocator);
-                              objAmbr.AddMember("Max-Requested-Bandwidth-DL", qos_prof->apn_ambr_ul, allocator);
+                              objAmbr.AddMember("Max-Requested-Bandwidth-UL", qos_prof->apn_ambr_ul, allocator);
+                              objAmbr.AddMember("Max-Requested-Bandwidth-DL", qos_prof->apn_ambr_dl, allocator);
                               objApnConf.AddMember("AMBR", objAmbr, allocator);
                           }
 

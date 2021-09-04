@@ -223,7 +223,18 @@ class portalConfig
 class newPortalConfig
 {
     public:
-        newPortalConfig() {;}
+        newPortalConfig()
+        {
+            key = "";
+            opc = "";
+            sqn = 0;
+            from_imsi = 0;
+            to_imsi = 0;
+            apn_ambr_ul = 0;
+            apn_ambr_dl = 0;
+            qci = 0;
+            arp = 0;
+        }
         ~newPortalConfig()
         {
             for (std::list<apn_profile*>::iterator it=apn_profile_list.begin(); it!=apn_profile_list.end(); ++it)
