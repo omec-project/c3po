@@ -321,10 +321,9 @@ parse_hss_json_doc(RAPIDJSON_NAMESPACE::Document &doc)
         config->sqn = doc["Sqn"].GetInt64();
     }
 
-
-    if(doc.HasMember("ambr-down"))
+    if(doc.HasMember("ambr-dl"))
     {
-        config->apn_ambr_dl = doc["ambr-down"].GetInt();
+        config->apn_ambr_dl = doc["ambr-dl"].GetInt();
     }
 
     if(doc.HasMember("ambr-up"))
@@ -332,8 +331,15 @@ parse_hss_json_doc(RAPIDJSON_NAMESPACE::Document &doc)
         config->apn_ambr_ul = doc["ambr-up"].GetInt();
     }
 
-    std::cout<<" Opc - "<<config->opc <<" key - "<<config->key
-        <<" sqn - "<<config->sqn<<std::endl;
+    if(doc.HasMember("qci"))
+    {
+        config->qci = doc["qci"].GetInt();
+    }
+
+    if(doc.HasMember("arp"))
+    {
+        config->arp= doc["arp"].GetInt();
+    }
 
     if(doc.HasMember("apn-profiles"))
     {
