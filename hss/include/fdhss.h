@@ -149,6 +149,7 @@ public:
    void sendRIR_ChangeImsiImeiSvAssn(ImsiImeiData &data);
 
    void poppulate_IMSIs(const ImsiEntity &ie);
+   void remove_IMSI(const ImsiEntity &ie);
 
    s6t::Application     *gets6tApp()      { return m_s6tapp; }
    s6as6d::Application  *gets6as6dApp()   { return m_s6aapp; }
