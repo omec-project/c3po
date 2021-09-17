@@ -256,6 +256,7 @@ public:
    bool getImsiInfo ( const char *imsi, DAImsiInfo &info, CassFutureCallback cb, void *data );
    bool getImsiInfo ( const std::string &imsi, DAImsiInfo &info, CassFutureCallback cb, void *data ) { return getImsiInfo( imsi.c_str(), info, cb, data ); }
 
+   bool deleteUserImsi(const ImsiEntity &ie, CassFutureCallback cb, void *data);
    bool insertUserImsi(const ImsiEntity &ie, CassFutureCallback cb, void *data);
 
    bool getEventIdsFromMsisdnData( SCassFuture &future, DAEventIdList &el );

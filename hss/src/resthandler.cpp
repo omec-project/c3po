@@ -27,6 +27,7 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
         response.send(Pistache::Http::Code::Ok);
      }
    } else if (request.resource() == "/v2/config/imsis") {
+      // Post handler 
       std::cout<<"v2 config imsis resource "<<std::endl;
       RAPIDJSON_NAMESPACE::Document doc;
       doc.Parse(request.body().c_str());
@@ -42,6 +43,16 @@ void RestHandler::onRequest(const Pistache::Http::Request& request, Pistache::Ht
       response.send(Pistache::Http::Code::Ok, "");
       newPortalConfig* config = parse_hss_json_doc(doc);
       assert(config != NULL);
+      if (request.method() == Pistache::Http::Method::Delete) {
+        for (uint64_t imsi = config->from_imsi; imsi <= config->to_imsi; imsi++ )
+        {
+              ImsiEntity data;
+              data.imsi = std::to_string(imsi); data.imsi_pres = true;
+              fdHss.remove_IMSI(data);
+        }
+        return;
+      }
+
       for (uint64_t imsi = config->from_imsi; imsi <= config->to_imsi; imsi++ )
       {
               ImsiEntity data;

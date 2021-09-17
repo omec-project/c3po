@@ -826,6 +826,31 @@ bool DataAccess::insertUserImsi( const ImsiEntity &ie, CassFutureCallback cb, vo
    return true;
 }
 
+bool DataAccess::deleteUserImsi( const ImsiEntity &ie, CassFutureCallback cb, void *data)
+{
+   std::stringstream ss;
+
+   ss << "DELETE FROM  vhss.users_imsi WHERE imsi='"<< ie.imsi<<"'";
+
+   std::cout << ss.str() << std::endl;
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+   {
+      std::cout << "DataAccess::" << __func__ << " - Error " << future.errorCode()
+                << " executing [" << ss.str() << "]" << std::endl;
+      return false;
+   }
+
+   if (cb)
+      return future.setCallback( cb, data );
+
+   return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
