@@ -1,151 +1,18 @@
 {
-  "subscriber-selection-rules": [
-    {
-      "keys": {
-        "imsi-range": {
-          "from": 315010201000001,
-          "to": 315010201009999
-        }
-      },
-      "selected-access-profile": [
-        "permit-apps-in-network"
-      ],
-      "priority": 20,
-      "selected-qos-profile": "mobile",
-      "selected-user-plane-profile": "user_plane1",
-      "selected-apn-profile": "apn-internet-menlo"
-    },
-    {
-      "keys": {
-        "imsi-range": {
-          "from": 315010201010001,
-          "to": 315010201019999
-        }
-      },
-      "selected-access-profile": [
-        "permit-apps-in-network"
-      ],
-      "priority": 23,
-      "selected-qos-profile": "mobile",
-      "selected-user-plane-profile": "user_plane1",
-      "selected-apn-profile": "apn-intranet-menlo"
-    },
-    {
-      "keys": {
-        "imsi-range": {
-          "from": 315010201020001,
-          "to": 315010201029999
-        }
-      },
-      "selected-access-profile": [
-        "permit-apps-in-network"
-      ],
-      "priority": 23,
-      "selected-qos-profile": "mobile",
-      "selected-user-plane-profile": "user_plane1",
-      "selected-apn-profile": "apn-iot-camera-menlo"
-    }
-  ],
-  "access-profiles": {
-    "default-permit-all": {
-      "description": "default-permit-all-network"
-    },
-    "deny-apps-in-network": {
-      "flow-description": [
-        "deny ip net 10.240.2.0/24"
-      ]
-    },
-    "deny-apps-group1": {
-      "flow-descriptions": [
-        "deny ip app1.aetherproject.org",
-        "deny ip host 10.240.1.1"
-      ]
-    },
-    "deny-apps-group2": {
-      "flow-descriptions": [
-        "deny ip app2.aetherproject.org",
-        "deny ip 10.240.1.2"
-      ]
-    }
-  },
-  "apn-profiles": {
-    "apn-internet-menlo": {
-      "usage": 1,
-      "dns_primary": "8.8.8.4",
-      "network": "lbo",
-      "apn-name": "intranet",
-      "mtu": 1460,
-      "gx_enabled": false,
-      "dns_secondary": "8.8.8.8",
-      "gx_apn": "internet"
-      
-    },
-    "apn-intranet-menlo": {
-      "usage": 1,
-      "dns_primary": "8.8.8.4",
-      "network": "lbo",
-      "apn-name": "internet1",
-      "mtu": 1460,
-      "gx_enabled": false,
-      "dns_secondary": "8.8.8.8",
-      "gx_apn":  "menlo-intranet"
-    },
-    "apn-iot-hd-camera-menlo": {
-      "usage": 1,
-      "dns_primary": "8.8.8.4",
-      "network": "lbo",
-      "apn-name": "intranet",
-      "mtu": 1460,
-      "gx_enabled": false,
-      "dns_secondary": "8.8.8.8",
-      "gx_apn": "iot-camera-menlo"
-    },
-    "apn-iot-lowrate-menlo": {
-      "usage": 1,
-      "dns_primary": "8.8.8.4",
-      "network": "lbo",
-      "apn-name": "intranet",
-      "mtu": 1460,
-      "gx_enabled": false,
-      "dns_secondary": "8.8.8.8",
-      "gx_apn": "iot-camera-menlo"
-    }
-  },
-  "user-plane-profiles": {
-    "user_plane1": {
-      "qos-tags": {
-        "tag1": "BW"
-      },
-      "user-plane": "spgwu-headless",
-      "global-address": true,
-      "access-tags": {
-        "tag1": "ACC"
-      }
-    }
-  },
-  "qos-profiles": {
-    "mobile": {
-      "apn-ambr": [
-        12345678,
-        12345678
-      ],
-      "qci": 9,
-      "arp": 1
-    }
-  },
   "Policies": {
     "service-groups": {
       "internet": {
-        "default-activate-service": "be-internet-access"
-        },
+        "default-activate-service": ["be-internet-access", "low-datarate"],
+        "on-demand-activate-service": ["video-non-gbr-1"]
+      },
       "menlo-intranet": {
-        "default-activate-service": "be-menlo-intranet-access"
+        "default-activate-service": ["be-menlo-intranet-access"]
       },
       "iot-hd-camera-menlo": {
-        "default-activate-service": "video-non-gbr-1"
+        "default-activate-service": ["video-non-gbr-1"]
       },
       "iot-lowrate-sensor": {
-        "default-activate-service": "video-non-gbr-2"
+        "default-activate-service": ["video-non-gbr-2"]
       }
     },
     "services": {
@@ -194,6 +61,7 @@
       "video-non-gbr-1": {
         "definition": {
           "Charging-Rule-Name": "video-non-gbr-1",
+          "Flow-Status": 2,
           "QoS-Information": {
             "QoS-Class-Identifier": 9,
             "Max-Requested-Bandwidth-UL": 2345,
@@ -209,6 +77,7 @@
             "APN-Aggregate-Max-Bitrate-DL": 5555
           },
           "Flow-Information": {
+            "Flow-Direction": 3,
             "Flow-Description": "permit out ip 0.0.0.0/0 to assigned"
           }
         }
@@ -260,6 +129,7 @@
       "best-effort-internet-access": {
         "definition": {
           "Charging-Rule-Name": "best-effort-internet-access",
+          "Flow-Status": 2,
           "QoS-Information": {
             "QoS-Class-Identifier": 9,
             "Max-Requested-Bandwidth-UL": 512000,
@@ -275,6 +145,7 @@
             "APN-Aggregate-Max-Bitrate-DL": 10240000
           },
           "Flow-Information": {
+            "Flow-Direction": 3,
             "Flow-Description": "permit out ip 0.0.0.0/0 to assigned"
           }
         }

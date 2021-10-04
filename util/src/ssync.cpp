@@ -62,26 +62,30 @@ void SMutex::destroy()
 
 bool SMutex::enter(bool wait)
 {
-    if (!mInitialized)
+    if (!mInitialized) {
         SError::throwRuntimeException("SMutex::enter() - SMutex not initialized");
+    }
 
     int res = pthread_mutex_lock(&mMutex);
 
-    if (res != 0 && wait)
+    if (res != 0 && wait) {
         SError::throwRuntimeExceptionWithErrno("SMutex::enter() - Unable to lock mutex", res);
+    }
 
     return res == 0;
 }
 
 void SMutex::leave()
 {
-    if (!mInitialized)
+    if (!mInitialized) {
         SError::throwRuntimeException("SMutex::enter() - SMutex not initialized");
+    }
 
     int res = pthread_mutex_unlock(&mMutex);
 
-    if (res != 0)
+    if (res != 0) {
         SError::throwRuntimeExceptionWithErrno("SMutex::enter() - Unable to unlock mutex", res);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

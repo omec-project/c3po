@@ -94,11 +94,11 @@ private:
 	int m_preemption_vulnerability;
 };
 
-class ServiceSelection
+class Service
 {
 public:
-	ServiceSelection();
-	~ServiceSelection();
+	Service();
+	~Service();
 	
 	int getQci() { return m_qci; }
 	int getArp() { return m_arp; }
@@ -128,32 +128,36 @@ private:
 	std::list<std::string> m_activation_rules_list;
 };
 
-class ServiceProfiles
+class ServiceGroup
 {
 public:
-	ServiceProfiles();
-	~ServiceProfiles();
-	const std::string &setServiceName( const char *v ) { m_service_name = v; return getServiceName(); }
-   const std::string &setServiceName( const std::string &v ) { m_service_name = v; return getServiceName(); }
+	ServiceGroup();
+	~ServiceGroup();
+	const std::string &setServiceGroupName( const char *v ) { m_service_group_name = v; return getServiceGroupName(); }
+    const std::string &setServiceGroupName( const std::string &v ) { m_service_group_name = v; return getServiceGroupName(); }
+	const std::string &getServiceGroupName() const { return m_service_group_name; }
 
-	const std::string &setServiceType( const char* v ) { m_service_type = v; return getServiceType(); }
-	const std::string &setServiceType( const std::string& v ) { m_service_type = v; return getServiceType(); }
+	void add_default_services_list( std::string v );
+	void remove_default_service_list( std::string& v );
+	bool get_default_service_type_list( std::string v );
 
-	const std::string &getServiceName() const { return m_service_name; }
-	const std::string &getServiceType() const { return m_service_type; }
-	
-	void add_service_type_list( std::string v );
-	void remove_service_type_list( std::string& v );
-	bool get_service_type_list( std::string v );
+    std::list<std::string>& get_default_service_list() 
+    {
+        return m_default_service_type_list;
+    }
 
-	void add_service_type_map( std::string key, std::string val );
-	void remove_service_type_map( std::string& v );
-	std::string get_service_type_map( std::string& v );
+	void add_ondemand_services_list( std::string v );
+	void remove_ondemand_service_list( std::string& v );
+	bool get_ondemand_service_type_list( std::string v );
+    std::list<std::string>& get_ondemand_service_list() 
+    {
+        return m_ondemand_service_type_list;
+    }
+
 private:	
-	std::string m_service_name; // service_group_name;
-	std::string m_service_type;
-	std::list<std::string> m_service_type_list;
-	std::unordered_map<std::string, std::string> m_service_type_map;
+	std::string m_service_group_name; // service_group_name;
+	std::list<std::string> m_default_service_type_list;
+	std::list<std::string> m_ondemand_service_type_list;
 };
 
 
@@ -163,31 +167,31 @@ public:
 	PoliciesConfig();
 	~PoliciesConfig()
    {
-      for (std::list<ServiceProfiles *> ::iterator it=service_profile_list.begin(); it!=service_profile_list.end(); ++it)
+      for (std::list<ServiceGroup *> ::iterator it=service_profile_list.begin(); it!=service_profile_list.end(); ++it)
       {
-         ServiceProfiles *service = *it;
+         ServiceGroup *service = *it;
          delete( service );
       }
        
 	}
-	void add_service_group_map( std::string service_name, ServiceProfiles* service_profile );
+	void add_service_group_map( std::string service_name, ServiceGroup* service_profile );
 	void remove_service_group_map( std::string& service_name );
-	ServiceProfiles* get_service_group_map( std::string& service_name ) const;
+	ServiceGroup* get_service_group_map( std::string& service_name ) const;
 
-	void add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection );
+	void add_service_selection_map( std::string service_selection_name, Service* service_selection );
 	void remove_service_selection_map( std::string& service_selection_name );
-	ServiceSelection* get_service_selection_map( std::string& service_selection_name ) const;
+	Service* get_service_selection_map( std::string& service_selection_name ) const;
 
 	void add_config_rule_map( std::string rule_name, ConfigRule* config_rule );
 	ConfigRule* get_config_rule_map( std::string& rule_name ) const;
 	void remove_config_rule_map( std::string& rule_name );
 
 
-	void getDefaultRule( std::string& apn_name, DefaultRule* default_rule ) const;
+	void getDefaultRules( std::string& apn_name, std::list<DefaultRule*> &default_rule ) const;
 public:
-	std::list<ServiceProfiles*> service_profile_list;
-	std::unordered_map<std::string, ServiceProfiles*> service_group_map;
-	std::unordered_map<std::string, ServiceSelection*> service_selection_map;
+	std::list<ServiceGroup*> service_profile_list;
+	std::unordered_map<std::string, ServiceGroup*> service_group_map;
+	std::unordered_map<std::string, Service*> service_selection_map;
 	std::unordered_map<std::string, ConfigRule*> config_rule_map;
 };
 

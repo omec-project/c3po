@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-GxSession::GxSession( PCRF &pcrf, SessionEvent* current_event )
+GxSession::GxSession( PCRF &pcrf)
    : m_state( sIdle ),
      m_pcrf( pcrf ),
      m_pcrf_endpoint( NULL ),
@@ -31,16 +31,13 @@ GxSession::GxSession( PCRF &pcrf, SessionEvent* current_event )
      m_ipv6len( 0 ),
      m_supported_features( 0 ),
      m_tdf( *this ),
-     m_tssf( *this ),
-	  m_default_rule( NULL )
+     m_tssf( *this )
 {
-   memset( &m_ipv4, 0, sizeof( m_ipv4 ) );
-   memset( &m_ipv6, 0, sizeof( m_ipv6 ) );
+    memset( &m_ipv4, 0, sizeof( m_ipv4 ) );
+    memset( &m_ipv6, 0, sizeof( m_ipv6 ) );
 
-   mp_currentstate = new GxSessionPendingState( pcrf, current_event );
-   mp_currentproc = new GxSessionValidateProc( pcrf, current_event );
+    mp_currentstate = GxSessionPendingState::getInstance();
 
-	mp_currentevent = current_event; 
 }
 
 GxSession::~GxSession()
@@ -202,14 +199,14 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
 ////////////////////////////////////////////////////////////////////////////////
 
 
-GxSessionState::GxSessionState( PCRF& pcrf, SessionEvent* current_event) : m_pcrf( pcrf ), mp_sessionevent( current_event )
+GxSessionState::GxSessionState(std::string state_name)
 {
 	Logger::gx().debug("GxSessionState");
+    m_statename = state_name;
 }
 
 GxSessionState::~GxSessionState()
 {
-	mp_sessionevent = NULL;
 }
 
 int GxSessionState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa )
@@ -217,36 +214,17 @@ int GxSessionState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtrac
 	Logger::gx().debug("GxSessionState rcvdRAA");
 }
 
-int GxSessionState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+int GxSessionState::handleSubCCR( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
-	Logger::gx().debug("GxSessionState validateReq");
+	Logger::gx().debug("GxSessionState handleSubCCR");
+    return ValidateErrorCode::failure;
 }
 
-int GxSessionState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
-	Logger::gx().debug("GxSessionState visit install function");
-}
-
-int GxSessionState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
-	Logger::gx().debug("GxSessionState visit remove function ");
-}
-
-int GxSessionState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
-{
-	Logger::gx().debug("GxSessionState visit validate function ");
-}
-
-int GxSessionState::visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
-	Logger::gx().debug("GxSessionState visit default remove function ");
-}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GxSessionPendingState::GxSessionPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+GxSessionPendingState::GxSessionPendingState() : GxSessionState("GxSessionPendingState")
 {
-	GxSessionState::setStateName( "GxSessionPendingState" );
 	Logger::gx().debug("GxSessionPendingState  ");
 }
 
@@ -254,83 +232,16 @@ GxSessionPendingState::~GxSessionPendingState()
 {
 }
 
-int GxSessionPendingState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+int GxSessionPendingState::handleSubCCR( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
 {
-	Logger::gx().debug("GxSessionPendingState validateReq ");
+	Logger::gx().debug("GxSessionPendingState handleSubCCR ");
     int ret;
-    ret = current_proc->accept( this, ccr );
+    ret = current_proc->handleProcCCR(ccr );
     return ret;
 }
 
-int GxSessionPendingState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
+GxSessionActiveState::GxSessionActiveState( ) : GxSessionState("GxSessionActiveState")
 {
-	Logger::gx().debug("GxSessionPendingState visit validate function  ");
-    /*
-     * SessionEvent class should have the called function virtual
-     * and all the Event should override these virtual methods
-     * Remove the dynamic cast when this code will be changed
-     */
-    int ret;
-    SessionEvent* event = getCurrentEvent();
-    GxIpCan1* ipcan1 = NULL;
-    ipcan1 = dynamic_cast<GxIpCan1*> ( event );
-    if ( ipcan1 )
-    {
-       ret = ipcan1->validate( ccr );
-       return ret;
-    }
-	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-GxSessionActivePendingState::GxSessionActivePendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
-{
-	GxSessionState::setStateName( "GxSessionActivePendingState" );
-   Logger::gx().debug("GxSessionActivePendingState  ");
-}
-
-GxSessionActivePendingState::~GxSessionActivePendingState()
-{
-    Logger::gx().debug("~GxSessionActivePendingState  ");
-}
-
-int GxSessionActivePendingState::validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr )
-{
-	Logger::gx().debug("GxSessionActivePendingState validateReq ");
-    int ret;
-    ret = current_proc->accept( this, ccr );
-    return ret;
-}
-
-int GxSessionActivePendingState::visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr )
-{
-	Logger::gx().debug("GxSessionActivePendingState visit validate function  ");
-    /*
-     * SessionEvent class should have the called function virtual
-     * and all the Event should override these virtual methods
-     * Remove the dynamic cast when this code will be changed
-     */
-    int ret;
-    SessionEvent* event = getCurrentEvent();
-    GxIpCan1* ipcan1 = NULL;
-    ipcan1 = dynamic_cast<GxIpCan1*> ( event );
-    if ( ipcan1 )
-    {
-		 ret = ipcan1->cleanupSession( true );
-       ret = ipcan1->validate( ccr );
-    }
-	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
-    return ret;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-GxSessionActiveState::GxSessionActiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
-{
-	GxSessionState::setStateName( "GxSessionActiveState" );
 	Logger::gx().debug("GxSessionActiveState  ");
 }
 
@@ -342,9 +253,8 @@ GxSessionActiveState::~GxSessionActiveState()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GxSessionInactiveState::GxSessionInactiveState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+GxSessionInactiveState::GxSessionInactiveState( ) : GxSessionState("GxSessionInactiveState" )
 {
-	GxSessionState::setStateName( "GxSessionInactiveState" );
 	Logger::gx().debug("GxSessionInactiveState  ");
 }
 
@@ -356,9 +266,8 @@ GxSessionInactiveState::~GxSessionInactiveState()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GxSessionModifyPendingState::GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_event ) : GxSessionState( pcrf, current_event )
+GxSessionModifyPendingState::GxSessionModifyPendingState( ) : GxSessionState("GxSessionModifyPendingState")
 {
-	GxSessionState::setStateName( "GxSessionModifyPendingState" );
 	Logger::gx().debug("GxSessionModifyPendingState  ");
 }
 
@@ -370,63 +279,15 @@ GxSessionModifyPendingState::~GxSessionModifyPendingState()
 int GxSessionModifyPendingState::rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionModifyPendingState::rcvdRAA  ");
-   int result;
-	result = current_proc->accept( this, raa );
-   return result;
-}
-
-int GxSessionModifyPendingState::visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
-    int result = false;
-    /*
-     * SessionEvent class should have the called function virtual
-     * and all the Event should override these virtual methods
-     * Remove the dynamic cast when this code will be changed
-     */
-    GxIpCan1* ipcan1 = NULL;
-    SessionEvent* event = getCurrentEvent();
-    ipcan1 = dynamic_cast<GxIpCan1*>( event );
-    if (ipcan1 != NULL )
-    {
-        result = ipcan1->rcvdInstallRAA( raa );
-    }
-	 Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
-    return result;
-}
-
-int GxSessionModifyPendingState::visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
     int result;
-    GxIpCan1* ipcan1 = NULL;
-    SessionEvent* event = getCurrentEvent();
-    ipcan1 = dynamic_cast<GxIpCan1*>( event );
-    if ( ipcan1 != NULL )
-    {
-        result = ipcan1->rcvdRemoveRAA( raa );
-    }
-	// extraction of avps for remove raa here
-	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
+	result = current_proc->handleProcRAA(raa );
     return result;
 }
 
-int GxSessionModifyPendingState::visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa )
-{
-	int result;
-	GxIpCan1* ipcan1 = NULL;
-	SessionEvent* event = getCurrentEvent();
-	ipcan1 = dynamic_cast<GxIpCan1*>( event );
-	if ( ipcan1 != NULL )
-	{
-		result = ipcan1->rcvdDefaultRemoveRAA( raa );
-	}
-	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
-	return result;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-GxSessionProc::GxSessionProc( PCRF& pcrf, SessionEvent* current_event ) : m_pcrf( pcrf ), mp_sessionevent( current_event )
+GxSessionProc::GxSessionProc(std::string proc_name, GxSession *gx_session, SessionEvent* current_event ) : m_procname(proc_name), mp_gxsession(gx_session),mp_sessionevent( current_event )
 {
 	Logger::gx().debug("GxSessionProc function ");
 }
@@ -436,12 +297,12 @@ GxSessionProc::~GxSessionProc()
 	mp_sessionevent = NULL;
 }
 
-int GxSessionProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+int GxSessionProc::handleProcRAA(gx::ReAuthAnswerExtractor& raa )
 {
 	Logger::gx().debug("GxSessionProc accept raa ");
 }
 
-int GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
+int GxSessionProc::handleProcCCR(gx::CreditControlRequestExtractor& ccr )
 {
 	Logger::gx().debug("GxSessionProc accept  ccr");
 }
@@ -449,84 +310,120 @@ int GxSessionProc::accept( GxSessionState* current_state, gx::CreditControlReque
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GxSessionInstallProc::GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
+RARRuleInstallProc::RARRuleInstallProc(GxSession *gx_session, SessionEvent* current_event ) : GxSessionProc("RARRuleInstallProc", gx_session, current_event )
 {
-	GxSessionProc::setProcName( "GxSessionInstallProc" );
-	Logger::gx().debug("GxSessionInstallProc ");
+	Logger::gx().debug("RARRuleInstallProc ");
 }
 
-GxSessionInstallProc::~GxSessionInstallProc()
+RARRuleInstallProc::~RARRuleInstallProc()
 {
-	Logger::gx().debug("GxSessionInstallProc destructor ");
+	Logger::gx().debug("RARRuleInstallProc destructor ");
 }
 
-int GxSessionInstallProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+int RARRuleInstallProc::handleProcRAA(gx::ReAuthAnswerExtractor& raa )
 {
     int result;
-	result = current_state->visit( this, raa );
+    GxIpCan1* ipcan1 = NULL;
+    SessionEvent* event = getEvent();
+    ipcan1 = dynamic_cast<GxIpCan1*>( event );
+    if (ipcan1 != NULL )
+    {
+        result = ipcan1->rcvdInstallRAA( raa );
+    }
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
+    return result;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RARRuleRemoveProc::RARRuleRemoveProc( GxSession *gx_session, SessionEvent* current_event ) : GxSessionProc("RARRuleRemoveProc",gx_session, current_event )
+{
+	Logger::gx().debug("RARRuleRemoveProc ");
+}
+
+RARRuleRemoveProc::~RARRuleRemoveProc()
+{
+	Logger::gx().debug("~RARRuleRemoveProc ");
+}
+
+int RARRuleRemoveProc::handleProcRAA(gx::ReAuthAnswerExtractor& raa )
+{
+    int result;
+    GxIpCan1* ipcan1 = NULL;
+    SessionEvent* event = getEvent();
+    ipcan1 = dynamic_cast<GxIpCan1*>( event );
+    if ( ipcan1 != NULL )
+    {
+        result = ipcan1->rcvdRemoveRAA( raa );
+    }
+	// extraction of avps for remove raa here
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
+
     return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GxSessionRemoveProc::GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
+GxSessionCreateProc::GxSessionCreateProc(GxSession *gx_session, SessionEvent* current_event ) : GxSessionProc("GxSessionCreateProc",gx_session, current_event )
 {
-	GxSessionProc::setProcName( "GxSessionRemoveProc" );
-	Logger::gx().debug("GxSessionRemoveProc ");
+	Logger::gx().debug("GxSessionCreateProc ");
 }
 
-GxSessionRemoveProc::~GxSessionRemoveProc()
+GxSessionCreateProc::~GxSessionCreateProc()
 {
-	Logger::gx().debug("~GxSessionRemoveProc ");
+	Logger::gx().debug("~GxSessionCreateProc ");
 }
 
-int GxSessionRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+int GxSessionCreateProc::handleProcCCR(gx::CreditControlRequestExtractor& ccr )
 {
-    int result;
-	result = current_state->visit( this, raa );
-    return result;
-}
+    int ret;
+    /*
+     * SessionEvent class should have the called function virtual
+     * and all the Event should override these virtual methods
+     * Remove the dynamic cast when this code will be changed
+     */
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-GxSessionValidateProc::GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
-{
-	GxSessionProc::setProcName( "GxSessionValidateProc" );
-	Logger::gx().debug("GxSessionValidateProc ");
-}
-
-GxSessionValidateProc::~GxSessionValidateProc()
-{
-	Logger::gx().debug("~GxSessionValidateProc ");
-}
-
-int GxSessionValidateProc::accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr )
-{
-   int ret;
-	ret = current_state->visit( this, ccr );
-   return ret;
+    SessionEvent* event = getEvent();
+    GxIpCan1* ipcan1 = NULL;
+    ipcan1 = dynamic_cast<GxIpCan1*> ( event );
+    if ( ipcan1 )
+    {
+       ret = ipcan1->validate( ccr );
+       return ret;
+    }
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
+    return ValidateErrorCode::failure;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-GxSessionDefaultRemoveProc::GxSessionDefaultRemoveProc( PCRF& pcrf, SessionEvent* current_event ) : GxSessionProc( pcrf, current_event )
+RARSessionRemoveProc::RARSessionRemoveProc(GxSession *gx_session, SessionEvent* current_event ) : GxSessionProc("RARSessionRemoveProc",gx_session, current_event )
 {
-	 GxSessionProc::setProcName( "GxSessionDefaultRemoveProc" );
-	Logger::gx().debug("GxSessionDefaultRemoveProc ");
+	Logger::gx().debug("RARSessionRemoveProc ");
 }
 
-GxSessionDefaultRemoveProc::~GxSessionDefaultRemoveProc()
+RARSessionRemoveProc::~RARSessionRemoveProc()
 {
-	Logger::gx().debug("~GxSessionDefaultRemoveProc ");
+	Logger::gx().debug("~RARSessionRemoveProc ");
 }
 
-int GxSessionDefaultRemoveProc::accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa )
+int RARSessionRemoveProc::handleProcRAA( gx::ReAuthAnswerExtractor& raa )
 {
 	int ret;
-	ret = current_state->visit( this, raa );
+    GxIpCan1* ipcan1 = NULL;
+    SessionEvent* event = getEvent();
+    ipcan1 = dynamic_cast<GxIpCan1*>( event );
+    if ( ipcan1 != NULL )
+    {
+        ret = ipcan1->rcvdRemoveRAA( raa );
+    }
+	// extraction of avps for remove raa here
+	Logger::gx().debug("Ignoring this event as it is not GxIpCan1 type ");
+
 	return ret;
 }
 
@@ -1000,6 +897,7 @@ void TriggerTimer::onTimer( SEventThread::Timer &t)
    }
 }
 
+// ajay : not clear flow 
 void TriggerTimer::dispatch( SEventThreadMessage& msg )
 {
 
@@ -1008,9 +906,9 @@ void TriggerTimer::dispatch( SEventThreadMessage& msg )
 		case RARPendingRuleInstallTimeout : 
 		{
 			Logger::gx().debug("RAR TIMEOUT Occured");
-      	m_reqTimer->stop();
-      	//m_gxipcan1->sendRAR( true );
-      	m_gxipcan1->sendRAR( RARTrigger::triggerRARPending );
+      	    m_reqTimer->stop();
+      	    //m_gxipcan1->sendRAR( true );
+      	    m_gxipcan1->sendRAR( RARTrigger::triggerRARPending );
 			break;
 		}
 		case RARPendingRuleRemoveTimeout :
@@ -1309,33 +1207,32 @@ int GxIpCan1::rcvdInstallRAA( gx::ReAuthAnswerExtractor& raa )
 void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 {
    int result;
-	GxSessionDefaultRemoveProc* gx_proc = NULL;
-	GxSessionProc* current_proc = NULL;
-	Logger::gx().debug("RCVD RAA FROM PEER");
-	gx::ReAuthAnswerExtractor raa( ans, getDict() );
-	ans.dump();
-   result = getCurrentState()->rcvdRAA( getCurrentProc(), raa ); 
+   RARSessionRemoveProc* gx_proc = NULL;
+   GxSessionProc* current_proc = NULL;
+   Logger::gx().debug("RCVD RAA FROM PEER");
+   gx::ReAuthAnswerExtractor raa( ans, getDict() );
+   ans.dump();
+   result = getCurrentProc()->handleProcRAA(raa ); 
    if ( result == ValidateErrorCode::success )
    {
 		current_proc = getCurrentProc();
 		if ( current_proc != NULL )
 		{
-			gx_proc = dynamic_cast<GxSessionDefaultRemoveProc*>( current_proc );
-      	if ( gx_proc != NULL )
-      	{
-				setCurrentState( NULL );
-         	// this is defaultRemoveProc so we need to destroy the GxSession because the default rules have been removed in pcef
-         	// PCRF initiated IP-Can Session Termination
-				cleanupSession( false );
-         	GxSession::teardownSession( "PCRFCRCRcmd::process:TERMINATION_REQUEST", getGxSession(), SdSession::srcIpCanSessionTermination, StSession::tcDiameterLogout );
-         	GxIpCan1::release( this );
-      	}
-			else
-			if ( gx_proc == NULL )
-			{
-      		setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
-				setCurrentProc( NULL );
-			}
+			gx_proc = dynamic_cast<RARSessionRemoveProc*>( current_proc );
+      	    if ( gx_proc != NULL )
+      	    {
+		    	setSubCurrentState( NULL ); // FIXME
+             	// this is defaultRemoveProc so we need to destroy the GxSession because the default rules have been removed in pcef
+             	// PCRF initiated IP-Can Session Termination
+		    	cleanupSession( false );
+             	GxSession::teardownSession( "PCRFCRCRcmd::process:TERMINATION_REQUEST", getGxSession(), SdSession::srcIpCanSessionTermination, StSession::tcDiameterLogout );
+             	GxIpCan1::release( this );
+      	    }
+		    else if ( gx_proc == NULL )
+		    {
+      	    	setSubCurrentState(GxSessionActiveState::getInstance());
+		    	setCurrentProc( NULL );
+		    }
 		}
    }
 
@@ -1343,7 +1240,7 @@ void GxIpCan1::rcvdRAA(FDMessageAnswer& ans)
 	current_proc = getCurrentProc();
 	if ( current_proc != NULL )
 	{
-		gx_proc = dynamic_cast<GxSessionDefaultRemoveProc*>( current_proc );
+		gx_proc = dynamic_cast<RARSessionRemoveProc*>( current_proc );
 		if ( gx_proc != NULL )
 		{
 			// this is defaultRemoveProc so we need to destroy the GxSession because the default rules have been removed in pcef 
@@ -1379,21 +1276,21 @@ void GxIpCan1::sendRAR( int triggerValue )
 
 	if( triggerValue == RARTrigger::triggerActivationTimerExpire )
 	{
-		if( getGxSession()->getDefaultRule()->getDefaultRuleFlag() == true )
+        /*
+		if( getGxSession()->getDefaultRule()->getDefaultRuleFlag() == true ) */
 		{
 			// 3 indicates IP_CAN_SESSION_TERMINATION
 			req->add( getDict().avpSessionReleaseCause(), 3 );
 		}
-		else
+		/*else   // ajay : FIXME - does not look right..defaultRule always have default flag set to true 
 		{
 			FDAvp cri ( getDict().avpChargingRuleRemove() );
-   		cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
+   		    cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
 			req->add( cri );
-		}
-		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );
+		} */
+		setCurrentProc( new RARSessionRemoveProc( getGxSession(), this ) );
 	}
-	else
-	if ( triggerValue == RARTrigger::triggerRARInstall )
+	else if ( triggerValue == RARTrigger::triggerRARInstall )
 	{
 		RulesList &arules( getGxSession()->getRules() );
 		if ( !arules.empty() )
@@ -1420,19 +1317,18 @@ void GxIpCan1::sendRAR( int triggerValue )
 			}
 
 			if (crcnt > 0)
-         {
-            req->add(cri);
-         }
-         if (pracnt > 0)
-         {
-            req->add(prai);
-         }
+            {
+                req->add(cri);
+            }
+            if (pracnt > 0)
+            {
+                req->add(prai);
+            }
 		}
 		// set current procedure for handling the remove RAA of the default rule
-		setCurrentProc( new GxSessionDefaultRemoveProc( getPCRF(), this ) );
+		setCurrentProc( new RARSessionRemoveProc( getGxSession(), this ) );
 	}
-	else
-	if ( triggerValue == RARTrigger::triggerRARRemove )
+	else if ( triggerValue == RARTrigger::triggerRARRemove )
 	{ 
 		// add the pending rule in remove list from install list
 		RulesList &arules( getGxSession()->getRules() );
@@ -1468,10 +1364,9 @@ void GxIpCan1::sendRAR( int triggerValue )
 				req->add( prar );
 			}
 		}
-      setCurrentProc( new GxSessionRemoveProc( getPCRF(), this ) );
+        setCurrentProc( new RARRuleRemoveProc( getGxSession(), this ) );
 	}
-	else
-	if ( triggerValue == RARTrigger::triggerRARPending )
+	else if ( triggerValue == RARTrigger::triggerRARPending )
 	{
 		if ( !prules.empty() )
 		{
@@ -1538,7 +1433,7 @@ void GxIpCan1::sendRAR( int triggerValue )
 		defBearerQos.add( avp_arp );
 		req->add(defBearerQos);
         
-      setCurrentProc( new GxSessionInstallProc( getPCRF(), this ) );
+      setCurrentProc( new RARRuleInstallProc( getGxSession(), this ) );
 	}
 
 	
@@ -1549,7 +1444,7 @@ void GxIpCan1::sendRAR( int triggerValue )
 	
 	req->dump();
 	req->send();
-   setCurrentState( new GxSessionModifyPendingState(getPCRF(), this ) );
+    setSubCurrentState( GxSessionModifyPendingState::getInstance() );
     
    //bool result = getPCRF().gxApp().sendRulesRARreq(*(getGxSession()), irules, rrules, this);
    //if (result)
@@ -1576,33 +1471,47 @@ void GxIpCan1::sendCCA()
 int GxIpCan1::cleanupSession( bool terminate )
 {
     printf("%s:%d\n", __FUNCTION__,__LINE__);
-	 // delete the Subscriber table which will internally delete SubscriberApn table.
-	 GxSession* prevSession = NULL;
+	// delete the Subscriber table which will internally delete SubscriberApn table.
+	GxSession* prevSession = NULL;
     if ( GxSessionMap::getInstance().findSession( getGxSession()->getImsi(), getGxSession()->getApn(), prevSession ) )
     {
 		
-		 SessionEvent* current_event = prevSession->getCurrentEvent();
-    	 GxIpCan1* ipcan1 = NULL;
-    	 ipcan1 = dynamic_cast<GxIpCan1*> ( current_event );
-		 if ( ipcan1 != NULL )
-		 {
-			 if ( ipcan1->getTriggerTimer() != NULL )
-			 {
-			    ipcan1->getTriggerTimer()->getTimer()->stop();
-				 delete( ipcan1->getTriggerTimer() );
-			 }
-		 }
-	    Subscriber& subscriber = ( prevSession->getSubscriber() );
+         GxSessionProc *proc = prevSession->getCurrentProc();
+         
+         if (proc != NULL) 
+         {
+             SessionEvent* current_event = proc->getEvent();
+             GxIpCan1* ipcan1 = NULL;
+             ipcan1 = dynamic_cast<GxIpCan1*> ( current_event );
+             if ( ipcan1 != NULL )
+             {
+                 if ( ipcan1->getTriggerTimer() != NULL )
+                 {
+                     ipcan1->getTriggerTimer()->getTimer()->stop();
+                     delete( ipcan1->getTriggerTimer() );
+                 }
+             }
+         }
+	     Subscriber& subscriber = ( prevSession->getSubscriber() );
 		 getPCRF().dataaccess().deleteSubscriber( subscriber );
 	 
     	 if ( getPCRF().dataaccess().sessionExists( prevSession->getImsi(), prevSession->getApn() ) )
     	 {
-          getPCRF().dataaccess().deleteSession( *prevSession );
+            getPCRF().dataaccess().deleteSession( *prevSession );
     	 }
 		 if( terminate == true )
 		 {
-          GxSessionMap::getInstance().eraseSession( prevSession->getImsi(), prevSession->getApn() );
+            GxSessionMap::getInstance().eraseSession( prevSession->getImsi(), prevSession->getApn() );
 		 }
+
+         std::list<DefaultRule*>::iterator itr;
+         itr = prevSession->getDefaultRuleList().begin();
+         // ajay : FIXME - fix rule cleanup
+         while(itr != prevSession->getDefaultRuleList().end()) {
+              prevSession->getDefaultRuleList().erase(itr);
+              itr = prevSession->getDefaultRuleList().begin();
+         }
+
 	 }
     return ValidateErrorCode::success;
 }
@@ -1615,741 +1524,755 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
 	std::string r;
     bool result = true;
     
-      size_t session_list_size = getGxSession()->getRules().size();
+    //
+    // find the IMSI
+    //
+    for ( auto subidit = ccr.subscription_id.getList().begin();
+          subidit != ccr.subscription_id.getList().end();
+          ++subidit )
+    {
+       int32_t subscription_id_type;
 
-      //
-      // find the IMSI
-      //
-      for ( auto subidit = ccr.subscription_id.getList().begin();
-            subidit != ccr.subscription_id.getList().end();
-            ++subidit )
-      {
-         int32_t subscription_id_type;
-
-         if ( (*subidit)->subscription_id_type.get( subscription_id_type ) && subscription_id_type == 1 ) // END_USER_IMSI
-         {
-            if ( !(*subidit)->subscription_id_data.get( s ) )
-            {
-               // subscriptionIdMissing error code
-               Logger::gx().error( "%s:%d - Subscription-Id-Data missing for END_USER_IMSI", __FILE__, __LINE__ );
-               RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_MISSING_AVP, *(*subidit) );
-               sendCCA();
-               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-               return ValidateErrorCode::subscriptionIdMissing;
-            }
-
-            getGxSession()->setImsi( s );
-
-            //
-            // reurn if imsi is not valid
-            //
-            if ( getGxSession()->getImsi().length() != 15 )
-            {
-               //imsi invalid error code
-               Logger::gx().error( "%s:%d - Subscription-Id END_USER_IMSI invalid value", __FILE__, __LINE__ );
-               RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_INVALID_AVP_VALUE, (*subidit)->subscription_id_data );
-               sendCCA();
-               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_INVALID_AVP_VALUE);
-               return ValidateErrorCode::imsiInvalid ;
-            }
-            break;
-         }
-      }
-
-      if ( !result )
-      {
-          return false;
-      }
-
-      //
-      // return if IMSI not found or invalid
-      //
-      if ( getGxSession()->getImsi().empty() )
-      {
-         // imsi empty return code
-         Logger::gx().error( "%s:%d - Subscription-Id END_USER_IMSI missing", __FILE__, __LINE__ );
-         RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpSubscriptionIdType(), 1 );
-         sendCCA();
-         StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-         return ValidateErrorCode::imsiEmpty ;
-      }
-
-      //
-      // get the APN
-      //
-      if ( !ccr.called_station_id.get( s ) )
-      {
-         // called station id missing error code
-         Logger::gx().error( "%s:%d - Called-Station-Id missing in INITIAL_REQUEST", __FILE__, __LINE__ );
-         RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpCalledStationId(), "" );
-         sendCCA();
-         StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-         return ValidateErrorCode::calledStationIdMissing ;
-      }
-
-	  DefaultRule* default_rule = new DefaultRule();
-	  Options::getPolicesConfig().getDefaultRule( s, default_rule );
-	  getGxSession()->setDefaultRule( default_rule );
-
-      getGxSession()->setApn( s );
-      std::cout<<"gxSession Apn "<<getGxSession()->getApn()<< ", s = "<<s<<std::endl;
-
-      //
-      // return if the APN is invalid
-      //
-      if ( getGxSession()->getApn().empty() )
-      {
-         //called-station-id empty error code
-         Logger::gx().error( "%s:%d - Called-Station-Id is empty", __FILE__, __LINE__ );
-         EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
-         sendCCA();
-         StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-         return ValidateErrorCode::calledStationIdEmpty ;
-      }
-
-      {
-          Apn *apn = NULL;
-          if (!getPCRF().getApn( getGxSession()->getApn(), apn ) )
+       if ( (*subidit)->subscription_id_type.get( subscription_id_type ) && subscription_id_type == 1 ) // END_USER_IMSI
+       {
+          if ( !(*subidit)->subscription_id_data.get( s ) )
           {
-            std::string apnName(getGxSession()->getApn());
-	        ServiceProfiles* service_profile = 	Options::getPolicesConfig().get_service_group_map(apnName);
-            if(service_profile != NULL)
-            {
-                Apn *apn = new Apn();
-                apn->setApn(getGxSession()->getApn());
-                apn->setFailOnUninstallableRule(true);
-                apn->setAutoCreateSubscriber(true);
-                apn->setMembershipValue("rule_name"); // What should be base ?
-                apn->setDomain ("onf");
-                apn->setSySubscriptionId("");
-                apn->setSyRequired(false);
-                apn->setDefaultBearerCtlMode(2);
-                apn->setForceDefaultBearerCtlMode(true);
-                apn->setTimerVal( 100000);
-                apn->setMaxCallTimerVal(4000000);
-		        std::string default_service_key_name( "default-activate-service" );
-		        std::string default_activate_service_val = service_profile->get_service_type_map( default_service_key_name );
-                // let;s get default service 
-		        ServiceSelection* service_default = Options::getPolicesConfig().get_service_selection_map( default_activate_service_val );
-		        if( service_default != NULL )
-		        {
-                    apn->setApnAmbrUlVal(service_default->getAmbrUl());
-                    apn->setApnAmbrDlVal(service_default->getAmbrDl());
-                }
-
-                // check if any on demand service is required 
-		        std::string service_name ( "on-demand-activate-service" );
-		        std::string service_ondemand_val = service_profile->get_service_type_map(service_name);
-		        ServiceSelection* service_ondemand = Options::getPolicesConfig().get_service_selection_map( service_ondemand_val);
-                apn->setDedicatedBearerCreation(false);
-		        if( service_ondemand != NULL )
-		        {
-                    apn->setDedicatedBearerCreation(true);
-                }
-                
-                auto itr = service_default->get_activation_rules_list().begin();
-                for (; itr != service_default->get_activation_rules_list().end(); itr++ ) 
-                {
-                  std::string rule_name = *itr;
-                  // Now let's add rules for this APN (i.e. service) 
-                  Rule *rule = nullptr;
-                  auto ruleit = getPCRF().getRuleMap().find(rule_name);
-                  if (ruleit  == getPCRF().getRuleMap().end())
-                  {
-	                ConfigRule * default_rule = Options::getPolicesConfig().get_config_rule_map(rule_name);
-
-                    rule = new Rule();
-                    rule->setRuleName(rule_name);
-                    rule->setBaseName(rule_name);
-                    rule->setType("CHARGING");
-                    rule->setDefinition (default_rule->getDefinition());
-                    rule->setTimeOfDay("");
-                    rule->setUsageMonitoringInfo("");
-                    rule->setSyRequired(false);
-                    rule->setTimeMask(0);
-                    rule->setFeatureMask(0);
-                    rule->setDefaultFlag(true);
-                  } else {
-                      rule = ruleit->second;
-                  }
-                  apn->addComputedRule(rule );
-                }
-                getPCRF().getApnMap().insert( std::pair<std::string,Apn*>( apn->getApn(), apn ) );
-            }
+             // subscriptionIdMissing error code
+             Logger::gx().error( "%s:%d - Subscription-Id-Data missing for END_USER_IMSI", __FILE__, __LINE__ );
+             RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_MISSING_AVP, *(*subidit) );
+             sendCCA();
+             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
+             return ValidateErrorCode::subscriptionIdMissing;
           }
-      }
 
-      //
-      // lookup the APN and return if it does not exist
-      //
-      {
-         Apn *apn = NULL;
-         if ( !getPCRF().getApn( getGxSession()->getApn(), apn ) )
-         {
-            // apn missing error code
-            Logger::gx().error( "%s:%d - APN [%s] not found", __FILE__, __LINE__, getGxSession()->getApn().c_str() );
-            EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
-            sendCCA();
-            StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            return ValidateErrorCode::apnMissing ;
-         }
+          getGxSession()->setImsi( s );
 
-         getGxSession()->setApnEntry( apn );
-      }
+          //
+          // reurn if imsi is not valid
+          //
+          if ( getGxSession()->getImsi().length() != 15 )
+          {
+             //imsi invalid error code
+             Logger::gx().error( "%s:%d - Subscription-Id END_USER_IMSI invalid value", __FILE__, __LINE__ );
+             RESULTCODE_WITH_FAILEDAVP1( getCCA(), DIAMETER_INVALID_AVP_VALUE, (*subidit)->subscription_id_data );
+             sendCCA();
+             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_INVALID_AVP_VALUE);
+             return ValidateErrorCode::imsiInvalid ;
+          }
+          break;
+       }
+    }
 
-      //
-      // get the session id
-      //
-      getCCR().session_id.get( s );
-      getGxSession()->setSessionId( s );
+    //
+    // return if IMSI not found or invalid
+    //
+    if ( getGxSession()->getImsi().empty() )
+    {
+       // imsi empty return code
+       Logger::gx().error( "%s:%d - Subscription-Id END_USER_IMSI missing", __FILE__, __LINE__ );
+       RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpSubscriptionIdType(), 1 );
+       sendCCA();
+       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
+       return ValidateErrorCode::imsiEmpty ;
+    }
 
-      //
-      // see if the session id already exists
-      //
-      {
-         GxSession *session = NULL;
-         if ( GxSessionMap::getInstance().findSession( getGxSession()->getSessionId(), session ) )
-         {
-            // contextExists error code
-            Logger::gx().error( "%s:%d - Session ID [%s] already exists imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getSessionId().c_str(),
-                  getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-            return ValidateErrorCode::contextExists ;
-         }
-      }
+    //
+    // get the APN
+    //
+    if ( !ccr.called_station_id.get( s ) )
+    {
+       // called station id missing error code
+       Logger::gx().error( "%s:%d - Called-Station-Id missing in INITIAL_REQUEST", __FILE__, __LINE__ );
+       RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpCalledStationId(), "" );
+       sendCCA();
+       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
+       return ValidateErrorCode::calledStationIdMissing ;
+    }
 
-      //
-      // see if the session already exists in memory
-      //
-      {
-         GxSession *session = NULL;
-         if ( GxSessionMap::getInstance().findSession( getGxSession()->getImsi(), getGxSession()->getApn(), session ) )
-         {
-            // contextExists error code
-            Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-            return ValidateErrorCode::contextExists ;
-         }
-      }
+    getGxSession()->setApn( s );
+    std::cout<<"gxSession Apn "<<getGxSession()->getApn()<< ", s = "<<s<<std::endl;
 
-      //
-      // see if the session exists in the database
-      //
-      if ( getPCRF().dataaccess().sessionExists( getGxSession()->getImsi(), getGxSession()->getApn() ) )
-      {
-         if ( Options::selfRedirect() )
-         {
-            Logger::gx().error( "%s:%d - self redirect not implemented", __FILE__, __LINE__ );
-            return ValidateErrorCode::failure ;
-         }
-         // context exists error code
-         Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]",
-               __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-         return ValidateErrorCode::contextExists ;
-      }
+    //
+    // return if the APN is invalid
+    //
+    if ( getGxSession()->getApn().empty() )
+    {
+       //called-station-id empty error code
+       Logger::gx().error( "%s:%d - Called-Station-Id is empty", __FILE__, __LINE__ );
+       EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
+       sendCCA();
+       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+       return ValidateErrorCode::calledStationIdEmpty ;
+    }
 
-      //
-      // lookup the subscriber
-      //
-      if ( !getPCRF().dataaccess().getSubscriber( getGxSession()->getImsi(), getGxSession()->getSubscriber(), getPCRF().getRules() ) )
-      {
-         //
-         // add subscriber if APN is configured to
-         //
-         if ( getGxSession()->getApnEntry()->getAutoCreateSubscriber() )
-         {
-            getGxSession()->getSubscriber().setImsi( getGxSession()->getImsi() );
-            getGxSession()->getSubscriber().setSySubscriptionId( getGxSession()->getApnEntry()->getSySubscriptionId() );
-            getGxSession()->getSubscriber().setFailOnUninstallableRule( getGxSession()->getApnEntry()->getFailOnUninstallableRule() );
+	Options::getPolicesConfig().getDefaultRules( s, getGxSession()->getDefaultRuleList());
+    std::cout<<"list of rules for GxSession "<<getGxSession()->getDefaultRuleList().size() << "\n ";
+
+
+    {
+        // FIXME : should we add these rules as soon as new config is available 
+        Apn *apn = NULL;
+        if (!getPCRF().getApn( getGxSession()->getApn(), apn ) )
+        {
+          std::string apnName(getGxSession()->getApn());
+          std::cout<<"apName "<<apnName<< " \n";
+	      ServiceGroup* service_group = 	Options::getPolicesConfig().get_service_group_map(apnName);
+          if(service_group != NULL)
+          {
+              std::cout<<"service group not null apName "<<apnName<< " \n";
+              Apn *apn = new Apn();
+              apn->setApn(getGxSession()->getApn());
+              apn->setFailOnUninstallableRule(true);
+              apn->setAutoCreateSubscriber(true);
+              apn->setMembershipValue("rule_name"); // What should be base ?
+              apn->setDomain ("onf");
+              apn->setSySubscriptionId("");
+              apn->setSyRequired(false);
+              apn->setDefaultBearerCtlMode(2);
+              apn->setForceDefaultBearerCtlMode(true);
+              apn->setTimerVal( 100000);
+              apn->setMaxCallTimerVal(4000000);
+              apn->setDedicatedBearerCreation(false);
+
+              // list of services to be enabled for this APN (service Group)
+              std::list<std::string> &service_list = service_group->get_default_service_list();
+              std::cout<<"service group -- service list length "<<service_list.size()<< " \n";
+              for(std::list<std::string>::iterator it=service_list.begin(); it != service_list.end(); it++) 
+              {
+		          std::string service_val = *it;
+                  // let;s get default service 
+	              Service* service_default = Options::getPolicesConfig().get_service_selection_map( service_val );
+	              if( service_default != NULL )
+	              {
+                      apn->setApnAmbrUlVal(service_default->getAmbrUl());
+                      apn->setApnAmbrDlVal(service_default->getAmbrDl());
+                  }
+
+                  auto itr = service_default->get_activation_rules_list().begin();
+                  for (; itr != service_default->get_activation_rules_list().end(); itr++ ) 
+                  {
+                    std::cout<<"service default activation rules list  \n";
+                    std::string rule_name = *itr;
+                    // Now let's add rules for this APN (i.e. service) 
+                    Rule *rule = nullptr;
+                    auto ruleit = getPCRF().getRuleMap().find(rule_name);
+                    if (ruleit  == getPCRF().getRuleMap().end())
+                    {
+	                  ConfigRule * default_rule = Options::getPolicesConfig().get_config_rule_map(rule_name);
+
+                      rule = new Rule();
+                      rule->setRuleName(rule_name);
+                      rule->setBaseName(rule_name);
+                      rule->setType("CHARGING");
+                      rule->setDefinition (default_rule->getDefinition());
+                      rule->setTimeOfDay("");
+                      rule->setUsageMonitoringInfo("");
+                      rule->setSyRequired(false);
+                      rule->setTimeMask(0);
+                      rule->setFeatureMask(0);
+                      rule->setDefaultFlag(true);
+                    } else {
+                      rule = ruleit->second;
+                    }
+                    std::cout<<"adding rule "<<rule_name<< " in the APN\n";
+                    apn->addComputedRule(rule ); // collection of default & dedicated bearer 
+                  }
+                  std::cout<<"service default activation rules list end \n";
+                  std::list<std::string> &ondemand_service_list = service_group->get_ondemand_service_list();
+                  if(ondemand_service_list.size() > 0)
+                  { 
+                      apn->setDedicatedBearerCreation(true);
+                  }
+              }
+              getPCRF().getApnMap().insert( std::pair<std::string,Apn*>( apn->getApn(), apn ) );
+          } else {
+              std::cout<<"service group null apName "<<apnName<< " \n";
+          }
+       }
+    }
+
+    //
+    // lookup the APN and return if it does not exist
+    //
+    {
+       Apn *apn = NULL;
+       if ( !getPCRF().getApn( getGxSession()->getApn(), apn ) )
+       {
+          // apn missing error code
+          Logger::gx().error( "%s:%d - APN [%s] not found", __FILE__, __LINE__, getGxSession()->getApn().c_str() );
+          EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+          return ValidateErrorCode::apnMissing ;
+       }
+
+       getGxSession()->setApnEntry( apn );
+    }
+
+    //
+    // get the session id
+    //
+    getCCR().session_id.get( s );
+    getGxSession()->setSessionId( s );
+
+    //
+    // see if the session id already exists
+    //
+    {
+       GxSession *session = NULL;
+       if ( GxSessionMap::getInstance().findSession( getGxSession()->getSessionId(), session ) )
+       {
+          // contextExists error code
+          Logger::gx().error( "%s:%d - Session ID [%s] already exists imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getSessionId().c_str(),
+                getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          return ValidateErrorCode::contextExists ;
+       }
+    }
+
+    //
+    // see if the session already exists in memory
+    //
+    {
+       GxSession *session = NULL;
+       if ( GxSessionMap::getInstance().findSession( getGxSession()->getImsi(), getGxSession()->getApn(), session ) )
+       {
+          // contextExists error code
+          Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          return ValidateErrorCode::contextExists ;
+       }
+    }
+
+    //
+    // see if the session exists in the database
+    //
+    if ( getPCRF().dataaccess().sessionExists( getGxSession()->getImsi(), getGxSession()->getApn() ) )
+    {
+       if ( Options::selfRedirect() )
+       {
+          Logger::gx().error( "%s:%d - self redirect not implemented", __FILE__, __LINE__ );
+          return ValidateErrorCode::failure ;
+       }
+       // context exists error code
+       Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]",
+             __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+       return ValidateErrorCode::contextExists ;
+    }
+
+    //
+    // lookup the subscriber
+    //
+    if ( !getPCRF().dataaccess().getSubscriber( getGxSession()->getImsi(), getGxSession()->getSubscriber(), getPCRF().getRules() ) )
+    {
+       //
+       // add subscriber if APN is configured to
+       //
+       if ( getGxSession()->getApnEntry()->getAutoCreateSubscriber() )
+       {
+          getGxSession()->getSubscriber().setImsi( getGxSession()->getImsi() );
+          getGxSession()->getSubscriber().setSySubscriptionId( getGxSession()->getApnEntry()->getSySubscriptionId() );
+          getGxSession()->getSubscriber().setFailOnUninstallableRule( getGxSession()->getApnEntry()->getFailOnUninstallableRule() );
 
 //            SubscriberApn *sa = new SubscriberApn();
 //            *sa = *getApnEntry();
 //            getSubscriber().addSubscriberApn( sa );
 
-            if ( !getPCRF().dataaccess().addSubscriber( getGxSession()->getSubscriber() ) )
-            {
-               // unableToAddNewSubscriber error code
-               Logger::gx().error( "%s:%d - Unable to add new subscriber imsi=[%s] apn=[%s]",
-                     __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-               RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-               sendCCA();
-               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-               return ValidateErrorCode::unableToAddNewSubscriber ;
-            }
-         }
-         else
-         {
-            // apnNotConfigured error code.
-            Logger::gx().error( "%s:%d - Subscriber does not exist and APN not configured to autoadd imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-            EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.called_station_id );
-            sendCCA();
-            StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            return ValidateErrorCode::apnNotConfigured ;
-         }
-      }
+          if ( !getPCRF().dataaccess().addSubscriber( getGxSession()->getSubscriber() ) )
+          {
+             // unableToAddNewSubscriber error code
+             Logger::gx().error( "%s:%d - Unable to add new subscriber imsi=[%s] apn=[%s]",
+                   __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+             RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+             sendCCA();
+             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+             return ValidateErrorCode::unableToAddNewSubscriber ;
+          }
+       }
+       else
+       {
+          // apnNotConfigured error code.
+          Logger::gx().error( "%s:%d - Subscriber does not exist and APN not configured to autoadd imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.called_station_id );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+          return ValidateErrorCode::apnNotConfigured ;
+       }
+    }
 
-      {
-         /*
-          * If the subscriber is found and the APN does not exist under the subscriber, should they be added?
-          */
-         SubscriberApn *sa = NULL;
+    {
+       /*
+        * If the subscriber is found and the APN does not exist under the subscriber, should they be added?
+        */
+       SubscriberApn *sa = NULL;
 
-         if ( !getGxSession()->getSubscriber().getApnPolicies().getSubscriberApn( getGxSession()->getApn(), sa ) )
-         {
-            //
-            // add the "APN" to the Subscriber
-            //
-            sa = new SubscriberApn();
-            *sa = *getGxSession()->getApnEntry();
-            getGxSession()->getSubscriber().addSubscriberApn( sa );
+       if ( !getGxSession()->getSubscriber().getApnPolicies().getSubscriberApn( getGxSession()->getApn(), sa ) )
+       {
+          //
+          // add the "APN" to the Subscriber
+          //
+          std::cout<<"subscriber apn not found create new one \n";
+          sa = new SubscriberApn();
+          *sa = *getGxSession()->getApnEntry();
+          getGxSession()->getSubscriber().addSubscriberApn( sa );
 
-            if ( !getPCRF().dataaccess().addSubscriberApn( getGxSession()->getImsi(), *sa ) )
-            {
-               //unableToAssociateApnWithSubscriber
-               Logger::gx().error( "%s:%d - Unable to associate APN with Subscriber imsi=[%s] apn=[%s]",
-                     __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-               EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.called_station_id );
-               sendCCA();
-               StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-               return ValidateErrorCode::unableToAssociateApnWithSubscriber ;
-            }
-         }
+          if ( !getPCRF().dataaccess().addSubscriberApn( getGxSession()->getImsi(), *sa ) )
+          {
+             //unableToAssociateApnWithSubscriber
+             Logger::gx().error( "%s:%d - Unable to associate APN with Subscriber imsi=[%s] apn=[%s]",
+                   __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+             EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.called_station_id );
+             sendCCA();
+             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+             return ValidateErrorCode::unableToAssociateApnWithSubscriber ;
+          }
+       }
 
-         //
-         // assign the rules associated with the APN to the process list
-         //
+       //
+       // assign the rules associated with the APN to the process list
+       //
 
-         getGxSession()->getRules() = sa->getComputedRules();
-         getGxSession()->getRules().addGxSession( getGxSession() );
-      }
+       getGxSession()->getRules() = sa->getComputedRules();
+       std::cout<<"rules list size "<<getGxSession()->getRules().size()<<"\n";
+       getGxSession()->getRules().addGxSession( getGxSession() ); // add gx session in each rule
+       
+    }
 #if 0
 
-      //
-      // get the PCRF endpoint
-      //
-      {
-          Endpoint *ep = NULL;
+    //
+    // get the PCRF endpoint
+    //
+    {
+        Endpoint *ep = NULL;
 
-          if ( !getPCRF().getEndpoint( Options::originHost(), ep ) )
-          {
-              ep = new Endpoint();
-              ep->setHost( Options::originHost() );
-              ep->setRealm( Options::originRealm() );
+        if ( !getPCRF().getEndpoint( Options::originHost(), ep ) )
+        {
+            ep = new Endpoint();
+            ep->setHost( Options::originHost() );
+            ep->setRealm( Options::originRealm() );
 
-              if ( getPCRF().dataaccess().addEndpoint( *ep ) )
-              {
-                  if ( !getPCRF().addEndpoint( ep ) )
-                  {
-                      Logger::gx().error( "%s:%d - Unable to add PCRF endpoint [%s] to collection imsi=[%s] apn=[%s]",
-                              __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                      EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
-                      sendCCA();
-                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                      delete ep;
-                      ABORT();
-                  }
-              }
-              else
-              {
-                  Logger::gx().error( "%s:%d - Error adding PCRF endpoint [%s] to database, imsi=[%s] apn=[%s]",
-                          __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
-                  sendCCA();
-                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  delete ep;
-                  ABORT();
-              }
-          }
-
-          getGxSession()->setPcrfEndpoint( ep );
-      }
-#endif
-      {
-          uint8_t ipaddr[16];
-          size_t ipaddrlen = sizeof(ipaddr);
-
-          if ( ccr.framed_ip_address.get( ipaddr, ipaddrlen ) && ipaddrlen == 4 )
-          {
-              if ( ipaddrlen == 4 )
-              {
-                  struct in_addr ipv4;
-                  ipv4.s_addr = *(uint32_t*)ipaddr;
-                  getGxSession()->setIPv4( ipv4, sizeof(ipv4) );
-              }
-              else
-              {
-                  //invalidIPForFrammedIPAddress
-                  Logger::gx().error( "%s:%d - Invalid length for Framed-IP-Address, expected 4 found %d",
-                          __FILE__, __LINE__, ipaddrlen );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.framed_ip_address );
-                  sendCCA();
-                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  return ValidateErrorCode::invalidIPForFrammedIPAddress ;
-              }
-          }
-
-          ipaddrlen = sizeof(ipaddr);
-          if ( ccr.framed_ipv6_prefix.get( ipaddr, ipaddrlen ) )
-          {
-              getGxSession()->setIPv6( ipaddr, ipaddrlen );
-          }
-
-          if ( getGxSession()->getIPv4Len() == 0 && getGxSession()->getIPv6Len() == 0 )
-          {
-              //ipv4OrIpv6 missing
-              Logger::gx().error( "%s:%d - Either Framed-IP-Address or Framed-IPv6-Prefix must be specified",
-                      __FILE__, __LINE__ );
-              EXP_RESULTCODE_WITH_FAILEDAVP2( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
-              sendCCA();
-              StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-              return ValidateErrorCode::ipv4OrIpv6Missing ;
-          }
-      }
-      //
-      // get the PCEF supported features
-      //
-      {
-          uint64_t supported_features = 0;
-
-          for ( auto sfextractor : ccr.supported_features.getList() )
-          {
-              uint32_t flid;
-
-              if ( sfextractor->feature_list_id.get( flid ) )
-              {
-                  if ( flid < 1 || flid > 2 )
-                  {
-                      //invalidFeatureListId error code
-                      Logger::gx().error( "%s:%d - Invalid Feature-List-ID [%u] for imsi=[%s] apn=[%s]",
-                              __FILE__, __LINE__, flid, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                      RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-                      sendCCA();
-                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-                      return ValidateErrorCode::invalidFeatureListId ;
-                  }
-
-                  uint32_t fl;
-
-                  if ( sfextractor->feature_list.get( fl ) )
-                      supported_features |= ( flid == 1 ? (int64_t)fl : (int64_t)fl << 32 );
-              }
-          }
-
-          if ( !result )
-          {
-              return false;
-          }
-
-          getGxSession()->setSupportedFeatures( supported_features );
-      }
-#if 1
-      //
-      // get the PCEF endpoint
-      //
-      if ( ccr.origin_host.get( s ) )
-      {
-          Endpoint *ep = NULL;
-
-          if ( !getPCRF().getEndpoint( s, ep ) )
-          {
-              ep = new Endpoint();
-              ep->setHost( s );
-              std::string pcef_realm;
-              if ( ccr.origin_realm.get( pcef_realm ) )
-              {
-                 ep->setRealm( pcef_realm );
-              }
-              else
-              {
-                 ep->setRealm( Options::originRealm() );
-              }
-
-              if ( getPCRF().dataaccess().addEndpoint( *ep ) )
-              {
-                  if ( !getPCRF().addEndpoint( ep ) )
-                  {
-                      //unableToAddPcef error code
-                      Logger::gx().error( "%s:%d - Unable to add PCEF endpoint [%s] to collection imsi=[%s] apn=[%s]",
-                              __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                      EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.origin_host );
-                      sendCCA();
-                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                      delete ep;
-                      return ValidateErrorCode::unableToAddPcef ;
-                  }
-              }
-              else
-              {
-                  // unableToAddPcefInDatabase
-                  Logger::gx().error( "%s:%d - Error adding PCEF endpoint [%s] to database, imsi=[%s] apn=[%s]",
-                          __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.origin_host );
-                  sendCCA();
-                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  delete ep;
-                  return ValidateErrorCode::unableToAddPcefInDatabase ;
-              }
-          }
-
-          getGxSession()->setPcefEndpoint( ep );
-      }
-      else
-      {
-          // originHostMissing
-          Logger::gx().error( "%s:%d - Origin-Host missing imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-          RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpOriginHost(), "" );
-          sendCCA();
-          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
-          return ValidateErrorCode::originHostMissing ;
-      }
-#endif
-      //
-      // get the TDF endpoint
-      //
-      if ( ccr.tdf_information.tdf_destination_host.get( s ) )
-      {
-          Endpoint *ep = NULL;
-
-          //
-          // lookup the TDF endpoint in memory
-          //
-          if ( getPCRF().getEndpoint( s, ep ) )
-          {
-              getGxSession()->getTdfSession().setEndpoint( ep );
-          }
-          else
-          {
-              //
-              // initialize a new Endpoint object since it was not found
-              //
-              ep = new Endpoint();
-              ep->setHost( s );
-              if ( ccr.tdf_information.tdf_destination_realm.get( s ) )
-                  ep->setRealm( s );
-              if ( ccr.tdf_information.tdf_ip_address.get( s ) )
-                  ep->setIp( s );
-
-              try
-              {
-                  if ( getPCRF().dataaccess().addEndpoint( *ep ) )
-                  {
-                      if ( getPCRF().addEndpoint( ep ) )
-                      {
-                          getGxSession()->getTdfSession().setEndpoint( ep );
-                      }
-                      else
-                      {
-                          //unableToAddTdfEndpoint
-                          Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the internal collection",
-                                  __FILE__, __LINE__, ep->getHost().c_str() );
-                          EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.tdf_information.tdf_destination_host );
-                          sendCCA();
-                          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                          delete ep;
-                          return ValidateErrorCode::unableToAddTdfEndpoint ;
-                      }
-                  }
-                  else
-                  {
-                      //unableToAddTdfEndpointToDatabase
-                      Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the database",
-                              __FILE__, __LINE__, ep->getHost().c_str() );
-                      EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.tdf_information.tdf_destination_host );
-                      sendCCA();
-                      StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                      delete ep;
-                      return ValidateErrorCode::unableToAddTdfEndpointToDatabase ;
-                  }
-              }
-              catch ( DAException &ex )
-              {
-                  // exceptionWhileAddingTdfEndpoint
-                  Logger::gx().error( "%s:%d - Exception while adding TDF endpoint [%s] to the database - %s",
-                          __FILE__, __LINE__, ep->getHost().c_str(), ex.what() );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.tdf_information.tdf_destination_host );
-                  sendCCA();
-                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  delete ep;
-                  return ValidateErrorCode::exceptionWhileAddingTdfEndpoint ;
-              }
-          }
-      }
-      else
-      {
-			
-          //
-          // set the TDF endpoint from the PcrfEndpoint
-          //
-          if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTdf().empty() )
-          {
-              Endpoint *ep = NULL;
-
-              if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTdf(), ep ) )
-              {
-                  getGxSession()->getTdfSession().setEndpoint( ep );
-              }
-              else
-              {
-                  //tdfEndpointEntryInvalid
-                  Logger::gx().error( "%s:%d - TDF endpoint [%s] specified in PCEF [%s] endoint entry does not exist",
-                          __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
-                          getGxSession()->getPcefEndpoint()->getHost().c_str() );
-                  EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
-                  sendCCA();
-                  StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-                  return ValidateErrorCode::tdfEndpointEntryInvalid ;
-              }
-          }
-      }
-
-      //
-      // get the TSSF endpoint
-      //
-      if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTssf().empty() )
-      {
-          Endpoint *ep = NULL;
-
-          if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTssf(), ep ) )
-          {
-              getGxSession()->getTssfSession().setEndpoint( ep );
-          }
-          else
-          {
-              // tssfEndpointEntryInvalid
-              Logger::gx().error( "%s:%d - TSSF endpoint [%s] specified in PCEF [%s] endoint database entry does not exist",
-                      __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
-                      getGxSession()->getPcefEndpoint()->getHost().c_str() );
-              EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
-              sendCCA();
-              StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-              return ValidateErrorCode::tssfEndpointEntryInvalid ;
-          }
-      }
-      //
-      // setup Sy interface if needed
-      //
-      {
-         bool syRequired = getGxSession()->getApnEntry()->getSyRequired();
-
-         if ( !syRequired )
-         {
-            for ( auto rule : getGxSession()->getRules() )
+            if ( getPCRF().dataaccess().addEndpoint( *ep ) )
             {
-               if ( ( syRequired = rule->getSyRequired() ) )
-               {
-                  break;
-               }
-            }
-         }
-
-         if ( syRequired )
-         {
-            // syInterfaceNotSuported
-            Logger::gx().error( "%s:%d - Sy interface required but not supported imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-            RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-            sendCCA();
-            StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            return ValidateErrorCode::syInterfaceNotSuported ;
-         }
-      }
-
-      //
-      // add the session to the database
-      //
-      if ( !getPCRF().dataaccess().addSession( *getGxSession() ) )
-      {
-         // unableToAddSessionToDatabase
-         Logger::gx().error( "%s:%d - Unable to add the session to the database imsi=[%s] apn=[%s]",
-               __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-         RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-         sendCCA();
-         StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-         return ValidateErrorCode::unableToAddSessionToDatabase ;
-      }
-
-      //
-      // all the parsing work has been completed, so add the session to the session map
-      //
-      if ( !GxSessionMap::getInstance().addSession( getGxSession() ) )
-      {
-         // unableToAddSessionInSessionMap
-         Logger::gx().error( "%s:%d - Unable to insert session into session map imsi=[%s] apn=[%s]",
-               __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-         RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-         sendCCA();
-         StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-         return ValidateErrorCode::unableToAddSessionInSessionMap ;
-      }
-
-      setDeleteGxSession( false ); std::cout<<"Calling TDF functions now"<<std::endl;
-
-      //
-      // establish the TDF session if necessary
-      //
-      {
-         m_sdEstablishSession = new SdIpCan1EstablishSession( getPCRF(), this );
-         if ( !m_sdEstablishSession )
-         {
-            // unableToAllocateSdIpCan1Object
-            Logger::gx().error( "%s:%d - Unable to allocate SdIpCan1 object for imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-            RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-            sendCCA();
-            StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            return ValidateErrorCode::unableToAllocateSdIpCan1Object ;
-         }
-
-        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
-         if ( !m_sdEstablishSession->processPhase1() )
-         {
-            printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
-            if ( ccr.tdf_information.tdf_destination_host.exists() )
-            {
-               EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS,
-                     ccr.tdf_information.tdf_destination_host );
+                if ( !getPCRF().addEndpoint( ep ) )
+                {
+                    Logger::gx().error( "%s:%d - Unable to add PCRF endpoint [%s] to collection imsi=[%s] apn=[%s]",
+                            __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                    EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
+                    sendCCA();
+                    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                    delete ep;
+                    ABORT();
+                }
             }
             else
             {
-               EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
+                Logger::gx().error( "%s:%d - Error adding PCRF endpoint [%s] to database, imsi=[%s] apn=[%s]",
+                        __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, getCCR().called_station_id );
+                sendCCA();
+                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                delete ep;
+                ABORT();
             }
-            // sdEstablishSessionFailed
+        }
+
+        getGxSession()->setPcrfEndpoint( ep );
+    }
+#endif
+    {
+        uint8_t ipaddr[16];
+        size_t ipaddrlen = sizeof(ipaddr);
+
+        if ( ccr.framed_ip_address.get( ipaddr, ipaddrlen ) && ipaddrlen == 4 )
+        {
+            if ( ipaddrlen == 4 )
+            {
+                struct in_addr ipv4;
+                ipv4.s_addr = *(uint32_t*)ipaddr;
+                getGxSession()->setIPv4( ipv4, sizeof(ipv4) );
+            }
+            else
+            {
+                //invalidIPForFrammedIPAddress
+                Logger::gx().error( "%s:%d - Invalid length for Framed-IP-Address, expected 4 found %d",
+                        __FILE__, __LINE__, ipaddrlen );
+                EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.framed_ip_address );
+                sendCCA();
+                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                return ValidateErrorCode::invalidIPForFrammedIPAddress ;
+            }
+        }
+
+        ipaddrlen = sizeof(ipaddr);
+        if ( ccr.framed_ipv6_prefix.get( ipaddr, ipaddrlen ) )
+        {
+            getGxSession()->setIPv6( ipaddr, ipaddrlen );
+        }
+
+        if ( getGxSession()->getIPv4Len() == 0 && getGxSession()->getIPv6Len() == 0 )
+        {
+            //ipv4OrIpv6 missing
+            Logger::gx().error( "%s:%d - Either Framed-IP-Address or Framed-IPv6-Prefix must be specified",
+                    __FILE__, __LINE__ );
+            EXP_RESULTCODE_WITH_FAILEDAVP2( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            return ValidateErrorCode::sdEstablishSessionFailed ;
-         }
-         printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
-      }
+            return ValidateErrorCode::ipv4OrIpv6Missing ;
+        }
+    }
+    //
+    // get the PCEF supported features
+    //
+    {
+        uint64_t supported_features = 0;
 
-      //
-      // establish the TSSF session if necessary
-      //
-      {
-         m_stEstablishSession = new StIpCan1EstablishSession( getPCRF(), this );
-         if ( !m_stEstablishSession )
-         {
-            // unableToAllocateStIpCan1EstablishSessionObject
-            Logger::gx().error( "%s:%d - Unable to allocate StIpCan1EstablishSession object for imsi=[%s] apn=[%s]",
-                  __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
-            RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
-            sendCCA();
-            StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
-            return ValidateErrorCode::unableToAllocateStIpCan1EstablishSessionObject ;
-         }
+        for ( auto sfextractor : ccr.supported_features.getList() )
+        {
+            uint32_t flid;
 
-        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
-         if ( !m_stEstablishSession->processPhase1() )
-         {
-            // stEstablishSessionFailed
+            if ( sfextractor->feature_list_id.get( flid ) )
+            {
+                if ( flid < 1 || flid > 2 )
+                {
+                    //invalidFeatureListId error code
+                    Logger::gx().error( "%s:%d - Invalid Feature-List-ID [%u] for imsi=[%s] apn=[%s]",
+                            __FILE__, __LINE__, flid, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                    RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+                    sendCCA();
+                    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+                    return ValidateErrorCode::invalidFeatureListId ;
+                }
+
+                uint32_t fl;
+
+                if ( sfextractor->feature_list.get( fl ) )
+                    supported_features |= ( flid == 1 ? (int64_t)fl : (int64_t)fl << 32 );
+            }
+        }
+
+        if ( !result )
+        {
+            return false;
+        }
+
+        getGxSession()->setSupportedFeatures( supported_features );
+    }
+
+    //
+    // get the PCEF endpoint
+    //
+    if ( ccr.origin_host.get( s ) )
+    {
+        Endpoint *ep = NULL;
+
+        if ( !getPCRF().getEndpoint( s, ep ) )
+        {
+            ep = new Endpoint();
+            ep->setHost( s );
+            std::string pcef_realm;
+            if ( ccr.origin_realm.get( pcef_realm ) )
+            {
+               ep->setRealm( pcef_realm );
+            }
+            else
+            {
+               ep->setRealm( Options::originRealm() );
+            }
+
+            if ( getPCRF().dataaccess().addEndpoint( *ep ) )
+            {
+                if ( !getPCRF().addEndpoint( ep ) )
+                {
+                    //unableToAddPcef error code
+                    Logger::gx().error( "%s:%d - Unable to add PCEF endpoint [%s] to collection imsi=[%s] apn=[%s]",
+                            __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                    EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.origin_host );
+                    sendCCA();
+                    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                    delete ep;
+                    return ValidateErrorCode::unableToAddPcef ;
+                }
+            }
+            else
+            {
+                // unableToAddPcefInDatabase
+                Logger::gx().error( "%s:%d - Error adding PCEF endpoint [%s] to database, imsi=[%s] apn=[%s]",
+                        __FILE__, __LINE__, ep->getHost().c_str(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+                EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.origin_host );
+                sendCCA();
+                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                delete ep;
+                return ValidateErrorCode::unableToAddPcefInDatabase ;
+            }
+        }
+
+        getGxSession()->setPcefEndpoint( ep );
+    }
+    else
+    {
+        // originHostMissing
+        Logger::gx().error( "%s:%d - Origin-Host missing imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+        RESULTCODE_WITH_FAILEDAVP2( getCCA(), DIAMETER_MISSING_AVP, avpOriginHost(), "" );
+        sendCCA();
+        StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_MISSING_AVP);
+        return ValidateErrorCode::originHostMissing ;
+    }
+    //
+    // get the TDF endpoint
+    //
+    if ( ccr.tdf_information.tdf_destination_host.get( s ) )
+    {
+        Endpoint *ep = NULL;
+
+        //
+        // lookup the TDF endpoint in memory
+        //
+        if ( getPCRF().getEndpoint( s, ep ) )
+        {
+            getGxSession()->getTdfSession().setEndpoint( ep );
+        }
+        else
+        {
+            //
+            // initialize a new Endpoint object since it was not found
+            //
+            ep = new Endpoint();
+            ep->setHost( s );
+            if ( ccr.tdf_information.tdf_destination_realm.get( s ) )
+                ep->setRealm( s );
+            if ( ccr.tdf_information.tdf_ip_address.get( s ) )
+                ep->setIp( s );
+
+            try
+            {
+                if ( getPCRF().dataaccess().addEndpoint( *ep ) )
+                {
+                    if ( getPCRF().addEndpoint( ep ) )
+                    {
+                        getGxSession()->getTdfSession().setEndpoint( ep );
+                    }
+                    else
+                    {
+                        //unableToAddTdfEndpoint
+                        Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the internal collection",
+                                __FILE__, __LINE__, ep->getHost().c_str() );
+                        EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.tdf_information.tdf_destination_host );
+                        sendCCA();
+                        StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                        delete ep;
+                        return ValidateErrorCode::unableToAddTdfEndpoint ;
+                    }
+                }
+                else
+                {
+                    //unableToAddTdfEndpointToDatabase
+                    Logger::gx().error( "%s:%d - Unable to add TDF endpoint [%s] to the database",
+                            __FILE__, __LINE__, ep->getHost().c_str() );
+                    EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.tdf_information.tdf_destination_host );
+                    sendCCA();
+                    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                    delete ep;
+                    return ValidateErrorCode::unableToAddTdfEndpointToDatabase ;
+                }
+            }
+            catch ( DAException &ex )
+            {
+                // exceptionWhileAddingTdfEndpoint
+                Logger::gx().error( "%s:%d - Exception while adding TDF endpoint [%s] to the database - %s",
+                        __FILE__, __LINE__, ep->getHost().c_str(), ex.what() );
+                EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccr.tdf_information.tdf_destination_host );
+                sendCCA();
+                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                delete ep;
+                return ValidateErrorCode::exceptionWhileAddingTdfEndpoint ;
+            }
+        }
+    }
+    else
+    {
+	  	
+        //
+        // set the TDF endpoint from the PcrfEndpoint
+        //
+        if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTdf().empty() )
+        {
+            Endpoint *ep = NULL;
+
+            if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTdf(), ep ) )
+            {
+                getGxSession()->getTdfSession().setEndpoint( ep );
+            }
+            else
+            {
+                //tdfEndpointEntryInvalid
+                Logger::gx().error( "%s:%d - TDF endpoint [%s] specified in PCEF [%s] endoint entry does not exist",
+                        __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
+                        getGxSession()->getPcefEndpoint()->getHost().c_str() );
+                EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
+                sendCCA();
+                StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+                return ValidateErrorCode::tdfEndpointEntryInvalid ;
+            }
+        } else {
+           printf("\n Skipping TDF %s %d \n",__FUNCTION__, __LINE__);
+        }
+    }
+
+    //
+    // get the TSSF endpoint
+    //
+    if ( getGxSession()->getPcrfEndpoint() && !getGxSession()->getPcrfEndpoint()->getAssignedTssf().empty() )
+    {
+        Endpoint *ep = NULL;
+
+        if ( getPCRF().getEndpoint( getGxSession()->getPcrfEndpoint()->getAssignedTssf(), ep ) )
+        {
+            getGxSession()->getTssfSession().setEndpoint( ep );
+        }
+        else
+        {
+            // tssfEndpointEntryInvalid
+            Logger::gx().error( "%s:%d - TSSF endpoint [%s] specified in PCEF [%s] endoint database entry does not exist",
+                    __FILE__, __LINE__, getGxSession()->getPcrfEndpoint()->getAssignedTdf().c_str(),
+                    getGxSession()->getPcefEndpoint()->getHost().c_str() );
             EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
             sendCCA();
             StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
-            return ValidateErrorCode::stEstablishSessionFailed ;
-         }
-      }
-      return ValidateErrorCode::success ;
+            return ValidateErrorCode::tssfEndpointEntryInvalid ;
+        }
+    }  else {
+           printf("\n ajay Skipping TSSF %s %d \n",__FUNCTION__, __LINE__);
+    }
+      
+    //
+    // setup Sy interface if needed
+    //
+    {
+       bool syRequired = getGxSession()->getApnEntry()->getSyRequired();
+
+       if ( !syRequired )
+       {
+          for ( auto rule : getGxSession()->getRules() )
+          {
+             if ( ( syRequired = rule->getSyRequired() ) )
+             {
+                break;
+             }
+          }
+       }
+
+       if ( syRequired )
+       {
+          // syInterfaceNotSuported
+          Logger::gx().error( "%s:%d - Sy interface required but not supported imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+          return ValidateErrorCode::syInterfaceNotSuported ;
+       } else {
+           printf("\n ajay - No syRequired %s %d \n",__FUNCTION__, __LINE__);
+       }
+    }
+
+    //
+    // add the session to the database
+    //
+    if ( !getPCRF().dataaccess().addSession( *getGxSession() ) )
+    {
+       // unableToAddSessionToDatabase
+       Logger::gx().error( "%s:%d - Unable to add the session to the database imsi=[%s] apn=[%s]",
+             __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+       RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+       sendCCA();
+       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+       return ValidateErrorCode::unableToAddSessionToDatabase ;
+    }
+
+    //
+    // all the parsing work has been completed, so add the session to the session map
+    //
+    if ( !GxSessionMap::getInstance().addSession( getGxSession() ) )
+    {
+       // unableToAddSessionInSessionMap
+       Logger::gx().error( "%s:%d - Unable to insert session into session map imsi=[%s] apn=[%s]",
+             __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+       RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+       sendCCA();
+       StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+       return ValidateErrorCode::unableToAddSessionInSessionMap ;
+    }
+
+    setDeleteGxSession( false ); 
+    std::cout<<"ajay Calling TDF functions now"<<std::endl;
+
+    //
+    // establish the TDF session if necessary
+    //
+    {
+       m_sdEstablishSession = new SdIpCan1EstablishSession( getPCRF(), this );
+       if ( !m_sdEstablishSession )
+       {
+          // unableToAllocateSdIpCan1Object
+          Logger::gx().error( "%s:%d - Unable to allocate SdIpCan1 object for imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+          return ValidateErrorCode::unableToAllocateSdIpCan1Object ;
+       }
+
+       printf("\n ajay calling phase1 m_sdEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+       if ( !m_sdEstablishSession->processPhase1() )
+       {
+          printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
+          if ( ccr.tdf_information.tdf_destination_host.exists() )
+          {
+             EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS,
+                   ccr.tdf_information.tdf_destination_host );
+          }
+          else
+          {
+             EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
+          }
+          // sdEstablishSessionFailed
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+          return ValidateErrorCode::sdEstablishSessionFailed ;
+       }
+       printf("\n ajay finished - phase1 m_sdEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+    }
+
+    //
+    // establish the TSSF session if necessary
+    //
+    {
+       m_stEstablishSession = new StIpCan1EstablishSession( getPCRF(), this );
+       if ( !m_stEstablishSession )
+       {
+          // unableToAllocateStIpCan1EstablishSessionObject
+          Logger::gx().error( "%s:%d - Unable to allocate StIpCan1EstablishSession object for imsi=[%s] apn=[%s]",
+                __FILE__, __LINE__, getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str() );
+          RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
+          return ValidateErrorCode::unableToAllocateStIpCan1EstablishSessionObject ;
+       }
+
+       printf("\n ajay calling - phase1 m_stEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+       if ( !m_stEstablishSession->processPhase1() )
+       {
+          // stEstablishSessionFailed
+          EXP_RESULTCODE( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS );
+          sendCCA();
+          StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
+          return ValidateErrorCode::stEstablishSessionFailed ;
+       }
+       printf("\n ajay finished - phase1 m_stEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+    }
+    return ValidateErrorCode::success ;
 }
 
 bool GxIpCan1::processPhase1()
@@ -2363,49 +2286,64 @@ bool GxIpCan1::processPhase1()
    int ret;
 
    setStatus( esProcessing );
-   setGxSession( new GxSession( getPCRF(), this ) );
-
-
-   ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
+   setGxSession( new GxSession( getPCRF()) );
+   GxSessionProc *proc = new GxSessionCreateProc(getGxSession(), this);
+   getGxSession()->setCurrentProc(proc);
+   
+   ret = getSubCurrentState()->handleSubCCR( getCurrentProc(), getCCR() );
 	//int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal();
    switch( ret )
    {
       case ValidateErrorCode::contextExists :
       {
       	// set current state to ActivePending and again validate the req
-         setCurrentState( new GxSessionActivePendingState( getPCRF(), this ) );
-         ret = getCurrentState()->validateReq( getCurrentProc(), getCCR() );
-			if ( ret == ValidateErrorCode::success )
-			{
-				setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
-				setCurrentProc( NULL );
-			}
-         result = true;
-			//new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
+         setSubCurrentState( GxSessionPendingState::getInstance( ) );
+         // Assumption is IMSI set in the session 
+         std::cout<<"Cleanup existing session \n";
+		 ret = cleanupSession( true );
+         ret = getSubCurrentState()->handleSubCCR( getCurrentProc(), getCCR() );
+         if ( ret == ValidateErrorCode::success )
+         {
+            setSubCurrentState(GxSessionActiveState::getInstance() );
+            setCurrentProc( NULL );
+            result = true;
+            if ( getGxSession()->getApnEntry()->getDedicatedBearerCreation() )
+            {
+                     // we have sent the successful CCA Initial, hence start the timer
+                     Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
+                     int timer = getGxSession()->getApnEntry()->getTimerVal();
+                     //m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
+            }
+         }
+         else 
+         {
+            result = false;
+         }
+         //new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
          break;
        }
        case ValidateErrorCode::success :
        {	
 			if ( getStatus() == esComplete )
-			{
-				// check whether dedicated bearer creation flag is true or false
-          	 setCurrentState( new GxSessionActiveState(getPCRF(), this ) );
-          	 setCurrentProc( NULL );
-				 if ( getGxSession()->getApnEntry()->getDedicatedBearerCreation() )
-				 {
-	          // we have sent the successful CCA Initial, hence start the timer
-             	Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
-				 	int timer = getGxSession()->getApnEntry()->getTimerVal();
-		       	//m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
-				 }
-	       }
-          result = true;
-			 //new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
-          break;
+            {
+                // check whether dedicated bearer creation flag is true or false
+                setSubCurrentState( GxSessionActiveState::getInstance());
+                setCurrentProc( NULL );
+                if ( getGxSession()->getApnEntry()->getDedicatedBearerCreation() )
+                {
+                        // we have sent the successful CCA Initial, hence start the timer
+                        Logger::gx().debug("STARTING THE TIMER AS CCA Initial is sent");
+                        int timer = getGxSession()->getApnEntry()->getTimerVal();
+                        //m_triggertimer = new TriggerTimer( this, RARTrigger::triggerRARPending, timer );
+                }
+            }
+            result = true;
+		       //new TriggerTimer( this, RARTrigger::triggerCallDisconnect, max_call_timer );  
+            break;
        }
        default :
        {
-          setCurrentState( NULL );
+          setSubCurrentState( NULL );
           setCurrentProc( NULL );
           result = false;
           break;
@@ -2420,7 +2358,7 @@ bool GxIpCan1::processPhase2( bool lockit )
 {
    SMutexLock l( m_mutex, lockit );
 
-   printf("%s %d \n",__FUNCTION__,__LINE__);
+   printf("ajay %s %d \n",__FUNCTION__,__LINE__);
    Logger::gx().debug( "%s:%d - GxIpCan1::processPhase2 - start", __FILE__, __LINE__ );
 
    // evaluate rules and send if good
@@ -2431,13 +2369,14 @@ bool GxIpCan1::processPhase2( bool lockit )
    if ( ( sdstatus == esPending || sdstatus == esProcessing ) ||
         ( ststatus == esPending || ststatus == esProcessing ) )
    {
+      printf("pending or processing state return");
       Logger::gx().debug( "%s:%d - GxIpCan1::processPhase2 - sdstatus=%s ststatus=%s",
             __FILE__, __LINE__,
             m_sdEstablishSession->getStatusDescription(),
             m_stEstablishSession->getStatusDescription() );
       return true;
    }
-
+   printf("\n ajay - sd st establish session skipped ");
    if ( getStatus() == esFailed || sdstatus == esFailed || ststatus == esFailed )
    {
       if ( getStatus() == esProcessing )
@@ -2450,6 +2389,7 @@ bool GxIpCan1::processPhase2( bool lockit )
       return false;
    }
 
+   printf("\n ajay - calling rule evaluator ");
    bool result = getRulesEvaluator().evaluate(*getGxSession(), getGxSession()->getRules(),
          getGxSession()->getInstalledRules(), getGxSession()->getTdfSession().getInstalledRules(),
          getGxSession()->getTssfSession().getInstalledRules(), getGxSession()->getSubscriber().getFailOnUninstallableRule() );
@@ -2469,7 +2409,7 @@ bool GxIpCan1::processPhase2( bool lockit )
 
       printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
       result = m_sdProcessRules->processPhase1();
-      std::cout<<"phase 1 m_sdProcessRules  over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
+      std::cout<<"ajay phase1 m_sdProcessRules  over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
       if ( !result )
       {
          setStatus( esFailed );
@@ -2490,7 +2430,7 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
-        printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
+        printf("\n created m_stProcessRules calling phase1 %s %d \n",__FUNCTION__, __LINE__);
       result = m_stProcessRules->processPhase1();
       if ( !result )
       {
@@ -2522,17 +2462,20 @@ bool GxIpCan1::processPhase3()
    if ( getStatus() != esProcessing )
       return true;
 
+   printf("%s %d \n",__FUNCTION__,__LINE__);
    EventStatus sdstatus = m_sdProcessRules ? m_sdProcessRules->getStatus() : esComplete;
    EventStatus ststatus = m_stProcessRules ? m_stProcessRules->getStatus() : esComplete;
 
    if ( ( sdstatus == esPending || sdstatus == esProcessing ) ||
         ( ststatus == esPending || ststatus == esProcessing ) )
    {
+      printf("\n SD ST is either pending or processing %s %d \n",__FUNCTION__,__LINE__);
       return true;
    }
 
    if ( sdstatus == esFailed || ststatus == esFailed )
    {
+      printf("\n SD ST is failed %s %d \n",__FUNCTION__,__LINE__);
       setStatus( esFailed );
       RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
       sendCCA();
@@ -2546,61 +2489,70 @@ bool GxIpCan1::processPhase3()
    // add the DIAMETER_SUCCESS Result-Code AVP
    getCCA().add( getDict().avpResultCode(), DIAMETER_SUCCESS );
 
-	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USER_LOCATION_CHANGE );
-	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: UE_TIMEZONE_CHANGE );
-	getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USAGE_REPORT );
+   getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USER_LOCATION_CHANGE );
+   getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: UE_TIMEZONE_CHANGE );
+   getCCA().add( getDict().avpEventTrigger(), EventTriggerValues :: USAGE_REPORT );
 
-	FDAvp arp( getDict().avpAllocationRetentionPriority() );
-	arp.add( getDict().avpPriorityLevel(), getGxSession()->getDefaultRule()->getPriorityLevel() );
-   arp.add( getDict().avpPreEmptionCapability(), getGxSession()->getDefaultRule()->getPreemptionCapability() );
-   arp.add( getDict().avpPreEmptionVulnerability(), getGxSession()->getDefaultRule()->getPreemptionVulnerability() );
+   FDAvp arp( getDict().avpAllocationRetentionPriority() );
+   
+   auto itr = getGxSession()->getDefaultRuleList().begin(); 
+   DefaultRule *firstRule = NULL;
+   while(itr != getGxSession()->getDefaultRuleList().end()) {
+        firstRule =  *itr;
+        break;
+   }
+   arp.add( getDict().avpPriorityLevel(), firstRule->getPriorityLevel() );
+   arp.add( getDict().avpPreEmptionCapability(), firstRule->getPreemptionCapability() );
+   arp.add( getDict().avpPreEmptionVulnerability(), firstRule->getPreemptionVulnerability() );
 
    FDAvp defBearerQos( getDict().avpDefaultEpsBearerQos() );
-	defBearerQos.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
-	defBearerQos.add( arp );
-  // std::string json_t("{\"QoS-Class-Identifier\": 9, \"Allocation-Retention-Priority\": {\"Priority-Level\": 1, \"Pre-emption-Capability\": 1, \"Pre-emption-Vulnerability\": 1}}");
-   //defBearerQos.addJson(json_t);
+   defBearerQos.add( getDict().avpQosClassIdentifier(), firstRule->getQci() );
+   defBearerQos.add( arp );
    getCCA().add( defBearerQos );
 
-	FDAvp qos_info( getDict().avpQosInformation() );
-	FDAvp def_arp( getDict().avpAllocationRetentionPriority() );
-	//FDAvp caamb( getDict().avpConditionalApnAggregateMaxBitrate() );
+   // ajay : this is APN AMBR ..
+   FDAvp qos_info( getDict().avpQosInformation() );
 
-	qos_info.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
-	
-	def_arp.add( getDict().avpPriorityLevel(), getGxSession()->getDefaultRule()->getPriorityLevel() );
-	def_arp.add( getDict().avpPreEmptionCapability(), getGxSession()->getDefaultRule()->getPreemptionCapability() );
-	def_arp.add( getDict().avpPreEmptionVulnerability(), getGxSession()->getDefaultRule()->getPreemptionVulnerability() );
+   qos_info.add( getDict().avpQosClassIdentifier(), firstRule->getQci() );
 
-	qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateUl() );
-	qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
+   FDAvp def_arp( getDict().avpAllocationRetentionPriority() );
+   def_arp.add( getDict().avpPriorityLevel(), firstRule->getPriorityLevel() );
+   def_arp.add( getDict().avpPreEmptionCapability(), firstRule->getPreemptionCapability() );
+   def_arp.add( getDict().avpPreEmptionVulnerability(), firstRule->getPreemptionVulnerability() );
+   qos_info.add( def_arp );
 
-	qos_info.add( def_arp );
-
-	getCCA().add( qos_info );
+   qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), firstRule->getApnAggregateMaxBitrateUl() );
+   qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), firstRule->getApnAggregateMaxBitrateDl() );
 
 
-	FDAvp def_qos_info( getDict().avpQosInformation() );
-	def_qos_info.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
-	def_qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateUl() );
-	def_qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
-	FDAvp cri( getDict().avpChargingRuleInstall() );
-	FDAvp crdef( getDict().avpChargingRuleDefinition() );
-	crdef.addJson( getGxSession()->getDefaultRule()->getDefinition() );
-	cri.add( getDict().avpChargingRuleName(), getGxSession()->getDefaultRule()->getRuleName() );
-	cri.add( crdef );
-	//cri.add( getDict().avpChargingRuleDefinition(), getGxSession()->getDefaultRule()->getDefinition() );
-	cri.add( def_qos_info );
-	FDAvp cri_arp( getDict().avpAllocationRetentionPriority() );
+   getCCA().add( qos_info );
 
-	cri_arp.add( getDict().avpPriorityLevel(), getGxSession()->getDefaultRule()->getPriorityLevel() );
-   cri_arp.add( getDict().avpPreEmptionCapability(), getGxSession()->getDefaultRule()->getPreemptionCapability() );
-   cri_arp.add( getDict().avpPreEmptionVulnerability(), getGxSession()->getDefaultRule()->getPreemptionVulnerability() );
-	cri.add( cri_arp );
-	getCCA().add( cri );
+
+#if 0
+   FDAvp def_qos_info( getDict().avpQosInformation() );
+   def_qos_info.add( getDict().avpQosClassIdentifier(), getGxSession()->getDefaultRule()->getQci() );
+   def_qos_info.add( getDict().avpApnAggregateMaxBitrateUl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateUl() );
+   def_qos_info.add( getDict().avpApnAggregateMaxBitrateDl(), getGxSession()->getDefaultRule()->getApnAggregateMaxBitrateDl() );
+#endif
+
+   std::list<DefaultRule*>::iterator itr1;
+   std::cout<<"Default rules list  size "<<getGxSession()->getDefaultRuleList().size()<<"\n";
+   for(itr1 = getGxSession()->getDefaultRuleList().begin();  itr1 != getGxSession()->getDefaultRuleList().end(); itr1++) {
+        DefaultRule *rule = NULL;
+        rule =  *itr1;
+        FDAvp crdef( getDict().avpChargingRuleDefinition() );
+        crdef.addJson( rule->getDefinition() );
+
+        FDAvp cri( getDict().avpChargingRuleInstall() );
+        cri.add( getDict().avpChargingRuleName(), rule->getRuleName() );
+        cri.add( crdef );
+        getCCA().add( cri );
+        std::cout<<"Adding rule in CRI "<<rule->getRuleName()<<"\n";
+   } 
+
 
    // add the rules
-	/*	
+   /*	
    {
       RulesList &irules( getRulesEvaluator().getGxInstallRules() );
       RulesList &rrules( getRulesEvaluator().getGxRemoveRules() );
@@ -2673,18 +2625,19 @@ bool GxIpCan1::processPhase3()
 			}
       }
    }
-	*/
-	int deactivation_timer = getGxSession()->getDefaultRule()->getDeactivationTimer();
-	if( deactivation_timer != 0 )
-	{
-		new TriggerTimer( this, RARTrigger::triggerActivationTimerExpire, deactivation_timer*1000 );	
-	}
+   */
+   // not just one rule..may be other as well?
+   int deactivation_timer = firstRule->getDeactivationTimer();
+   if (deactivation_timer != 0)
+   {
+           new TriggerTimer( this, RARTrigger::triggerActivationTimerExpire, deactivation_timer*1000 );	
+   }
 
    std::cout<<"Sending CCA-Initial \n"<<std::endl; 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
    setCurrentProc( NULL );
-   setCurrentState( new GxSessionActiveState( getPCRF(), this ) );
+   setSubCurrentState( GxSessionActiveState::getInstance( ) );
 
    // flag this event as complete
    setStatus( esComplete );
@@ -2722,9 +2675,9 @@ bool SdIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
-      printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
+      printf("ajay : tdf not required start gxEvent phase2 %s %d \n",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
-      std::cout<<"Calling phase 2 from "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
+      std::cout<<"ajay : gxEvent phase2 over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
       return result;
    }
 
@@ -2776,7 +2729,7 @@ bool SdIpCan1EstablishSession::processPhase2( bool success )
       tdf.setState( SdSession::sFailed );
    }
 
-         printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("calling phase2 from %s %d \n",__FUNCTION__,__LINE__);
    bool result = m_gxevent->processPhase2();
 
    return result;
@@ -2809,7 +2762,7 @@ bool StIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
-         printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("calling phase2 from %s %d \n",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
       return result;
    }
@@ -2859,7 +2812,7 @@ bool StIpCan1EstablishSession::processPhase2( bool success )
             __FILE__, __LINE__, getStatusDescription( esProcessing ), getStatusDescription(),
             gxsession->getImsi().c_str(), gxsession->getApn().c_str() );
       setStatus( esFailed );
-         printf("Calling phase 2 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("calling phase2 from %s %d \n",__FUNCTION__,__LINE__);
       tssf.setState( StSession::sFailed );
    }
 
@@ -2894,9 +2847,9 @@ bool SdIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("ajay - calling gxEvent phase 3 from %s %d \n",__FUNCTION__,__LINE__);
          bool result = m_gxevent->processPhase3();
-         std::cout<<"phase 3 over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
+         printf("ajay - finished gxEvent phase 3 from %s %d \n",__FUNCTION__,__LINE__);
          return result;
       }
       else
@@ -2955,7 +2908,7 @@ bool SdIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
-         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("calling phase3 from %s %d \n",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
@@ -2985,7 +2938,7 @@ bool StIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("calling phase3 from %s %d \n",__FUNCTION__,__LINE__);
          return m_gxevent->processPhase3();
       }
       else
@@ -3044,7 +2997,7 @@ bool StIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
-         printf("Calling phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("calling phase3 from %s %d \n",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
@@ -3284,14 +3237,14 @@ bool SdProcessRulesUpdate::processPhase1( RuleEvaluator &re )
    std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
    if ( rrules.empty() && irules.empty() )
    {
-   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+      std::cout<<" no rule to install sdProcess function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
       setStatus( esComplete );
       return false; // false indicates that processing of event is to halt
    }
 
    if ( !tdf.required() )
    {
-   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+      std::cout<<" ajay TDF not required function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
       Logger::sd().error( "%s:%d - SdProcessRulesUpdate - the TDF is flagged as not required but there are %u/%u install/remove rules to install at the TDF",
             __FILE__, __LINE__, irules.size(), rrules.size() );
       setStatus( esFailed );
@@ -3369,6 +3322,7 @@ bool StProcessRulesUpdate::processPhase1( RuleEvaluator &re )
 
    if ( rrules.empty() && irules.empty() )
    {
+      std::cout<<"ajay no rules to process on st interface \n";
       setStatus( esComplete );
       return false;
    }

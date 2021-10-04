@@ -58,11 +58,11 @@ private:
    RulesList m_computed_rules;
    bool m_syrequired;
    std::string m_transfer_policy;
-	int m_timerval;
-	bool m_dedicated_bearer_creation;
-	int m_max_call_timer;
-	int m_apn_ambr_ul;
-	int m_apn_ambr_dl;
+   int m_timerval;
+   bool m_dedicated_bearer_creation;
+   int m_max_call_timer;
+   int m_apn_ambr_ul;
+   int m_apn_ambr_dl;
 };
 
 class SubscriberApnMap : public std::map<std::string,SubscriberApn*>

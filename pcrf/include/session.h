@@ -310,104 +310,103 @@ class GxSessionState;
 class GxSessionProc
 {
 public:
-	GxSessionProc( PCRF& pcrf, SessionEvent* current_event );
+	GxSessionProc(std::string proc_name, GxSession *session, SessionEvent* current_event );
 	virtual ~GxSessionProc();
 	std::string& getProcName() { return m_procname; }
-	std::string& setProcName( char const* name) { m_procname = name; return getProcName(); }
-	std::string& setProcName( std::string& name) { m_procname = name; return getProcName(); }
-	virtual int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa ); // modify pending state
-	virtual int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr ); // pending state
+	virtual int handleProcCCR(gx::CreditControlRequestExtractor& ccr ); 
+	virtual int handleProcRAA(gx::ReAuthAnswerExtractor& raa );
+    SessionEvent* getEvent() { return mp_sessionevent; }
 private:
-	PCRF& m_pcrf;
 	SessionEvent* mp_sessionevent;
+    GxSession*    mp_gxsession;
 	std::string m_procname;
 };
 
-class GxSessionInstallProc : public GxSessionProc
+class RARRuleInstallProc : public GxSessionProc
 {
 public:
-	GxSessionInstallProc( PCRF& pcrf, SessionEvent* current_event );
-	~GxSessionInstallProc();
-	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	RARRuleInstallProc(GxSession *session, SessionEvent* current_event );
+	~RARRuleInstallProc();
+	int handleProcRAA(gx::ReAuthAnswerExtractor& raa ) override;
 };
 
-class GxSessionRemoveProc : public GxSessionProc
+class RARRuleRemoveProc : public GxSessionProc
 {
 public:
-	GxSessionRemoveProc( PCRF& pcrf, SessionEvent* current_event );
-	~GxSessionRemoveProc();
-	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	RARRuleRemoveProc(GxSession *session, SessionEvent* current_event );
+	~RARRuleRemoveProc();
+	int handleProcRAA(gx::ReAuthAnswerExtractor& raa ) override;
 };
 
-class GxSessionValidateProc : public GxSessionProc
+class GxSessionCreateProc : public GxSessionProc
 {
 public:
-	GxSessionValidateProc( PCRF& pcrf, SessionEvent* current_event );
-	~GxSessionValidateProc();
-	int accept( GxSessionState* current_state, gx::CreditControlRequestExtractor& ccr );
+	GxSessionCreateProc(GxSession *session, SessionEvent* current_event );
+	~GxSessionCreateProc();
+	int handleProcCCR(gx::CreditControlRequestExtractor& ccr ) override;
 };
 
-class GxSessionDefaultRemoveProc : public GxSessionProc
+class RARSessionRemoveProc : public GxSessionProc
 {
 public:
-	GxSessionDefaultRemoveProc( PCRF& pcrf, SessionEvent* current_event );
-	~GxSessionDefaultRemoveProc();
-	int accept( GxSessionState* current_state, gx::ReAuthAnswerExtractor& raa );
+	RARSessionRemoveProc(GxSession *session, SessionEvent* current_event );
+	~RARSessionRemoveProc();
+	int handleProcRAA(gx::ReAuthAnswerExtractor& raa ) override;
 };
 
 class GxSessionState
 {
 public:
-	GxSessionState( PCRF& pcrf, SessionEvent* current_session );
+	GxSessionState(std::string name);
 	virtual ~GxSessionState();
-	SessionEvent* getCurrentEvent() { return mp_sessionevent; }
 	std::string& getStateName() { return m_statename; }
-	std::string& setStateName( char const* name) { m_statename = name; return getStateName(); }
-   std::string& setStateName( std::string& name) { m_statename = name; return getStateName(); }
 	// events function
 	virtual int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //modify pending state
-	virtual int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
-	// visitor functions
-	virtual int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa ); //install raa
-	virtual int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // remove raa
-	virtual int visit( GxSessionValidateProc* cuurent_proc, gx::CreditControlRequestExtractor& ccr ); // validate ccr request 
-	virtual int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa ); // default rule remove raa 
+	virtual int handleSubCCR( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ); // pending state
 
 private:
-	PCRF& m_pcrf;
-	SessionEvent* mp_sessionevent;
 	std::string m_statename;
 };
 
 class GxSessionPendingState : public GxSessionState
 {
 public:
-	GxSessionPendingState( PCRF& pcrf, SessionEvent* current_session );
+    static GxSessionPendingState* getInstance()
+    {
+        static GxSessionPendingState instance;
+        return &instance;
+    }
+
+
+	GxSessionPendingState();
 	~GxSessionPendingState();
-	int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
-	int visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
+	int handleSubCCR( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr ) override;
 };
 
-class GxSessionActivePendingState : public GxSessionState
-{
-public:
-    GxSessionActivePendingState( PCRF& pcrf, SessionEvent* current_session );
-    ~GxSessionActivePendingState();
-    int validateReq( GxSessionProc* current_proc, gx::CreditControlRequestExtractor& ccr );
-    int visit( GxSessionValidateProc* current_proc, gx::CreditControlRequestExtractor& ccr );
-};
 
 class GxSessionActiveState : public GxSessionState
 {
 public:
-	GxSessionActiveState( PCRF& pcrf, SessionEvent* current_session );
+    static GxSessionActiveState* getInstance()
+    {
+        static GxSessionActiveState instance;
+        return &instance;
+    }
+
+	GxSessionActiveState();
 	~GxSessionActiveState();
 };
 
 class GxSessionInactiveState : public GxSessionState
 {
 public:
-	GxSessionInactiveState( PCRF& pcrf, SessionEvent* current_session );
+    static GxSessionInactiveState* getInstance()
+    {
+        static GxSessionInactiveState instance;
+        return &instance;
+    }
+
+	GxSessionInactiveState();
 	~GxSessionInactiveState();
 
 };
@@ -415,45 +414,48 @@ public:
 class GxSessionModifyPendingState : public GxSessionState
 {
 public:
-	GxSessionModifyPendingState( PCRF& pcrf, SessionEvent* current_session );
+    static GxSessionModifyPendingState* getInstance()
+    {
+        static GxSessionModifyPendingState instance;
+        return &instance;
+    }
+
+	GxSessionModifyPendingState();
 	~GxSessionModifyPendingState();
 	int rcvdRAA( GxSessionProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	int visit( GxSessionInstallProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	int visit( GxSessionRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
-	int visit( GxSessionDefaultRemoveProc* current_proc, gx::ReAuthAnswerExtractor& raa );
 };
 
 
 class DefaultRule
 {
 public:
-	DefaultRule();
-	~DefaultRule();
+    DefaultRule();
+    ~DefaultRule();
 	const std::string &setRuleName( const char *v ) { m_rule_name = v; return getRuleName(); }
-   const std::string &setRuleName( const std::string &v ) { m_rule_name = v; return getRuleName(); }
-   const std::string &getRuleName() const { return m_rule_name; }
+    const std::string &setRuleName( const std::string &v ) { m_rule_name = v; return getRuleName(); }
+    const std::string &getRuleName() const { return m_rule_name; }
 
 	const std::string &setDefinition( const char *v ) { m_rule_definition = v; return getDefinition(); }
-   const std::string &setDefinition( const std::string &v ) { m_rule_definition = v; return getDefinition(); }
-   const std::string &getDefinition() const { return m_rule_definition; }
+    const std::string &setDefinition( const std::string &v ) { m_rule_definition = v; return getDefinition(); }
+    const std::string &getDefinition() const { return m_rule_definition; }
 
 	int getApnAggregateMaxBitrateUl() { return m_apn_aggregate_max_bitrate_ul; }
-   int setApnAggregateMaxBitrateUl( int v ) { m_apn_aggregate_max_bitrate_ul = v; return getApnAggregateMaxBitrateUl(); }
+    int setApnAggregateMaxBitrateUl( int v ) { m_apn_aggregate_max_bitrate_ul = v; return getApnAggregateMaxBitrateUl(); }
 
-   int getApnAggregateMaxBitrateDl() { return m_apn_aggregate_max_bitrate_dl; }
-   int setApnAggregateMaxBitrateDl( int v ) { m_apn_aggregate_max_bitrate_dl = v; return getApnAggregateMaxBitrateDl(); }
+    int getApnAggregateMaxBitrateDl() { return m_apn_aggregate_max_bitrate_dl; }
+    int setApnAggregateMaxBitrateDl( int v ) { m_apn_aggregate_max_bitrate_dl = v; return getApnAggregateMaxBitrateDl(); }
 
 	int getPriorityLevel() { return m_priority_level; }
-   int setPriorityLevel( int v ) { m_priority_level = v; return getPriorityLevel(); }
+    int setPriorityLevel( int v ) { m_priority_level = v; return getPriorityLevel(); }
 
-   int getPreemptionCapability() { return m_preemption_capability; }
-   int setPreemptionCapability( int v ) { m_preemption_capability = v; return getPreemptionCapability(); }
+    int getPreemptionCapability() { return m_preemption_capability; }
+    int setPreemptionCapability( int v ) { m_preemption_capability = v; return getPreemptionCapability(); }
 
-   int getPreemptionVulnerability() { return m_preemption_vulnerability; }
-   int setPreemptionVulnerability( int v ) { m_preemption_vulnerability = v; return getPreemptionVulnerability(); }
+    int getPreemptionVulnerability() { return m_preemption_vulnerability; }
+    int setPreemptionVulnerability( int v ) { m_preemption_vulnerability = v; return getPreemptionVulnerability(); }
 
 	int getQci() { return m_qci; }
-   int setQci( int v ) { m_qci = v; return getQci(); }
+    int setQci( int v ) { m_qci = v; return getQci(); }
 
 	int getDeactivationTimer() { return m_deactivation_timer; }
 	int setDeactivationTimer( int v ) { m_deactivation_timer = v; return getDeactivationTimer(); }
@@ -467,109 +469,106 @@ private:
 	bool m_default_rule_flag;
 	int m_deactivation_timer;
 	int m_priority_level;
-   int m_preemption_capability;
-   int m_preemption_vulnerability;
+    int m_preemption_capability;
+    int m_preemption_vulnerability;
 	int m_qci;
 	int m_apn_aggregate_max_bitrate_ul;
-   int m_apn_aggregate_max_bitrate_dl;
+    int m_apn_aggregate_max_bitrate_dl;
 };
 
 class GxSession
 {
 public:
-   enum State
-   {
-      sIdle,
-      sOpening,
-      sOpen,
-      sClosing,
-      sClosed,
-      sFailed
-   };
+    enum State
+    {
+       sIdle,
+       sOpening,
+       sOpen,
+       sClosing,
+       sClosed,
+       sFailed
+    };
 
-   enum Event
-   {
-      eIpCan1,
-      eIpCan2,
-      eIpCan3,
-      eIpcan4
-   };
+    enum Event
+    {
+       eIpCan1,
+       eIpCan2,
+       eIpCan3,
+       eIpcan4
+    };
 
-   GxSession( PCRF &pcrf, SessionEvent* current_event );
-   ~GxSession();
+    GxSession( PCRF &pcrf);
+    ~GxSession();
 
-   bool canDelete();
+    bool canDelete();
 
-   State getState() { return m_state; }
-   State setState( State s ) { return m_state = s; }
+    State getState() { return m_state; }
+    State setState( State s ) { return m_state = s; }
 
-   PCRF &getPCRF() const { return m_pcrf; }
+    PCRF &getPCRF() const { return m_pcrf; }
 
-   const std::string &getImsi() const { return m_imsi; }
-   const std::string &setImsi( const char *v ) { m_imsi = v; return getImsi(); }
-   const std::string &setImsi( const std::string &v ) { m_imsi = v; return getImsi(); }
+    const std::string &getImsi() const { return m_imsi; }
+    const std::string &setImsi( const char *v ) { m_imsi = v; return getImsi(); }
+    const std::string &setImsi( const std::string &v ) { m_imsi = v; return getImsi(); }
 
-   const std::string &getApn() const { return m_apn; }
-   const std::string &setApn( const char *v ) { m_apn = v; return getApn(); }
-   const std::string &setApn( const std::string &v ) { m_apn = v; return getApn(); }
+    const std::string &getApn() const { return m_apn; }
+    const std::string &setApn( const char *v ) { m_apn = v; return getApn(); }
+    const std::string &setApn( const std::string &v ) { m_apn = v; return getApn(); }
 
-   const std::string &getSessionId() const { return m_sessionid; }
-   const std::string &setSessionId( const char *v ) { m_sessionid = v; return getSessionId(); }
-   const std::string &setSessionId( const std::string &v ) { m_sessionid = v; return getSessionId(); }
+    const std::string &getSessionId() const { return m_sessionid; }
+    const std::string &setSessionId( const char *v ) { m_sessionid = v; return getSessionId(); }
+    const std::string &setSessionId( const std::string &v ) { m_sessionid = v; return getSessionId(); }
 
-   Apn *getApnEntry() const { return m_apnentry; }
-   Apn *setApnEntry( Apn *apn ) { return m_apnentry = apn; }
+    Apn *getApnEntry() const { return m_apnentry; }
+    Apn *setApnEntry( Apn *apn ) { return m_apnentry = apn; }
 
-   Endpoint *getPcefEndpoint() const { return m_pcef_endpoint; }
-   Endpoint *setPcefEndpoint( Endpoint *v ) { m_pcef_endpoint = v; return getPcefEndpoint(); }
+    Endpoint *getPcefEndpoint() const { return m_pcef_endpoint; }
+    Endpoint *setPcefEndpoint( Endpoint *v ) { m_pcef_endpoint = v; return getPcefEndpoint(); }
 
-   Endpoint *getPcrfEndpoint() const { return m_pcrf_endpoint; }
-   Endpoint *setPcrfEndpoint( Endpoint *v ) { m_pcrf_endpoint = v; return getPcrfEndpoint(); }
+    Endpoint *getPcrfEndpoint() const { return m_pcrf_endpoint; }
+    Endpoint *setPcrfEndpoint( Endpoint *v ) { m_pcrf_endpoint = v; return getPcrfEndpoint(); }
 
-   size_t getIPv4Len() { return m_ipv4len; }
-   size_t setIPv4Len( size_t v ) { return m_ipv4len = v; }
-   const struct in_addr &getIPv4() const { return m_ipv4; }
-   const struct in_addr &setIPv4( struct in_addr &ia, size_t len );
-   const std::string &getIPv4str() const { return m_sipv4; }
+    size_t getIPv4Len() { return m_ipv4len; }
+    size_t setIPv4Len( size_t v ) { return m_ipv4len = v; }
+    const struct in_addr &getIPv4() const { return m_ipv4; }
+    const struct in_addr &setIPv4( struct in_addr &ia, size_t len );
+    const std::string &getIPv4str() const { return m_sipv4; }
 
-   size_t getIPv6Len() { return m_ipv6len; }
-   size_t setIPv6Len( size_t v ) { return m_ipv6len = v; }
-   const struct in6_addr &getIPv6() const { return m_ipv6; }
-   const struct in6_addr &setIPv6( const uint8_t *ia, size_t len );
-   const std::string &getIPv6str() const { return m_sipv6; }
+    size_t getIPv6Len() { return m_ipv6len; }
+    size_t setIPv6Len( size_t v ) { return m_ipv6len = v; }
+    const struct in6_addr &getIPv6() const { return m_ipv6; }
+    const struct in6_addr &setIPv6( const uint8_t *ia, size_t len );
+    const std::string &getIPv6str() const { return m_sipv6; }
 
-   uint64_t getSupportedFeatures() const { return m_supported_features; }
-   uint64_t setSupportedFeatures( int64_t v ) { return m_supported_features = v; }
+    uint64_t getSupportedFeatures() const { return m_supported_features; }
+    uint64_t setSupportedFeatures( int64_t v ) { return m_supported_features = v; }
 
-   const BearerMap &getBearers() const { return m_bearers; }
+    const BearerMap &getBearers() const { return m_bearers; }
 
-   SdSession &getTdfSession() { return m_tdf; }
-   StSession &getTssfSession() { return m_tssf; }
+    SdSession &getTdfSession() { return m_tdf; }
+    StSession &getTssfSession() { return m_tssf; }
 
-   RulesList &getRules() { return m_rules; }
-   RulesList &getInstalledRules() { return m_installed; }
+    RulesList &getRules() { return m_rules; }
+    RulesList &getInstalledRules() { return m_installed; }
 
-	RulesReportList &getRulesReport() { return m_rulesreport; }
+    RulesReportList &getRulesReport() { return m_rulesreport; }
 
-   Subscriber &getSubscriber() { return m_subscriber; }
+    Subscriber &getSubscriber() { return m_subscriber; }
 
-   SMutex &getMutex() { return m_mutex; }
+    SMutex &getMutex() { return m_mutex; }
 
-	DefaultRule* getDefaultRule() { return m_default_rule; }
-	void setDefaultRule( DefaultRule* default_rule ) { m_default_rule = default_rule; }
+	std::list<DefaultRule*> &getDefaultRuleList() { return m_default_rule_list; }
 	
 	GxSessionState* getCurrentState() { return mp_currentstate; }
-   void setCurrentState( GxSessionState* current_state) 
+
+    void setCurrentState( GxSessionState* current_state) 
 	{ 
-		if ( getCurrentState() != NULL )
-		{
-			delete ( getCurrentState() );
-		}
 		mp_currentstate = current_state; 
 	}
 
-   GxSessionProc* getCurrentProc() { return mp_currentproc; }
-   void setCurrentProc( GxSessionProc* current_proc ) 
+    GxSessionProc* getCurrentProc() { return mp_currentproc; }
+
+    void setCurrentProc( GxSessionProc* current_proc ) 
 	{ 
 		if ( getCurrentProc() != NULL )
 		{
@@ -577,9 +576,6 @@ public:
 		}
 		mp_currentproc = current_proc; 
 	}
-
-	SessionEvent* getCurrentEvent() { return mp_currentevent; }
-	void setCurrentEvent( SessionEvent* current_event ) { mp_currentevent = current_event; }
 
    static void teardownSession( const char *source, GxSession *gx, SdSession::SessionReleaseCause src, bool lock = true ) { teardownSession( source, gx, src, StSession::tcDiameterLogout, lock ); }
    static void teardownSession( const char *source, GxSession *gx, StSession::TerminationCause tc, bool lock = true ) { teardownSession( source, gx, SdSession::srcUnspecifiedReason, tc, lock ); }
@@ -589,8 +585,7 @@ public:
 private:
    SMutex m_mutex;
    State m_state;
-	SessionEvent* mp_currentevent;
-	GxSessionState* mp_currentstate;
+   GxSessionState* mp_currentstate;
    GxSessionProc* mp_currentproc;
    PCRF &m_pcrf;
    std::string m_imsi;
@@ -599,7 +594,7 @@ private:
    Apn *m_apnentry;
    Endpoint *m_pcef_endpoint;
    Endpoint *m_pcrf_endpoint;
-	DefaultRule* m_default_rule;
+   std::list<DefaultRule*> m_default_rule_list; // default bearer rules list ?
    struct in_addr m_ipv4;
    size_t m_ipv4len;
    std::string m_sipv4;
@@ -886,8 +881,8 @@ public:
    int validate( gx::CreditControlRequestExtractor& ccr );
    int cleanupSession( bool terminate );
 
-	GxSessionState* getCurrentState() { getGxSession()->getCurrentState(); }
-	void setCurrentState( GxSessionState* current_state) { getGxSession()->setCurrentState( current_state ); }
+	GxSessionState* getSubCurrentState() { getGxSession()->getCurrentState(); }
+	void setSubCurrentState( GxSessionState* current_state) { getGxSession()->setCurrentState( current_state ); }
 
 	GxSessionProc* getCurrentProc() { getGxSession()->getCurrentProc(); }
 	void setCurrentProc( GxSessionProc* current_proc ) { getGxSession()->setCurrentProc( current_proc ); }
@@ -920,7 +915,7 @@ private:
    GxSession *m_gxsession;
    bool m_delete_gxsession;
 
-   RuleEvaluator m_rulesEval;
+   RuleEvaluator m_rulesEval; // ajay : move this from here to session 
 
    int32_t m_default_bearer_mode;
 

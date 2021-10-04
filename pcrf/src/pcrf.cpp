@@ -103,10 +103,11 @@ bool PCRF::init()
    // load the rules into memory
    //
    if ( !m_dataaccess.getRules( m_rules ) )
-	{
+   {
       return false;
-	}
+   }
 
+   // ajay - read more 
    if ( Options::enableRuleTimers() )
    {
       for ( auto r : m_rules )
