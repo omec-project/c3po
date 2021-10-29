@@ -112,9 +112,16 @@ std::list<Rule*>::iterator RulesList::erase( std::list<Rule*>::iterator &it )
 
 void RulesList::addGxSession( GxSession *gx )
 {
-   for ( auto r : m_rules )
-      if ( r->getRuleTimer() )
-         r->getRuleTimer()->addSession( gx );
+   static int count;
+   std::cout<<"inside addSession for timer \n";
+   for ( auto r : m_rules ) {
+      RuleTimer *tmr = r->getRuleTimer();
+      if ( tmr != NULL) {
+         std::cout<<"calling addSession for "<<count <<" timer "<<tmr<<" \n";
+         tmr->addSession( gx );
+      }
+      count++;
+    }
 }
 
 void RulesList::removeGxSession( GxSession *gx )
@@ -295,17 +302,20 @@ bool RuleEvaluator::evaluate( GxSession &pcef, const RulesList &rules, RulesList
 
 RuleTimer::RuleTimer()
 {
+   std::cout<<"inside RuleTimer constructor \n";
 
 }
 
 RuleTimer::~RuleTimer()
 {
+   std::cout<<"inside RuleTimer de-constructor \n";
 
 }
 
 bool RuleTimer::addSession( GxSession *gx )
 {
    SMutexLock l( m_mutex );
+   std::cout<<"inside addSession \n";
    auto res = m_sessions.insert( gx );
    return res.second;
 }
@@ -442,13 +452,18 @@ RuleTimers::~RuleTimers()
 RuleTimer *RuleTimers::addRuleTimer( Rule *rule )
 {
    if ( !Options::enableRuleTimers() || !rule->getTimeSensitive() )
+    {
+      std::cout<<"not adding timer for rule \n";
       return NULL;
+    }
 
    SMutexLock l( m_mutex );
    auto it = m_map.find( rule->getRuleName() );
 
+   std::cout<<" addRuleTimer "<<rule->getRuleName() <<"\n";
    if ( it == m_map.end() )
    {
+      std::cout<<"addRuleTimer "<<rule->getRuleName()<<" .. create new RuleTimers \n";
       RuleTimer *rt = new RuleTimer();
       rt->setRule( rule );
 
@@ -467,6 +482,7 @@ RuleTimer *RuleTimers::addRuleTimer( Rule *rule )
    }
    else
    {
+      std::cout<<"addRuleTimer "<<rule->getRuleName()<<" .. use existing RuleTimers \n";
       rule->setRuleTimer( it->second );
    }
 
@@ -477,7 +493,7 @@ RuleTimer *RuleTimers::getRuleTimer( const std::string &name )
 {
    SMutexLock l( m_mutex );
    auto it = m_map.find( name );
-
+    std::cout<<"getRuleTimer \n";
    if ( it == m_map.end() )
       return NULL;
 

@@ -33,9 +33,9 @@ PoliciesConfig::PoliciesConfig()
 {
 }
 
-void PoliciesConfig::add_service_group_map( std::string service_name, ServiceProfiles* service_profile )
+void PoliciesConfig::add_service_group_map( std::string service_name, ServiceGroup* service_group)
 {
-	service_group_map[service_name] = service_profile; 
+	service_group_map[service_name] = service_group; 
 }
 
 void PoliciesConfig::remove_service_group_map( std::string& service_name )
@@ -43,7 +43,7 @@ void PoliciesConfig::remove_service_group_map( std::string& service_name )
 	service_group_map.erase( service_name );
 }
 
-ServiceProfiles* PoliciesConfig::get_service_group_map( std::string& service_name ) const 
+ServiceGroup* PoliciesConfig::get_service_group_map( std::string& service_name ) const 
 {
 	auto itr = service_group_map.find( service_name );
 	if( itr == service_group_map.end() )
@@ -53,7 +53,7 @@ ServiceProfiles* PoliciesConfig::get_service_group_map( std::string& service_nam
 	return itr->second;
 }
 
-void PoliciesConfig::add_service_selection_map( std::string service_selection_name, ServiceSelection* service_selection )
+void PoliciesConfig::add_service_selection_map( std::string service_selection_name, Service* service_selection )
 {
 	service_selection_map[service_selection_name] = service_selection; 
 }
@@ -63,7 +63,7 @@ void PoliciesConfig::remove_service_selection_map( std::string& service_selectio
 	service_selection_map.erase( service_selection_name );
 }
 
-ServiceSelection* PoliciesConfig::get_service_selection_map( std::string& service_selection_name ) const
+Service* PoliciesConfig::get_service_selection_map( std::string& service_selection_name ) const
 {
 	auto itr = service_selection_map.find( service_selection_name );
 	if( itr == service_selection_map.end() )
@@ -93,110 +93,107 @@ void PoliciesConfig::remove_config_rule_map( std::string& rule_name )
 	config_rule_map.erase( rule_name );
 }
 
-void PoliciesConfig::getDefaultRule( std::string& apn_name, DefaultRule* default_rule ) const
+void PoliciesConfig::getDefaultRules( std::string& apn_name, std::list<DefaultRule*> &default_rules ) const
 {
-	ServiceProfiles* service_profile = 	get_service_group_map( apn_name );	
-	if( service_profile != NULL )
+	ServiceGroup* service_group = 	get_service_group_map( apn_name );	
+	if( service_group != NULL )
 	{
-		std::string default_service_key_name( "default-activate-service" );
-		std::string default_activate_service_val = service_profile->get_service_type_map( default_service_key_name );
-		default_rule->setDefaultRuleFlag( true );
+        std::list<std::string> &service_list = service_group->get_default_service_list();
+        for(std::list<std::string>::iterator it=service_list.begin(); it != service_list.end(); it++) {
+		    std::string service_val = *it;
+            
 	
-		ServiceSelection* service_selection = get_service_selection_map( default_activate_service_val );
-		if( service_selection != NULL )
-		{
-			default_rule->setApnAggregateMaxBitrateUl( service_selection->getAmbrUl() );
-			default_rule->setApnAggregateMaxBitrateDl( service_selection->getAmbrDl() );	
-			default_rule->setDeactivationTimer( service_selection->getDeactivationTimer() );
-			for (std::list<std::string>::iterator it = service_selection->get_activation_rules_list().begin();
-                     it != service_selection->get_activation_rules_list().end(); ++it)
-			{
-				std::string activation_rule_name = *it;
-				ConfigRule* config_rule = get_config_rule_map( activation_rule_name );
-				if( config_rule != NULL )
-				{
-					default_rule->setRuleName( config_rule->getRuleName() );
-					default_rule->setPriorityLevel( config_rule->getPriorityLevel() );
-					default_rule->setPreemptionCapability( config_rule->getPreemptionCapability() );
-					default_rule->setPreemptionVulnerability( config_rule->getPreemptionVulnerability() );
-					default_rule->setQci( config_rule->getQci() );
-					default_rule->setDefinition( config_rule->getDefinition() );
-				}
-			}
-		}		
+		    Service* service_selection = get_service_selection_map( service_val );
+		    if( service_selection != NULL )
+		    {
+		    	for (std::list<std::string>::iterator it = service_selection->get_activation_rules_list().begin();
+                         it != service_selection->get_activation_rules_list().end(); ++it)
+		    	{
+	                DefaultRule* default_rule = new DefaultRule();
+		            default_rule->setDefaultRuleFlag( true );
+		    	    default_rule->setApnAggregateMaxBitrateUl( service_selection->getAmbrUl() );
+		    	    default_rule->setApnAggregateMaxBitrateDl( service_selection->getAmbrDl() );	
+		    	    default_rule->setDeactivationTimer( service_selection->getDeactivationTimer() );
+
+		    		std::string activation_rule_name = *it;
+		    		ConfigRule* config_rule = get_config_rule_map( activation_rule_name );
+		    		if( config_rule != NULL )
+		    		{
+		    			default_rule->setRuleName( config_rule->getRuleName() );
+		    			default_rule->setPriorityLevel( config_rule->getPriorityLevel() );
+		    			default_rule->setPreemptionCapability( config_rule->getPreemptionCapability() );
+		    			default_rule->setPreemptionVulnerability( config_rule->getPreemptionVulnerability() );
+		    			default_rule->setQci( config_rule->getQci() );
+		    			default_rule->setDefinition( config_rule->getDefinition() );
+		    		}
+                    std::cout<<"ajay : adding default rule "<<activation_rule_name << "\n";
+                    default_rules.push_back(default_rule);
+		    	}
+		    }
+        }
 	}
 }
 
-ServiceProfiles::ServiceProfiles()
+ServiceGroup::ServiceGroup()
 {
 }
 
-ServiceProfiles::~ServiceProfiles()
+ServiceGroup::~ServiceGroup()
 {
 }
 
-void ServiceProfiles::add_service_type_list( std::string v )
+void ServiceGroup::add_default_services_list( std::string v )
 {
-	m_service_type_list.push_back( v );
+	m_default_service_type_list.push_back( v );
 }
 
-void ServiceProfiles::remove_service_type_list( std::string& v )
+void ServiceGroup::remove_default_service_list( std::string& v )
 {
-	m_service_type_list.remove( v );
+	m_default_service_type_list.remove( v );
 }
 
-bool ServiceProfiles::get_service_type_list( std::string v )
+bool ServiceGroup::get_default_service_type_list( std::string v )
 {
 	std::list<std::string>::iterator it;
-	it = std::find( m_service_type_list.begin(), m_service_type_list.end(), v );
-	if( it != m_service_type_list.end() )
+	it = std::find( m_default_service_type_list.begin(), m_default_service_type_list.end(), v );
+	if( it != m_default_service_type_list.end() )
 	{
 		return true;
 	}
 	return false;
 }
 
-void ServiceProfiles::add_service_type_map( std::string key, std::string val )
+void ServiceGroup::add_ondemand_services_list( std::string v )
 {
-	m_service_type_map[key] = val;
+	m_ondemand_service_type_list.push_back( v );
 }
 
-void ServiceProfiles::remove_service_type_map( std::string& key )
+void ServiceGroup::remove_ondemand_service_list( std::string& v )
 {
-	m_service_type_map.erase( key );
+	m_ondemand_service_type_list.remove( v );
 }
 
-std::string ServiceProfiles::get_service_type_map( std::string& key )
-{
-	auto itr = m_service_type_map.find( key );
-   if( itr == m_service_type_map.end() )
-   {
-      return std::string("");
-   }
-   return itr->second;	
-}
-
-ServiceSelection::ServiceSelection() : m_deactivation_timer( 0 )
+Service::Service() : m_deactivation_timer( 0 )
 {
 }
 
-ServiceSelection::~ServiceSelection()
+Service::~Service()
 {
 }
 
-std::list<std::string>& ServiceSelection::get_activation_rules_list()
+std::list<std::string>& Service::get_activation_rules_list()
 {
 	return m_activation_rules_list;
 }
 
-void ServiceSelection::add_activation_rules(std::string v)
+void Service::add_activation_rules(std::string v)
 {
 	
    m_activation_rules_list.push_back(v);
 	
 }
 
-void ServiceSelection::remove_activation_rules(std::string v)
+void Service::remove_activation_rules(std::string v)
 {
     m_activation_rules_list.remove( v );
 }
@@ -575,25 +572,41 @@ Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
 				const RAPIDJSON_NAMESPACE::Value& subServiceGroup = service_policies_itr->value;
 				for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_group_itr = subServiceGroup.MemberBegin(); sub_service_group_itr != subServiceGroup.MemberEnd(); ++sub_service_group_itr )
 				{
-					ServiceProfiles* service_profile = new ServiceProfiles();
+					ServiceGroup* service_group = new ServiceGroup();
 					std::string service_group_name = sub_service_group_itr->name.GetString();
-					service_profile->setServiceName( service_group_name );
+					service_group->setServiceGroupName( service_group_name );
+                    std::cout<<"service_group_name: "<<service_group_name<<"\n";
 					const RAPIDJSON_NAMESPACE::Value& subServiceSection = sub_service_group_itr->value;
 					for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_section_itr = subServiceSection.MemberBegin(); sub_service_section_itr != subServiceSection.MemberEnd(); ++sub_service_section_itr )
 					{
 						std::string activate_service_val;
 						std::string activate_service_name = sub_service_section_itr->name.GetString();
-						service_profile->setServiceType( activate_service_name );
-						const RAPIDJSON_NAMESPACE::Value& service_section_value = sub_service_section_itr->value;
-						for( uint32_t i = 0; i < sub_service_section_itr->value.Size(); i++ )
-						{	
-							// TODO : default-activate-service may contain multiple activate services, so need to maintain the list in ServiceProfiles class
-							activate_service_val =  sub_service_section_itr->value[i].GetString();
-						}
-						// TODO: Add string list as a 2 type in map
-						service_profile->add_service_type_map( activate_service_name, activate_service_val );
+                        std::cout<<"set service type : "<<activate_service_name <<"\n";
+                        if(!strcmp("default-activate-service",activate_service_name.c_str()))
+                        {
+						    for( uint32_t i = 0; i < sub_service_section_itr->value.Size(); i++ )
+						    {
+						    	// TODO : default-activate-service may contain multiple activate services, so need to maintain the list in ServiceProfiles class
+						    	activate_service_val =  sub_service_section_itr->value[i].GetString();
+                                std::cout<<"activate service val "<<activate_service_val <<"\n";
+						    }
+						    // TODO: Add string list as a 2 type in map
+                            service_group->add_default_services_list(activate_service_val); 
+                        }
+                        else if(!strcmp("ondemand-activate-service",activate_service_name.c_str()))
+                        {
+						    for( uint32_t i = 0; i < sub_service_section_itr->value.Size(); i++ )
+						    {
+						    	// TODO : default-activate-service may contain multiple activate services, so need to maintain the list in ServiceProfiles class
+						    	activate_service_val =  sub_service_section_itr->value[i].GetString();
+                                std::cout<<"on demand activate service val "<<activate_service_val <<"\n";
+						    }
+						    // TODO: Add string list as a 2 type in map
+                            service_group->add_ondemand_services_list(activate_service_val); 
+                        }
+                        else { std::cout<<"unknown service type\n";}
 					}
-					temp_config->add_service_group_map( service_group_name, service_profile );
+					temp_config->add_service_group_map( service_group_name, service_group );
 				}
 			}
 			else if( strcmp( service_group_name.c_str(), "services" ) == 0 )
@@ -601,7 +614,7 @@ Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
 				const RAPIDJSON_NAMESPACE::Value& subServiceSelection = service_policies_itr->value;
 				for( RAPIDJSON_NAMESPACE::Value::ConstMemberIterator sub_service_selection_itr = subServiceSelection.MemberBegin(); sub_service_selection_itr != subServiceSelection.MemberEnd(); ++sub_service_selection_itr )
             {
-			    ServiceSelection* service_selection = new ServiceSelection();
+			    Service* service_selection = new Service();
 			    std::string service_selection_name = sub_service_selection_itr->name.GetString();
                 service_selection->setServiceName( service_selection_name );
                 const RAPIDJSON_NAMESPACE::Value& subServiceSection = sub_service_selection_itr->value;
@@ -631,6 +644,7 @@ Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
 							{
 								activation_rule =  sub_service_section_itr1->value[i].GetString();	
 								service_selection->add_activation_rules(activation_rule );
+                                std::cout<<"Activate rule "<<activation_rule<<"\n";
 							}
 						}
 						else if( strcmp( sub_service_section_itr1->name.GetString(), "deactivate-conditions" ) == 0 )
@@ -644,8 +658,9 @@ Options::parseJsonDocP(RAPIDJSON_NAMESPACE::Document &doc)
 							}
 						}
 					}
+                    std::cout<<"adding service "<<service_selection_name<<"\n";
 					temp_config->add_service_selection_map( service_selection_name, service_selection );
-				}	
+				}
 			}
 			else if( strcmp( service_group_name.c_str(), "rules" ) == 0 )
 			{

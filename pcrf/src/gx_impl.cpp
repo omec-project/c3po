@@ -115,6 +115,7 @@ int CRCRcmd::process( FDMessageRequest *req )
 {
 
    std::cout<<"Received CRCRcmd::process\n";
+   Logger::gx().debug( "%s:%d - CRCRcmd process ", __FILE__, __LINE__ );
    int cc_request_type;
    CreditControlRequestExtractor ccr( *req, getDict() );
 
@@ -1080,9 +1081,6 @@ void PCRFCRCRcmd::ccrInitial( CreditControlRequestExtractor &ccr, FDMessageAnswe
    }
 }
 
-#define CCR ccri->getCCR()
-#define CCA ccri->getCCA()
-
 #define ABORT() \
    result = false; \
    break;
@@ -1092,6 +1090,7 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
    bool result = true;
    std::string s;
 
+   std::cout<<"ajay parseCCRInitialRequest \n";
    while ( result )
    {
       //
@@ -1118,8 +1117,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
       //
       // find the IMSI
       //
-      for ( auto subidit = CCR.subscription_id.getList().begin();
-            subidit != CCR.subscription_id.getList().end();
+      for ( auto subidit = ccri->getCCR().subscription_id.getList().begin();
+            subidit != ccri->getCCR().subscription_id.getList().end();
             ++subidit )
       {
          int32_t subscription_id_type;
@@ -1129,8 +1128,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             if ( !(*subidit)->subscription_id_data.get( s ) )
             {
                Logger::gx().error( "%s:%d - Subscription-Id-Data missing for END_USER_IMSI", __FILE__, __LINE__ );
-               RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_MISSING_AVP, *(*subidit) );
-               CCA.send();
+               RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_MISSING_AVP, *(*subidit) );
+               ccri->getCCA().send();
                ABORT();
             }
 
@@ -1142,8 +1141,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             if ( ccri->getImsi().empty() || ccri->getImsi().size() != 10 )
             {
                Logger::gx().error( "%s:%d - Subscription-Id END_USER_IMSI invalid value", __FILE__, __LINE__ );
-               RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_INVALID_AVP_VALUE, (*subidit)->subscription_id_data );
-               CCA.send();
+               RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_INVALID_AVP_VALUE, (*subidit)->subscription_id_data );
+               ccri->getCCA().send();
                ABORT();
             }
 
@@ -1160,19 +1159,19 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
       if ( !ccri->imsiExists() )
       {
          Logger::gx().error( "%s:%d - Subscription-Id END_USER_IMSI missing", __FILE__, __LINE__ );
-         RESULTCODE_WITH_FAILEDAVP2( CCA, DIAMETER_MISSING_AVP, avpSubscriptionIdType(), 1 );
-         CCA.send();
+         RESULTCODE_WITH_FAILEDAVP2( ccri->getCCA(), DIAMETER_MISSING_AVP, avpSubscriptionIdType(), 1 );
+         ccri->getCCA().send();
          ABORT();
       }
 
       //
       // get the APN
       //
-      if ( !CCR.called_station_id.get( s ) )
+      if ( !ccri->getCCR().called_station_id.get( s ) )
       {
          Logger::gx().error( "%s:%d - Called-Station-Id missing in INITIAL_REQUEST", __FILE__, __LINE__ );
-         RESULTCODE_WITH_FAILEDAVP2( CCA, DIAMETER_MISSING_AVP, avpCalledStationId(), "" );
-         CCA.send();
+         RESULTCODE_WITH_FAILEDAVP2( ccri->getCCA(), DIAMETER_MISSING_AVP, avpCalledStationId(), "" );
+         ccri->getCCA().send();
          ABORT();
       }
 
@@ -1184,8 +1183,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
       if ( ccri->getApn().empty() )
       {
          Logger::gx().error( "%s:%d - Called-Station-Id is empty", __FILE__, __LINE__ );
-         EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.called_station_id );
-         CCA.send();
+         EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().called_station_id );
+         ccri->getCCA().send();
          ABORT();
       }
 
@@ -1197,8 +1196,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
          if ( !getPCRF().getApn( ccri->getApn(), apn ) )
          {
             Logger::gx().error( "%s:%d - APN [%s] not found", __FILE__, __LINE__, ccri.getApn().c_str() );
-            EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.called_station_id );
-            CCA.send();
+            EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().called_station_id );
+            ccri->getCCA().send();
             ABORT();
          }
 
@@ -1213,8 +1212,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
          if ( getPCRF().getSession( ccri->getImsi(), ccri->getApn(), session ) )
          {
             Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]", __FILE__, __LINE__, ccri->getImsi().c_str(), ccri->getApn().c_str() );
-            RESULTCODE( CCA, DIAMETER_UNABLE_TO_COMPLY );
-            CCA.send();
+            RESULTCODE( ccri->getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+            ccri->getCCA().send();
             ABORT();
          }
       }
@@ -1227,14 +1226,14 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
          if ( Options::selfRedirect() )
          {
             Logger::gx().error( "%s:%d - self redirect not implemented", __FILE__, __LINE__ );
-            RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_UNABLE_TO_COMPLY, CCR.cc_request_type );
-            CCA.send();
+            RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_UNABLE_TO_COMPLY, ccri->getCCR().cc_request_type );
+            ccri->getCCA().send();
             ABORT();
          }
 
          Logger::gx().error( "%s:%d - Session already exists imsi=[%s] apn=[%s]", __FILE__, __LINE__, ccri->getImsi().c_str(), ccri->getApn().c_str() );
-         RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_UNABLE_TO_COMPLY, CCR.cc_request_type );
-         CCA.send();
+         RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_UNABLE_TO_COMPLY, ccri->getCCR().cc_request_type );
+         ccri->getCCA().send();
          ABORT();
       }
 
@@ -1260,8 +1259,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             {
                Logger::gx().error( "%s:%d - Unable to add new subscriber imsi=[%s] apn=[%s]",
                      __FILE__, __LINE__, ccri->getImsi().c_str(), ccri->getApn().c_str() );
-               RESULTCODE( CCA, DIAMETER_UNABLE_TO_COMPLY );
-               CCA.send();
+               RESULTCODE( ccri->getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+               ccri->getCCA().send();
                ABORT();
             }
          }
@@ -1269,8 +1268,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
          {
             Logger::gx().error( "%s:%d - Subscriber does not exist and APN not configured to autoadd imsi=[%s] apn=[%s]",
                   __FILE__, __LINE__, ccri.getImsi().c_str(), ccri.getApn().c_str() );
-            EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.called_station_id );
-            CCA.send();
+            EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().called_station_id );
+            ccri->getCCA().send();
             ABORT();
          }
       }
@@ -1294,8 +1293,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             {
                Logger::gx().error( "%s:%d - Unable to associate APN with Subscriber imsi=[%s] apn=[%s]",
                      __FILE__, __LINE__, ccri->getImsi().c_str(), ccri->getApn().c_str() );
-               EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.called_station_id );
-               CCA.send();
+               EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().called_station_id );
+               ccri->getCCA().send();
                delete sa;
                ABORT();
             }
@@ -1317,14 +1316,14 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
          session->setApn( ccri->getApn() );
          session->setPcrfEndpoint( Options::originHost() );
 
-         CCR.session_id.get( s );
+         ccri->getCCR().session_id.get( s );
          session->setPcefSessionId( s );
 
          {
             uint8_t ipaddr[16];
             size_t ipaddrlen = sizeof(ipaddr);
 
-            if ( CCR.framed_ip_address.get( ipaddr, ipaddrlen ) && ipaddrlen == 4 )
+            if ( ccri->getCCR().framed_ip_address.get( ipaddr, ipaddrlen ) && ipaddrlen == 4 )
             {
                if ( ipaddrlen == 4 )
                {
@@ -1336,8 +1335,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
                {
                   Logger::gx().error( "%s:%d - Invalid length for Framed-IP-Address, expected 4 found %d",
                         __FILE__, __LINE__, ipaddrlen );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.framed_ip_address );
-                  CCA.send();
+                  EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().framed_ip_address );
+                  ccri->getCCA().send();
                   delete session;
                   ABORT();
                }
@@ -1359,8 +1358,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             {
                Logger::gx().error( "%s:%d - Either Framed-IP-Address or Framed-IPv6-Prefix must be specified",
                      __FILE__, __LINE__ );
-               EXP_RESULTCODE_WITH_FAILEDAVP2( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
-               CCA.send();
+               EXP_RESULTCODE_WITH_FAILEDAVP2( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, avpFramedIpAddress(), "" );
+               ccri->getCCA().send();
                delete session;
                ABORT();
             }
@@ -1382,8 +1381,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
                {
                   Logger::gx().error( "%s:%d - PCEF endpoint [%s] does not exist",
                         __FILE__, __LINE__, s.c_str() );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.origin_host );
-                  CCA.send();
+                  EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().origin_host );
+                  ccri->getCCA().send();
                   delete session;
                   ABORT();
                }
@@ -1392,8 +1391,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             {
                Logger::gx().error( "%s:%d - Origin-Host missing imsi=[%s] apn=[%s]",
                      __FILE__, __LINE__, ccri.getImsi().c_str(), ccri.getApn().c_str() );
-               RESULTCODE_WITH_FAILEDAVP2( CCA, DIAMETER_MISSING_AVP, avpOriginHost(), "" );
-               CCA.send();
+               RESULTCODE_WITH_FAILEDAVP2( ccri->getCCA(), DIAMETER_MISSING_AVP, avpOriginHost(), "" );
+               ccri->getCCA().send();
                delete session;
                ABORT();
             }
@@ -1401,7 +1400,7 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             //
             // get the TDF endpoint
             //
-            if ( CCR.tdf_information.gdf_destination_host.get( s ) )
+            if ( ccri->getCCR().tdf_information.gdf_destination_host.get( s ) )
             {
                Endpoint *ep = NULL;
 
@@ -1413,8 +1412,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
                {
                   Logger::gx().error( "%s:%d - TDF endpoint [%s] does not exist",
                         __FILE__, __LINE__, s.c_str() );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, CCR.tdf_information.tdf_destination_host );
-                  CCA.send();
+                  EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, ccri->getCCR().tdf_information.tdf_destination_host );
+                  ccri->getCCA().send();
                   delete session;
                   ABORT();
                }
@@ -1437,7 +1436,7 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
                      Logger::gx().error( "%s:%d - TDF endpoint [%s] specified in PCEF [%s] endoint entry does not exist",
                            __FILE__, __LINE__, session->getPcrfEndpoint()->getAssignedTdf().c_str(),
                            session->getPcrfEndpoint()->getEndpoint().c_str() );
-                     EXP_RESULTCODE( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS );
+                     EXP_RESULTCODE( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS );
                      delete session;
                      ABORT();
                   }
@@ -1460,8 +1459,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
                   Logger::gx().error( "%s:%d - TSC endpoint [%s] specified in PCEF [%s] endoint entry does not exist",
                         __FILE__, __LINE__, session->getPcrfEndpoint()->getAssignedTdf().c_str(),
                         session->getPcrfEndpoint()->getEndpoint().c_str() );
-                  EXP_RESULTCODE( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS );
-                  CCA.send();
+                  EXP_RESULTCODE( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS );
+                  ccri->getCCA().send();
                   delete session;
                   ABORT();
                }
@@ -1473,8 +1472,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
          {
             Logger::gx().error( "%s:%d - Unable to insert session into session map imsi=[%s] apn=[%s]",
                   __FILE__, __LINE__, ccri->getImsi().c_str(), ccri->getApn().c_str() );
-            RESULTCODE( CCA, DIAMETER_UNABLE_TO_COMPLY );
-            CCA.send();
+            RESULTCODE( ccri->getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+            ccri->getCCA().send();
             delete session;
             ABORT();
          }
@@ -1500,7 +1499,7 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
             Logger::gx().error( "%s:%d - Sy interface required but not supported imsi=[%s] apn=[%s]",
                   __FILE__, __LINE__, ccri.getImsi().c_str(), ccri->getApn().c_str() );
             RESULTCODE( cca, DIAMETER_UNABLE_TO_COMPLY );
-            CCA.send();
+            ccri->getCCA().send();
             getPCRF().deleteSession( ccri->getImsi(), ccri->getApn() );
             ABORT();
          }
@@ -1512,7 +1511,7 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
       {
          uint64_t supported_features = 0;
 
-         for ( auto sfextractor : CCR.supported_features.getList() )
+         for ( auto sfextractor : ccri->getCCR().supported_features.getList() )
          {
             uint32_t flid;
 
@@ -1522,8 +1521,8 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
                {
                   Logger::gx().error( "%s:%d - Invalid Feature-List-ID [%u] for imsi=[%s] apn=[%s]",
                         __FILE__, __LINE__, flid, ccri->getImsi().c_str(), ccri->getApn().c_str() );
-                  EXP_RESULTCODE_WITH_FAILEDAVP1( CCA, DIAMETER_ERROR_INITIAL_PARAMETERS, *sfextractor );
-                  CCA.send();
+                  EXP_RESULTCODE_WITH_FAILEDAVP1( ccri->getCCA(), DIAMETER_ERROR_INITIAL_PARAMETERS, *sfextractor );
+                  ccri->getCCA().send();
                   getPCRF().deleteSession( ccri->getImsi(), ccri->getApn() );
                   ABORT();
                }
@@ -1632,8 +1631,8 @@ void PCRFCRCRcmd::processCCRInitialRequest( CCRInitial *ccri )
          {
             Logger::gx().error( "%s:%d - Aborting, unable to install rule=[%s] imsi=[%s] apn=[%s]",
                   __FILE__, __LINE__, flid, ccri->getImsi().c_str(), ccri->getApn().c_str(), (*ruleit)->getRuleName().c_str() );
-            EXP_RESULTCODE( CCA, DIAMETER_PCC_RULE_EVENT );
-            CCA.send();
+            EXP_RESULTCODE( ccri->getCCA(), DIAMETER_PCC_RULE_EVENT );
+            ccri->getCCA().send();
             getPCRF().deleteSession( ccri->getImsi(), ccri->getApn() );
             keepGoing = false;
          }
@@ -1656,7 +1655,7 @@ void PCRFCRCRcmd::processCCRInitialRequest( CCRInitial *ccri )
       // need guidance for applicability steps 173-181
       //
       int32_t nrs;
-      if ( CCR.network_request_support.get( nrs ) )
+      if ( ccri->getCCR().network_request_support.get( nrs ) )
       {
          if ( nrs == NETWORK_REQUEST_SUPPORT_NOT_SUPPORTED &&
               ccri->getApnEntry()->getDefaultBearerCtlMode() == BEARER_CTL_MODE_UE_NETWORK )
@@ -1665,8 +1664,8 @@ void PCRFCRCRcmd::processCCRInitialRequest( CCRInitial *ccri )
                   __FILE__, __LINE__, ccri->getImsi().c_str(), ccri->getApn().c_str(),
                   nrs == NETWORK_REQUEST_SUPPORT_NOT_SUPPORTED ? "NOT_" : "",
                   ccri.getApnEntry()->getDefaultBearerCtlMode() == BEARER_CTL_MODE_UE_ONLY ? "UE_ONLY" : "UE_NW" );
-            RESULTCODE( CCA, DIAMETER_UNABLE_TO_COMPLY );
-            CCA.send();
+            RESULTCODE( ccri->getCCA(), DIAMETER_UNABLE_TO_COMPLY );
+            ccri->getCCA().send();
             getPCRF().deleteSession( ccri->getImsi(), ccri->getApn() );
 
             ABORT();
@@ -1674,7 +1673,7 @@ void PCRFCRCRcmd::processCCRInitialRequest( CCRInitial *ccri )
       }
 #endif
 
-      CCA.add( ccri->getDict().avpBearerControlMode(), ccri->getApnEntry()->getDefaultBearerCtlMode() );
+      ccri->getCCA().add( ccri->getDict().avpBearerControlMode(), ccri->getApnEntry()->getDefaultBearerCtlMode() );
 
       if ( ccri->getApnEntry()->getDefaultBearerCtlMode() == BEARER_CTL_MODE_UE_NETWORK )
       {

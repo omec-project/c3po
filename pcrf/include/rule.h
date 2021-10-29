@@ -29,7 +29,7 @@ class RuleTimer;
 class Rule
 {
 public:
-   Rule() : m_active_toggle(true), m_default_rule_flag(false) {}
+   Rule() : m_rt(NULL), m_active_toggle(true), m_default_rule_flag(false) {}
    ~Rule() {}
 
    const std::string &getRuleName() { return m_rulename; }
@@ -87,7 +87,7 @@ private:
    uint64_t m_featuremask;
    RuleTimer *m_rt;
    bool m_active_toggle;
-	bool m_default_rule_flag;
+   bool m_default_rule_flag;
 };
 
 class GxChargingRuleReport

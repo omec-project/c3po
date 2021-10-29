@@ -48,10 +48,10 @@ void Logger::_init( const char *app )
    m_audit = new SLogger( "audit", m_auditsinks, "%v", Options::logQueueSize() );
 
    m_system->set_level( spdlog::level::info );
-   m_gx->set_level( spdlog::level::warn );
-   m_rx->set_level( spdlog::level::warn );
-   m_sd->set_level( spdlog::level::warn );
-   m_st->set_level( spdlog::level::warn );
+   m_gx->set_level( spdlog::level::debug );
+   m_rx->set_level( spdlog::level::debug );
+   m_sd->set_level( spdlog::level::debug );
+   m_st->set_level( spdlog::level::debug );
    m_chronos->set_level( spdlog::level::warn );
    m_stat->set_level(spdlog::level::info);
    m_audit->set_level(spdlog::level::trace);
