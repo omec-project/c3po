@@ -300,7 +300,6 @@ Dictionary::Dictionary()
     m_avp_ext_pdp_address( "Ext-PDP-Address", m_vnd_3gpp.getId() ),
     m_avp_regional_subscription_zone_code( "Regional-Subscription-Zone-Code", m_vnd_3gpp.getId() )
 {
-    std::cout << "Registering s6as6d dictionary" << std::endl;
 };
 
 Dictionary::~Dictionary()

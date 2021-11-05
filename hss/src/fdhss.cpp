@@ -188,7 +188,6 @@ bool FDHss::init(hss_config_t * hss_config_p){
       m_endpoint->serveThreaded();
 
       Pistache::Address addrOss( Pistache::Ipv4::any(), Pistache::Port(Options::getossport()) );
-
       m_ossendpoint = new OssEndpoint<Logger>(addrOss, &StatsHss::singleton(), &Logger::singleton().audit(), &Logger::singleton(), Options::getossfile());
       m_ossendpoint->init();
       m_ossendpoint->start();
@@ -416,6 +415,16 @@ s->dump();
          }
       }
    }
+}
+
+void FDHss::poppulate_IMSIs(const ImsiEntity &ie)
+{
+    m_dbobj.insertUserImsi(ie, NULL, NULL);
+}
+
+void FDHss::remove_IMSI(const ImsiEntity &ie)
+{
+    m_dbobj.deleteUserImsi(ie, NULL, NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

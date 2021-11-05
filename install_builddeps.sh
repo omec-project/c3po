@@ -79,12 +79,12 @@ install_rapidjson() {
 
 install_pistache() {
 	cd /tmp
- 	wget https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz 
- 	tar -zxvf cmake-3.18.0-Linux-x86_64.tar.gz
+	wget https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz 
+	tar -zxvf cmake-3.18.0-Linux-x86_64.tar.gz
 	echo "Installing pistache"
 	cd $DEPS_DIR/pistache
-	echo $PWD
-	patch -p1 -g1 < ../../patches/pistache.patch.1.txt
+  echo $PWD
+	patch -p1 < ../../patches/pistache.patch.1.txt
 	mkdir build && cd build
 	/tmp/cmake-3.18.0-Linux-x86_64/bin/cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ../
 	make -j $CPUS

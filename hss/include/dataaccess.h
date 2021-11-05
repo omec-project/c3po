@@ -109,12 +109,75 @@ public:
    }
 };
 
+class ImsiEntity
+{
+public:
+   ImsiEntity()
+   {
+      imsi = "";                        imsi_pres = false;
+      idmmeidentity = 0;                idmmeidentity_pres = false;
+      imei = "";                        imei_pres = false;
+      imei_sv = "";                     imei_sv_pres = false;
+      key = "";                         key_pres = false;
+      lipa_permissions = "";            lipa_permissions_pres = false;
+      mmeidentity_idmmeidentity = 0;    mmeidentity_idmmeidentity_pres = false;
+      mme_cap = 0;                      mme_cap_pres = false;
+      mmehost = "";                     mmehost_pres = false;
+      mmerealm = "";                    mmerealm_pres = false;
+      ms_ps_status = "";                ms_ps_status_pres = false;
+      msisdn = 0;                       msisdn_pres = false;
+      niddvalidity = "";                niddvalidity_pres = false;
+      nir_dest_host = "";               nir_dest_host_pres = false;
+      nir_dest_realm = "";              nir_dest_realm_pres = false;
+      opc = "";                         opc_pres = false;
+      pgw_id = 0;                       pgw_id_pres = false;
+      rand = "";                        rand_pres = false;
+      rfsp_index = 0;                   rfsp_index_pres = false;
+      sqn = 0;                          sqn_pres = false;
+      subscription_data = "";           subscription_data_pres = false;
+      supported_features = "";          supported_features_pres = false;
+      ue_reachability = 0;              ue_reachability_pres = false;
+      urrp_mme = 0;                     urrp_mme_pres = false;
+      user_identifier = "";             user_identifier_pres = false;
+      visited_plmnid = "";              visited_plmnid_pres = false;
+      access_restriction = 0;           access_restriction_pres = false;
+   }
+   std::string imsi;                     bool imsi_pres;
+   int32_t access_restriction;           bool access_restriction_pres;
+   int32_t idmmeidentity;                bool idmmeidentity_pres;
+   std::string imei;                     bool imei_pres;
+   std::string imei_sv;                  bool imei_sv_pres;
+   std::string key;                      bool key_pres;
+   std::string lipa_permissions;         bool lipa_permissions_pres;
+   int32_t mme_cap;                      bool mme_cap_pres;
+   std::string mmehost;                  bool mmehost_pres;
+   int32_t mmeidentity_idmmeidentity;    bool mmeidentity_idmmeidentity_pres;
+   std::string mmerealm;                 bool mmerealm_pres;
+   std::string ms_ps_status;             bool ms_ps_status_pres;
+   int64_t msisdn;                       bool msisdn_pres;
+   std::string niddvalidity;             bool niddvalidity_pres;
+   std::string nir_dest_host;            bool nir_dest_host_pres;
+   std::string nir_dest_realm;           bool nir_dest_realm_pres;
+   std::string opc;                      bool opc_pres;
+   int32_t pgw_id;                       bool pgw_id_pres;
+   std::string rand;                     bool rand_pres;
+   int32_t rfsp_index;                   bool rfsp_index_pres;
+   int32_t sqn;                          bool sqn_pres;
+   std::string subscription_data;        bool subscription_data_pres;
+   std::string supported_features;       bool supported_features_pres;
+   int32_t ue_reachability;              bool ue_reachability_pres;
+   int32_t urrp_mme;                     bool urrp_mme_pres;
+   std::string user_identifier;          bool user_identifier_pres;
+   std::string visited_plmnid;           bool visited_plmnid_pres;
+};
+
 struct DAImsiInfo {
-   std::string imsi;
-   std::string mmehost;
+    std::string imsi;
+    std::string mmehost;
 	std::string mmerealm;
 	std::string ms_ps_status;
 	std::string subscription_data;
+	std::string supported_features;
 	int64_t msisdn;
 	std::string str_msisdn;
 	std::string visited_plmnid;
@@ -192,6 +255,9 @@ public:
    bool getImsiInfoData( SCassFuture &future, DAImsiInfo &info );
    bool getImsiInfo ( const char *imsi, DAImsiInfo &info, CassFutureCallback cb, void *data );
    bool getImsiInfo ( const std::string &imsi, DAImsiInfo &info, CassFutureCallback cb, void *data ) { return getImsiInfo( imsi.c_str(), info, cb, data ); }
+
+   bool deleteUserImsi(const ImsiEntity &ie, CassFutureCallback cb, void *data);
+   bool insertUserImsi(const ImsiEntity &ie, CassFutureCallback cb, void *data);
 
    bool getEventIdsFromMsisdnData( SCassFuture &future, DAEventIdList &el );
    bool getEventIdsFromMsisdn( int64_t msisdn, DAEventIdList &el, CassFutureCallback cb, void *data );

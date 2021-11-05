@@ -732,6 +732,7 @@ bool DataAccess::getImsiInfoData( SCassFuture &future, DAImsiInfo &info )
       GET_EVENT_DATA( row, mmerealm, info.mmerealm );
       GET_EVENT_DATA( row, ms_ps_status, info.ms_ps_status );
       GET_EVENT_DATA( row, subscription_data, info.subscription_data );
+      GET_EVENT_DATA( row, supported_features, info.supported_features);
       GET_EVENT_DATA( row, msisdn, info.msisdn );
       info.str_msisdn = std::to_string( info.msisdn );
       GET_EVENT_DATA( row, visited_plmnid, info.visited_plmnid );
@@ -747,7 +748,7 @@ bool DataAccess::getImsiInfo ( const char *imsi, DAImsiInfo &info, CassFutureCal
 {
    std::stringstream ss;
 
-   ss << "SELECT imsi, mmehost, mmerealm, ms_ps_status, subscription_data, msisdn, visited_plmnid, access_restriction, mmeidentity_idmmeidentity FROM users_imsi where imsi = '"
+   ss << "SELECT imsi, mmehost, mmerealm, ms_ps_status, subscription_data, supported_features, msisdn, visited_plmnid, access_restriction, mmeidentity_idmmeidentity FROM users_imsi where imsi = '"
       << imsi << "' ;" ;
 
    SCassStatement stmt( ss.str().c_str() );
@@ -758,6 +759,96 @@ bool DataAccess::getImsiInfo ( const char *imsi, DAImsiInfo &info, CassFutureCal
       return future.setCallback( cb, data );
 
    return getImsiInfoData( future, info );
+}
+
+#define ADD_VALUE_STRING(_ss, _ie, _name, _comma) \
+{ \
+   if (_ie._name ## _pres) \
+      _ss << "'" << _ie._name << "'" _comma; \
+   else \
+      _ss << "null" _comma; \
+}
+
+#define ADD_VALUE_INT(_ss, _ie, _name, _comma) \
+{ \
+   if (_ie._name ## _pres) \
+      _ss << _ie._name << _comma; \
+   else \
+      _ss << "null" _comma; \
+}
+
+bool DataAccess::insertUserImsi( const ImsiEntity &ie, CassFutureCallback cb, void *data)
+{
+   std::stringstream ss;
+
+   ss << "INSERT INTO vhss.users_imsi ("
+         << "imsi, msisdn, access_restriction, key,"
+         << "opc, mmehost, mmeidentity_idmmeidentity, mmerealm, rand, sqn, subscription_data, supported_features"
+         << ") VALUES (";
+   ADD_VALUE_STRING(ss, ie, imsi, ",");
+   ADD_VALUE_INT(ss, ie, msisdn, ",");
+   ADD_VALUE_INT(ss, ie, access_restriction, ",");
+   ADD_VALUE_STRING(ss, ie, key, ",");
+   ADD_VALUE_STRING(ss, ie, opc, ",");
+   ADD_VALUE_STRING(ss, ie, mmehost, ",");
+   ADD_VALUE_INT(ss, ie, mmeidentity_idmmeidentity, ",");
+   ADD_VALUE_STRING(ss, ie, mmerealm, ",");
+   ADD_VALUE_STRING(ss, ie, rand, ",");
+   ADD_VALUE_INT(ss, ie, sqn, ",");
+   ADD_VALUE_STRING(ss, ie, subscription_data, ",");
+   ADD_VALUE_STRING(ss, ie, supported_features, "");
+   ss << ")";
+
+   std::cout << ss.str() << std::endl;
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+   {
+      std::cout << "DataAccess::" << __func__ << " - Error " << future.errorCode()
+                << " executing [" << ss.str() << "]" << std::endl;
+      return false;
+   }
+
+   if (cb)
+      return future.setCallback( cb, data );
+
+#if 0
+   if ( !insertUserMsisdn( ie.imsi, ie.msisdn ) )
+   {
+      deleteUserImsi( ie.imsi );
+      return false;
+   }
+#endif
+
+   return true;
+}
+
+bool DataAccess::deleteUserImsi( const ImsiEntity &ie, CassFutureCallback cb, void *data)
+{
+   std::stringstream ss;
+
+   ss << "DELETE FROM  vhss.users_imsi WHERE imsi='"<< ie.imsi<<"'";
+
+   std::cout << ss.str() << std::endl;
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+   {
+      std::cout << "DataAccess::" << __func__ << " - Error " << future.errorCode()
+                << " executing [" << ss.str() << "]" << std::endl;
+      return false;
+   }
+
+   if (cb)
+      return future.setCallback( cb, data );
+
+   return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

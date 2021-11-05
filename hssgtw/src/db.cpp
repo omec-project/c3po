@@ -79,7 +79,7 @@ bool DB::insertUserImsi( const ImsiEntity &ie )
          << "imsi,access_restriction,idmmeidentity,imei,imei_sv,key,"
          << "lipa_permissions,mme_cap,mmehost,mmeidentity_idmmeidentity,"
          << "mmerealm,ms_ps_status,msisdn,niddvalidity,nir_dest_host,"
-         << "nir_dest_realm,opc,pgw_id,rand,rfsp_index,sqn,subscription_data,"
+         << "nir_dest_realm,opc,pgw_id,rand,rfsp_index,sqn,subscription_data,supported_features"
          << "ue_reachability,urrp_mme,user_identifier,visited_plmnid"
          << ") VALUES (";
    ADD_VALUE_STRING(ss, ie, imsi, ",");
@@ -104,6 +104,7 @@ bool DB::insertUserImsi( const ImsiEntity &ie )
    ADD_VALUE_INT(ss, ie, rfsp_index, ",");
    ADD_VALUE_INT(ss, ie, sqn, ",");
    ADD_VALUE_STRING(ss, ie, subscription_data, ",");
+   ADD_VALUE_STRING(ss, ie, supported_features, ",");
    ADD_VALUE_INT(ss, ie, ue_reachability, ",");
    ADD_VALUE_INT(ss, ie, urrp_mme, ",");
    ADD_VALUE_STRING(ss, ie, user_identifier, ",");
@@ -159,6 +160,7 @@ bool DB::updateUserImsi( const ImsiEntity &ie )
    ADD_UPDATE_INT(ss, ie, rfsp_index, cnt);
    ADD_UPDATE_INT(ss, ie, sqn, cnt);
    ADD_UPDATE_STRING(ss, ie, subscription_data, cnt);
+   ADD_UPDATE_STRING(ss, ie, supported_features, cnt);
    ADD_UPDATE_INT(ss, ie, ue_reachability, cnt);
    ADD_UPDATE_INT(ss, ie, urrp_mme, cnt);
    ADD_UPDATE_STRING(ss, ie, user_identifier, cnt);
