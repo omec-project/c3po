@@ -146,7 +146,7 @@ int CRCRcmd::process( FDMessageRequest *req )
             break;
          }
 
-         std::cout<<"calling ipca1->processPhase1\n";
+         std::cout<<"\ncalling ipca1->processPhase1";
          if ( !ipcan1->processPhase1() )
          {
             GxSession::teardownSession( "PCRFCRCRcmd::process:INITIAL_REQUEST", ipcan1->getGxSession(), SdSession::srcUnspecifiedReason, StSession::tcDiameterAdministrative );
@@ -1090,7 +1090,7 @@ bool PCRFCRCRcmd::parseCCRInitialRequest( FDMessageReuest *req, gx::Dictionary &
    bool result = true;
    std::string s;
 
-   std::cout<<"ajay parseCCRInitialRequest \n";
+   std::cout<<"parseCCRInitialRequest ";
    while ( result )
    {
       //

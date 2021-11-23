@@ -35,9 +35,11 @@ GxSession::GxSession( PCRF &pcrf)
 {
     memset( &m_ipv4, 0, sizeof( m_ipv4 ) );
     memset( &m_ipv6, 0, sizeof( m_ipv6 ) );
-
     mp_currentstate = GxSessionPendingState::getInstance();
-
+    mp_currentproc  = NULL;
+    m_apnentry = NULL;
+    m_pcef_endpoint = NULL;
+    m_pcrf_endpoint = NULL;
 }
 
 GxSession::~GxSession()
@@ -45,7 +47,7 @@ GxSession::~GxSession()
    m_rules.removeGxSession( this );
 	if ( mp_currentstate != NULL )
 	{
-		delete( mp_currentstate );
+		delete( mp_currentstate ); // CRASH
 	}
 	if ( mp_currentproc != NULL )
 	{
@@ -991,7 +993,7 @@ GxIpCan1::~GxIpCan1()
 	
 	if ( m_triggertimer != NULL )
 	{
-		delete( m_triggertimer );
+		delete( m_triggertimer ); // BUG - crash 
 	}
 	
 }
@@ -1590,7 +1592,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
     }
 
     getGxSession()->setApn( s );
-    std::cout<<"gxSession Apn "<<getGxSession()->getApn()<< ", s = "<<s<<std::endl;
+    std::cout<<"\ngxSession Apn "<<getGxSession()->getApn()<< ", s = "<<s;
 
     //
     // return if the APN is invalid
@@ -2116,7 +2118,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
                 return ValidateErrorCode::tdfEndpointEntryInvalid ;
             }
         } else {
-           printf("\n Skipping TDF %s %d \n",__FUNCTION__, __LINE__);
+           printf("Skipping TDF %s %d ",__FUNCTION__, __LINE__);
         }
     }
 
@@ -2143,7 +2145,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
             return ValidateErrorCode::tssfEndpointEntryInvalid ;
         }
     }  else {
-           printf("\n ajay Skipping TSSF %s %d \n",__FUNCTION__, __LINE__);
+           printf("\nSkipping TSSF %s %d ",__FUNCTION__, __LINE__);
     }
       
     //
@@ -2173,7 +2175,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
           return ValidateErrorCode::syInterfaceNotSuported ;
        } else {
-           printf("\n ajay - No syRequired %s %d \n",__FUNCTION__, __LINE__);
+           printf("\nNo syRequired %s %d ",__FUNCTION__, __LINE__);
        }
     }
 
@@ -2206,7 +2208,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
     }
 
     setDeleteGxSession( false ); 
-    std::cout<<"ajay Calling TDF functions now"<<std::endl;
+    std::cout<<"\nCalling TDF functions now";
 
     //
     // establish the TDF session if necessary
@@ -2224,10 +2226,10 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           return ValidateErrorCode::unableToAllocateSdIpCan1Object ;
        }
 
-       printf("\n ajay calling phase1 m_sdEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+       printf("\ncalling phase1 m_sdEstablishSession %s %d ",__FUNCTION__, __LINE__);
        if ( !m_sdEstablishSession->processPhase1() )
        {
-          printf("\n phase1 return %s %d \n",__FUNCTION__, __LINE__);
+          printf("\n phase1 return %s %d ",__FUNCTION__, __LINE__);
           if ( ccr.tdf_information.tdf_destination_host.exists() )
           {
              EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS,
@@ -2242,7 +2244,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
           return ValidateErrorCode::sdEstablishSessionFailed ;
        }
-       printf("\n ajay finished - phase1 m_sdEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+       printf("\nfinished - phase1 m_sdEstablishSession %s %d ",__FUNCTION__, __LINE__);
     }
 
     //
@@ -2261,7 +2263,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           return ValidateErrorCode::unableToAllocateStIpCan1EstablishSessionObject ;
        }
 
-       printf("\n ajay calling - phase1 m_stEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+       printf("\ncalling - phase1 m_stEstablishSession %s %d ",__FUNCTION__, __LINE__);
        if ( !m_stEstablishSession->processPhase1() )
        {
           // stEstablishSessionFailed
@@ -2270,7 +2272,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
           return ValidateErrorCode::stEstablishSessionFailed ;
        }
-       printf("\n ajay finished - phase1 m_stEstablishSession %s %d \n",__FUNCTION__, __LINE__);
+       printf("\nfinished - phase1 m_stEstablishSession %s %d ",__FUNCTION__, __LINE__);
     }
     return ValidateErrorCode::success ;
 }
@@ -2288,7 +2290,7 @@ bool GxIpCan1::processPhase1()
    setStatus( esProcessing );
    setGxSession( new GxSession( getPCRF()) );
    GxSessionProc *proc = new GxSessionCreateProc(getGxSession(), this);
-   getGxSession()->setCurrentProc(proc);
+   getGxSession()->setCurrentProc(proc); // CRASH 
    
    ret = getSubCurrentState()->handleSubCCR( getCurrentProc(), getCCR() );
 	//int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal();
@@ -2358,7 +2360,7 @@ bool GxIpCan1::processPhase2( bool lockit )
 {
    SMutexLock l( m_mutex, lockit );
 
-   printf("ajay %s %d \n",__FUNCTION__,__LINE__);
+   printf("\n %s %d",__FUNCTION__,__LINE__);
    Logger::gx().debug( "%s:%d - GxIpCan1::processPhase2 - start", __FILE__, __LINE__ );
 
    // evaluate rules and send if good
@@ -2376,7 +2378,7 @@ bool GxIpCan1::processPhase2( bool lockit )
             m_stEstablishSession->getStatusDescription() );
       return true;
    }
-   printf("\n ajay - sd st establish session skipped ");
+   printf("\nsd st establish session skipped ");
    if ( getStatus() == esFailed || sdstatus == esFailed || ststatus == esFailed )
    {
       if ( getStatus() == esProcessing )
@@ -2389,7 +2391,7 @@ bool GxIpCan1::processPhase2( bool lockit )
       return false;
    }
 
-   printf("\n ajay - calling rule evaluator ");
+   printf("\ncalling rule evaluator ");
    bool result = getRulesEvaluator().evaluate(*getGxSession(), getGxSession()->getRules(),
          getGxSession()->getInstalledRules(), getGxSession()->getTdfSession().getInstalledRules(),
          getGxSession()->getTssfSession().getInstalledRules(), getGxSession()->getSubscriber().getFailOnUninstallableRule() );
@@ -2407,9 +2409,9 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
-      printf("\n calling phase1 %s %d \n",__FUNCTION__, __LINE__);
+      printf("\ncalling phase1 %s %d ",__FUNCTION__, __LINE__);
       result = m_sdProcessRules->processPhase1();
-      std::cout<<"ajay phase1 m_sdProcessRules  over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
+      std::cout<<"\nphase1 m_sdProcessRules  over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result;
       if ( !result )
       {
          setStatus( esFailed );
@@ -2430,7 +2432,7 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
-        printf("\n created m_stProcessRules calling phase1 %s %d \n",__FUNCTION__, __LINE__);
+        printf("\ncreated m_stProcessRules calling phase1 %s %d ",__FUNCTION__, __LINE__);
       result = m_stProcessRules->processPhase1();
       if ( !result )
       {
@@ -2456,13 +2458,13 @@ bool GxIpCan1::processPhase2( bool lockit )
 
 bool GxIpCan1::processPhase3()
 {
-   printf("%s %d \n",__FUNCTION__,__LINE__);
+   printf("\n%s %d ",__FUNCTION__,__LINE__);
    SMutexLock l( m_mutex );
 
    if ( getStatus() != esProcessing )
       return true;
 
-   printf("%s %d \n",__FUNCTION__,__LINE__);
+   printf("\n%s %d ",__FUNCTION__,__LINE__);
    EventStatus sdstatus = m_sdProcessRules ? m_sdProcessRules->getStatus() : esComplete;
    EventStatus ststatus = m_stProcessRules ? m_stProcessRules->getStatus() : esComplete;
 
@@ -2633,7 +2635,7 @@ bool GxIpCan1::processPhase3()
            new TriggerTimer( this, RARTrigger::triggerActivationTimerExpire, deactivation_timer*1000 );	
    }
 
-   std::cout<<"Sending CCA-Initial \n"<<std::endl; 
+   std::cout<<"\nSending CCA-Initial "; 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
    setCurrentProc( NULL );
@@ -2675,9 +2677,9 @@ bool SdIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
-      printf("ajay : tdf not required start gxEvent phase2 %s %d \n",__FUNCTION__,__LINE__);
+      printf("\ntdf not required start gxEvent phase2 %s %d ",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
-      std::cout<<"ajay : gxEvent phase2 over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result<<std::endl;;
+      std::cout<<"\ngxEvent phase2 over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result;
       return result;
    }
 
@@ -2729,7 +2731,7 @@ bool SdIpCan1EstablishSession::processPhase2( bool success )
       tdf.setState( SdSession::sFailed );
    }
 
-         printf("calling phase2 from %s %d \n",__FUNCTION__,__LINE__);
+   printf("\ncalling phase2 from %s %d ",__FUNCTION__,__LINE__);
    bool result = m_gxevent->processPhase2();
 
    return result;
@@ -2847,9 +2849,9 @@ bool SdIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         printf("ajay - calling gxEvent phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\ncalling gxEvent phase 3 from %s %d ",__FUNCTION__,__LINE__);
          bool result = m_gxevent->processPhase3();
-         printf("ajay - finished gxEvent phase 3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\nfinished gxEvent phase 3 from %s %d ",__FUNCTION__,__LINE__);
          return result;
       }
       else
@@ -3234,17 +3236,17 @@ bool SdProcessRulesUpdate::processPhase1( RuleEvaluator &re )
    RulesList &irules( re.getSdInstallRules() );
    RulesList &rrules( re.getSdRemoveRules() );
 
-   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+   std::cout<<"\nfunction  "<<__FUNCTION__<<" line - "<<__LINE__;
    if ( rrules.empty() && irules.empty() )
    {
-      std::cout<<" no rule to install sdProcess function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+      std::cout<<"\nno rule to install sdProcess function  "<<__FUNCTION__<<" line - "<<__LINE__;
       setStatus( esComplete );
       return false; // false indicates that processing of event is to halt
    }
 
    if ( !tdf.required() )
    {
-      std::cout<<" ajay TDF not required function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+      std::cout<<"\nTDF not required function  "<<__FUNCTION__<<" line - "<<__LINE__;
       Logger::sd().error( "%s:%d - SdProcessRulesUpdate - the TDF is flagged as not required but there are %u/%u install/remove rules to install at the TDF",
             __FILE__, __LINE__, irules.size(), rrules.size() );
       setStatus( esFailed );
@@ -3260,10 +3262,10 @@ bool SdProcessRulesUpdate::processPhase1( RuleEvaluator &re )
 
    if ( !result ) {
       setStatus( esFailed );
-        std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+        std::cout<<"\nfunction  "<<__FUNCTION__<<" line - "<<__LINE__;
     }
 
-   std::cout<<" function  "<<__FUNCTION__<<" line - "<<__LINE__<<std::endl;
+   std::cout<<"\nfunction  "<<__FUNCTION__<<" line - "<<__LINE__;
    return result;
 }
 
@@ -3322,7 +3324,7 @@ bool StProcessRulesUpdate::processPhase1( RuleEvaluator &re )
 
    if ( rrules.empty() && irules.empty() )
    {
-      std::cout<<"ajay no rules to process on st interface \n";
+      std::cout<<"\nno rules to process on st interface ";
       setStatus( esComplete );
       return false;
    }

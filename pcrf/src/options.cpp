@@ -126,7 +126,7 @@ void PoliciesConfig::getDefaultRules( std::string& apn_name, std::list<DefaultRu
 		    			default_rule->setQci( config_rule->getQci() );
 		    			default_rule->setDefinition( config_rule->getDefinition() );
 		    		}
-                    std::cout<<"ajay : adding default rule "<<activation_rule_name << "\n";
+                    std::cout<<"adding default rule "<<activation_rule_name << "\n";
                     default_rules.push_back(default_rule);
 		    	}
 		    }
