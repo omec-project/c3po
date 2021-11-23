@@ -47,7 +47,7 @@ GxSession::~GxSession()
    m_rules.removeGxSession( this );
 	if ( mp_currentstate != NULL )
 	{
-		delete( mp_currentstate ); // CRASH
+		delete( mp_currentstate );
 	}
 	if ( mp_currentproc != NULL )
 	{
@@ -954,7 +954,8 @@ GxIpCan1::GxIpCan1( PCRF &pcrf, FDMessageRequest *req, gx::Dictionary &dict )
      m_sdEstablishSession( NULL ),
      m_stEstablishSession( NULL ),
      m_sdProcessRules( NULL ),
-     m_stProcessRules( NULL )
+     m_stProcessRules( NULL ),
+     m_triggertimer( NULL )
 {
    //
    // initialize the Credit-Control-Answer (CCA)
@@ -993,9 +994,8 @@ GxIpCan1::~GxIpCan1()
 	
 	if ( m_triggertimer != NULL )
 	{
-		delete( m_triggertimer ); // BUG - crash 
+		delete( m_triggertimer );
 	}
-	
 }
 
 void GxIpCan1::release( GxIpCan1 *gxevent )
@@ -2290,7 +2290,7 @@ bool GxIpCan1::processPhase1()
    setStatus( esProcessing );
    setGxSession( new GxSession( getPCRF()) );
    GxSessionProc *proc = new GxSessionCreateProc(getGxSession(), this);
-   getGxSession()->setCurrentProc(proc); // CRASH 
+   getGxSession()->setCurrentProc(proc);
    
    ret = getSubCurrentState()->handleSubCCR( getCurrentProc(), getCCR() );
 	//int max_call_timer = getGxSession()->getApnEntry()->getMaxCallTimerVal();
@@ -2764,7 +2764,7 @@ bool StIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
-         printf("calling phase2 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\ncalling phase2 from %s %d ",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
       return result;
    }
@@ -2814,7 +2814,7 @@ bool StIpCan1EstablishSession::processPhase2( bool success )
             __FILE__, __LINE__, getStatusDescription( esProcessing ), getStatusDescription(),
             gxsession->getImsi().c_str(), gxsession->getApn().c_str() );
       setStatus( esFailed );
-         printf("calling phase2 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\ncalling phase2 from %s %d ",__FUNCTION__,__LINE__);
       tssf.setState( StSession::sFailed );
    }
 
@@ -2910,7 +2910,7 @@ bool SdIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
-         printf("calling phase3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\ncalling phase3 from %s %d ",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
@@ -2940,7 +2940,7 @@ bool StIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         printf("calling phase3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\ncalling phase3 from %s %d ",__FUNCTION__,__LINE__);
          return m_gxevent->processPhase3();
       }
       else
@@ -2999,7 +2999,7 @@ bool StIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
-         printf("calling phase3 from %s %d \n",__FUNCTION__,__LINE__);
+         printf("\ncalling phase3 from %s %d ",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
