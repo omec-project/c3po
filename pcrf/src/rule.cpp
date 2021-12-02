@@ -113,11 +113,11 @@ std::list<Rule*>::iterator RulesList::erase( std::list<Rule*>::iterator &it )
 void RulesList::addGxSession( GxSession *gx )
 {
    static int count;
-   std::cout<<"inside addSession for timer";
+   std::cout<<"\nInside addSession for timer IMSI "<<gx->getImsi();
    for ( auto r : m_rules ) {
       RuleTimer *tmr = r->getRuleTimer();
       if ( tmr != NULL) {
-         std::cout<<"calling addSession for "<<count <<" timer "<<tmr<<" \n";
+         std::cout<<"\nCalling addSession for "<<count <<" timer "<<tmr;
          tmr->addSession( gx );
       }
       count++;
