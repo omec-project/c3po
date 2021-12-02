@@ -281,7 +281,12 @@ public:
 
    bool operator<( const GxSessionKey &rh ) const
    {
-      return m_imsi < rh.m_imsi ? true : m_apn < rh.m_apn;
+      //std::cout<<"\nLocal imsi "<<m_imsi<<" searching for "<<rh.m_imsi<<" Local apn "<<m_apn<<" searching for "<<rh.m_apn;
+      if(m_imsi < rh.m_imsi)
+        return true;
+      if ((m_imsi == rh.m_imsi) && ( m_apn < rh.m_apn))
+        return true;
+      return false;
    }
 
    GxSessionKey &operator=( const GxSessionKey &rh )
@@ -611,7 +616,7 @@ private:
    Subscriber m_subscriber;
 };
 
-class GxSessionMap : public std::map<const GxSessionKey,GxSession*>
+class GxSessionMap
 {
    friend GxSession;
 public:
@@ -629,6 +634,14 @@ public:
    bool isTerminating( GxSession *gx, bool lock = true );
 
    SMutex &getMutex() { return m_mutex; }
+   void printImsiApnMap()
+   {
+      for (auto i : m_imsiApn_session)
+      {
+          const GxSessionKey key=i.first;
+          std::cout <<"\nIMSI "<<key.getImsi()<<" APN "<<key.getApn();
+      }
+   }
 
 protected:
    void terminateSession( GxSession *gx );
@@ -638,6 +651,7 @@ private:
    GxSessionMap();
 
    SMutex m_mutex;
+   std::map<const GxSessionKey, GxSession*> m_imsiApn_session;
    std::set<GxSession*> m_sessions;
    std::map<std::string,GxSession*> m_sessionids;
    std::set<GxSession*> m_terminating;
