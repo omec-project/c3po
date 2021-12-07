@@ -146,7 +146,7 @@ int CRCRcmd::process( FDMessageRequest *req )
             break;
          }
 
-         std::cout<<"\ncalling ipca1->processPhase1";
+         Logger::gx().warn("calling ipca1->processPhase1");
          if ( !ipcan1->processPhase1() )
          {
             GxSession::teardownSession( "PCRFCRCRcmd::process:INITIAL_REQUEST", ipcan1->getGxSession(), SdSession::srcUnspecifiedReason, StSession::tcDiameterAdministrative );

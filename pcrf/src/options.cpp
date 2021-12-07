@@ -7,6 +7,7 @@
 */
 
 
+#include "logger.h"
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
@@ -126,7 +127,7 @@ void PoliciesConfig::getDefaultRules( std::string& apn_name, std::list<DefaultRu
 		    			default_rule->setQci( config_rule->getQci() );
 		    			default_rule->setDefinition( config_rule->getDefinition() );
 		    		}
-                    std::cout<<"\nAdding default rule "<<activation_rule_name;
+                    Logger::gx().warn("Adding default rule %s ",activation_rule_name.c_str());
                     default_rules.push_back(default_rule);
 		    	}
 		    }
