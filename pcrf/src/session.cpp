@@ -152,7 +152,7 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
 
    if ( !isTerminating )
    {
-      Logger::gx().warn("\ncalling terminate session %p Imsi %s ", gx, gx->getImsi().c_str());
+      Logger::gx().warn("calling terminate session %p Imsi %s ", gx, gx->getImsi().c_str());
       GxSessionMap::getInstance().terminateSession( gx );
 
       //
@@ -166,7 +166,7 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
       if ( sdterminate )
       {
          SdTerminateSession *ts = new SdTerminateSession( gx );
-         Logger::gx().warn("\ncalling phase1 %s %d",__FUNCTION__, __LINE__);
+         Logger::gx().warn("calling phase1 %s %d",__FUNCTION__, __LINE__);
          if ( !ts->processPhase1( src ) )
          {
             sdclosed = true;
@@ -182,7 +182,7 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
       if ( stterminate )
       {
          StTerminateSession *ts = new StTerminateSession( gx );
-         Logger::gx().warn("\ncalling phase1 %s %d",__FUNCTION__, __LINE__);
+         Logger::gx().warn("calling phase1 %s %d",__FUNCTION__, __LINE__);
          if ( !ts->processPhase1( tc ) )
          {
             stclosed = true;
@@ -195,7 +195,7 @@ void GxSession::teardownSession( const char *source, GxSession *gx, SdSession::S
 
    if ( !sdclosed || !stclosed )
     {
-      Logger::gx().warn("\nreturn from teardownm before calling delete session sdclosed = %d stclosed %d", sdclosed, stclosed); 
+      Logger::gx().warn("return from teardownm before calling delete session sdclosed = %d stclosed %d", sdclosed, stclosed); 
       return;
     }
 
@@ -494,15 +494,15 @@ bool GxSessionMap::addSession( GxSession *session, bool lock )
    GxSessionKey sk( session->getImsi(), session->getApn() );
    auto ret = m_imsiApn_session.insert( std::pair<GxSessionKey,GxSession*>( sk, session ) );
 
-   std::cout<<"\naddSesion IMSI - "<<session->getImsi()<<" APN "<<session->getApn()<<", session "<<session<<", map size "<<m_imsiApn_session.size()<<std::endl;
+   Logger::gx().warn("addSesion IMSI %s , APN = %s , Session %p Map Size %lu ",session->getImsi().c_str(), session->getApn().c_str(), session, m_imsiApn_session.size());
    if ( ret.second )
    {
-      std::cout<<"\nsuccess add imsi in gxSessionMap session IMSI - "<<session->getImsi()<<" APN "<<session->getApn()<<std::endl;
+      Logger::gx().warn("success add imsi in gxSessionMap session IMSI %s APN %s ",session->getImsi().c_str(), session->getApn().c_str());
       auto sesins = m_sessions.insert( session );
 
       if ( sesins.second )
       {
-        std::cout<<"\nsuccess1 to add imsi in session IMSI - "<<session->getImsi()<<" APN "<<session->getApn()<<std::endl;
+         Logger::gx().warn("1success to add imsi in session IMSI %s APN %s",session->getImsi().c_str(), session->getApn().c_str());
          auto sidins = m_sessionids.insert( std::pair<std::string,GxSession*>( session->getSessionId(), session ) );
          result = sidins.second;
 
@@ -512,14 +512,14 @@ bool GxSessionMap::addSession( GxSession *session, bool lock )
             m_imsiApn_session.erase( ret.first );
             // remove from the set
             m_sessions.erase( session );
-            std::cout<<"failed to add imsi in sessionid IMSI - "<<session->getImsi()<<" APN "<<session->getApn()<<" sessionid "<<session->getSessionId()<<std::endl;
+            Logger::gx().warn("failed to add imsi in sessionid IMSI %s APN %s SessionId %s ",session->getImsi().c_str(), session->getApn().c_str(), session->getSessionId().c_str());
          } else {
-            std::cout<<"success to add imsi in sessionid IMSI - "<<session->getImsi()<<" APN "<<session->getApn()<<" sessionid "<<session->getSessionId()<<std::endl;
+            Logger::gx().warn("success to add imsi in sessionid IMSI - %s , APN %s sessionid %s ",session->getImsi().c_str(), session->getApn().c_str(), session->getSessionId().c_str());
         }
       }
       else
       {
-        std::cout<<"failed to add imsi in session IMSI - "<<session->getImsi()<<" APN "<<session->getApn()<<" sessionid "<<session->getSessionId()<<std::endl;
+         Logger::gx().warn("failed to add imsi in sessionlist IMSI %s APN %s SessionId %s ",session->getImsi().c_str(), session->getApn().c_str(), session->getSessionId().c_str());
          result = false;
          // remove from the main map
          m_imsiApn_session.erase( ret.first );
@@ -529,7 +529,7 @@ bool GxSessionMap::addSession( GxSession *session, bool lock )
    {
 	  GxSession *temp_session = NULL;
       GxSessionMap::getInstance().findSession(session->getImsi(), session->getApn(), temp_session);
-      Logger::gx().warn("\nfailed to add imsi in gxSessionMap IMSI - %s, APN = %s, existing session %p, new session %p", session->getImsi().c_str(), session->getApn().c_str(), temp_session, session);
+      Logger::gx().warn("failed to add imsi in gxSessionMap IMSI - %s, APN = %s, existing session %p, new session %p", session->getImsi().c_str(), session->getApn().c_str(), temp_session, session);
       result = false;
    }
 
@@ -550,12 +550,12 @@ bool GxSessionMap::findSession( const std::string &imsi, const std::string &apn,
    auto it = m_imsiApn_session.find( k );
    if ( it == m_imsiApn_session.end() )
    {
-      std::cout<<"failed to find imsi in session IMSI - "<<imsi<<" APN "<<apn<<std::endl;
+      Logger::gx().warn("failed to find imsi in session IMSI - %s, APN %s ",imsi.c_str(), apn.c_str());
       return false;
    }
 
    session = it->second;
-   std::cout<<"1findSession success session for imsi "<<imsi<<" APN "<<apn<<" gx Session "<<session<<" map size "<<m_imsiApn_session.size()<<std::endl;
+   Logger::gx().warn("found session for imsi %s APN %s Gx Session %p, imsiApn map size %lu", imsi.c_str(), apn.c_str(), session, m_imsiApn_session.size());
    return true;
 }
 
@@ -566,12 +566,12 @@ bool GxSessionMap::findSession( const std::string &sessionid, GxSession* &sessio
    auto it = m_sessionids.find( sessionid );
    if ( it == m_sessionids.end() )
    {
-     std::cout<<"failed to find sessionid  "<<sessionid<<std::endl;
+     Logger::gx().warn("failed to find sessionid  %s",sessionid.c_str());
      return false;
    }
 
    session = it->second;
-   std::cout<<"2findSession success session for sessionid "<<sessionid<<" map size "<<m_imsiApn_session.size()<<std::endl;
+   Logger::gx().warn("findSession success session for sessionid %s  Map Size %lu",sessionid.c_str(), m_imsiApn_session.size());
    return true;
 }
 
@@ -592,7 +592,7 @@ bool GxSessionMap::eraseSession( const std::string &imsi, const std::string &apn
     if ( it != m_imsiApn_session.end() )
     {
         gx = it->second;
-        std::cout<<"\neraseSession Gx session "<<gx<<" Imsi "<<gx->getImsi()<<" APN "<<gx->getApn();
+        Logger::gx().warn("eraseSession Gx session %p IMSI = %s APN %s ",gx, gx->getImsi().c_str(), gx->getApn().c_str());
         //erase( it );
     }
     else {
@@ -600,7 +600,7 @@ bool GxSessionMap::eraseSession( const std::string &imsi, const std::string &apn
     }
     if ( gx != NULL )
     {
-       Logger::gx().warn("\nEraseSession : Session Not Null deleting from maps :%s:%d", __FILE__, __LINE__);
+       Logger::gx().warn("EraseSession : Session Not Null deleting from maps :%s:%d", __FILE__, __LINE__);
        if ( m_sessions.erase( gx ) == 1 )
        {
           Logger::gx().warn( "%s:%d - GxSessionMap::deleteSession() session erased from m_sessions sessionid=[%s] imsi=[%s] apn=[%s]",
@@ -618,7 +618,7 @@ bool GxSessionMap::eraseSession( const std::string &imsi, const std::string &apn
        }
        m_imsiApn_session.erase( it );
     }
-    Logger::gx().warn( "End %s:%d - GxSessionMap::eraseSessio session imsi =[%s] apn=[%s] Map size = %lu ",
+    Logger::gx().warn( "End %s:%d - GxSessionMap::eraseSession session imsi =[%s] apn=[%s] Map size = %lu ",
                 __FILE__, __LINE__, imsi.c_str(), apn.c_str(), m_imsiApn_session.size());
 
 #ifdef DEBUG_LOCAL
@@ -632,7 +632,7 @@ bool GxSessionMap::eraseSession( const std::string &imsi, const std::string &apn
 bool GxSessionMap::isTerminating( GxSession *session, bool lock )
 {
    SMutexLock l( m_mutex, lock );
-   Logger::gx().warn("\nisTerminate Gx session %p, Imsi = %s APN = %s ", session, session->getImsi().c_str(), session->getApn().c_str());
+   Logger::gx().warn("isTerminate Gx session %p, Imsi = %s APN = %s ", session, session->getImsi().c_str(), session->getApn().c_str());
    return m_terminating.find( session ) != m_terminating.end();
 }
 
@@ -646,7 +646,7 @@ void GxSessionMap::terminateSession( GxSession *gx )
    printImsiApnMap();
    std::cout<<"\nPrint map terminateSession end2";
 #endif
-   Logger::gx().warn("\nTerminate Gx session %p, Imsi = %s Apn = %s Map size = %lu ",gx, gx->getImsi().c_str(), gx->getApn().c_str(), m_imsiApn_session.size());
+   Logger::gx().warn("Terminate Gx session %p, Imsi = %s Apn = %s Map size = %lu ",gx, gx->getImsi().c_str(), gx->getApn().c_str(), m_imsiApn_session.size());
 
    GxSessionKey sk( gx->getImsi(), gx->getApn() );
    auto it = m_imsiApn_session.find( sk );
@@ -1038,6 +1038,7 @@ GxIpCan1::GxIpCan1( PCRF &pcrf, FDMessageRequest *req, gx::Dictionary &dict )
      m_stProcessRules( NULL ),
      m_triggertimer( NULL )
 {
+   Logger::gx().warn("GxIpCan1 constructor %p", this);
    //
    // initialize the Credit-Control-Answer (CCA)
    //
@@ -1553,12 +1554,13 @@ void GxIpCan1::sendCCA()
   
 int GxIpCan1::cleanupSession( bool terminate )
 {
-    Logger::gx().warn("\n%s:%d", __FUNCTION__,__LINE__);
+    Logger::gx().warn("%s:%d - terminate = %d ", __FUNCTION__,__LINE__, terminate);
 	// delete the Subscriber table which will internally delete SubscriberApn table.
 	GxSession* prevSession = NULL;
     if ( GxSessionMap::getInstance().findSession( getGxSession()->getImsi(), getGxSession()->getApn(), prevSession ) )
     {
 		
+         Logger::gx().warn("found session %p for IMSI = %s APN %s ", getGxSession(), getGxSession()->getImsi().c_str(), getGxSession()->getApn().c_str());
          GxSessionProc *proc = prevSession->getCurrentProc();
          
          if (proc != NULL) 
@@ -1575,6 +1577,17 @@ int GxIpCan1::cleanupSession( bool terminate )
                  }
              }
          }
+         std::list<DefaultRule*>::iterator itr;
+         itr = prevSession->getDefaultRuleList().begin();
+         Logger::gx().warn("Previous Session %p . Rules size before delete %d",prevSession, prevSession->getDefaultRuleList().size());
+         while(itr != prevSession->getDefaultRuleList().end()) {
+              DefaultRule *rule = *itr;
+              Logger::gx().warn("Deleting Rule %s",rule->getRuleName().c_str());
+              prevSession->getDefaultRuleList().erase(itr);
+              itr = prevSession->getDefaultRuleList().begin();
+         }
+         Logger::gx().warn("Previous Session %p . Rules size after delete %d",prevSession, prevSession->getDefaultRuleList().size());
+
 	     Subscriber& subscriber = ( prevSession->getSubscriber() );
 		 getPCRF().dataaccess().deleteSubscriber( subscriber );
 	 
@@ -1584,25 +1597,18 @@ int GxIpCan1::cleanupSession( bool terminate )
     	 }
 		 if( terminate == true )
 		 {
+            Logger::gx().warn("Erasesession ***** %p", prevSession);
             GxSessionMap::getInstance().eraseSession( prevSession->getImsi(), prevSession->getApn() );
 		 }
-
-         std::list<DefaultRule*>::iterator itr;
-         itr = prevSession->getDefaultRuleList().begin();
-         // ajay : FIXME - fix rule cleanup
-         while(itr != prevSession->getDefaultRuleList().end()) {
-              prevSession->getDefaultRuleList().erase(itr);
-              itr = prevSession->getDefaultRuleList().begin();
-         }
-
 	 }
-    return ValidateErrorCode::success;
+     Logger::gx().warn("Return from %s",__FUNCTION__);
+     return ValidateErrorCode::success;
 }
 
  
 int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
 {
-    Logger::gx().warn("\n%s:%d", __FUNCTION__,__LINE__);
+    Logger::gx().warn("%s:%d - Session %p ", __FUNCTION__,__LINE__, getGxSession());
     std::string s;
 	std::string r;
     bool result = true;
@@ -1673,7 +1679,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
     }
 
     getGxSession()->setApn( s );
-    std::cout<<"\ngxSession Apn "<<getGxSession()->getApn()<< ", s = "<<s;
+    Logger::gx().warn("gxSession Apn %s , s = %s ",getGxSession()->getApn().c_str(), s.c_str());
 
     //
     // return if the APN is invalid
@@ -1689,7 +1695,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
     }
 
 	Options::getPolicesConfig().getDefaultRules( s, getGxSession()->getDefaultRuleList());
-    std::cout<<"list of rules for GxSession "<<getGxSession()->getDefaultRuleList().size() << "\n ";
+    Logger::gx().warn("list of rules for GxSession %p - %lu ",getGxSession(), getGxSession()->getDefaultRuleList().size());
 
 
     {
@@ -1895,7 +1901,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           //
           // add the "APN" to the Subscriber
           //
-          std::cout<<"subscriber apn not found create new one "<<getGxSession()->getApn()<<"\n";
+          Logger::gx().warn("subscriber apn not found create new one %s",getGxSession()->getApn().c_str());
           sa = new SubscriberApn();
           *sa = *getGxSession()->getApnEntry();
           getGxSession()->getSubscriber().addSubscriberApn( sa );
@@ -1917,7 +1923,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
        //
 
        getGxSession()->getRules() = sa->getComputedRules();
-       std::cout<<"rules list size "<<getGxSession()->getRules().size()<<"\n";
+       Logger::gx().warn("rules list size %lu",getGxSession()->getRules().size());
        getGxSession()->getRules().addGxSession( getGxSession() ); // add gx session in each rule
        
     }
@@ -2199,7 +2205,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
                 return ValidateErrorCode::tdfEndpointEntryInvalid ;
             }
         } else {
-           Logger::gx().warn("\nSkipping TDF %s %d ",__FUNCTION__, __LINE__);
+           Logger::gx().warn("Skipping TDF %s %d ",__FUNCTION__, __LINE__);
         }
     }
 
@@ -2226,7 +2232,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
             return ValidateErrorCode::tssfEndpointEntryInvalid ;
         }
     }  else {
-           Logger::gx().warn("\nSkipping TSSF %s %d ",__FUNCTION__, __LINE__);
+           Logger::gx().warn("Skipping TSSF %s %d ",__FUNCTION__, __LINE__);
     }
       
     //
@@ -2256,7 +2262,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_UNABLE_TO_COMPLY);
           return ValidateErrorCode::syInterfaceNotSuported ;
        } else {
-           Logger::gx().warn("\nNo syRequired %s %d ",__FUNCTION__, __LINE__);
+           Logger::gx().warn("No syRequired %s %d ",__FUNCTION__, __LINE__);
        }
     }
 
@@ -2289,7 +2295,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
     }
 
     setDeleteGxSession( false ); 
-    std::cout<<"\nCalling TDF functions now";
+    Logger::gx().warn("Calling TDF functions now");
 
     //
     // establish the TDF session if necessary
@@ -2307,10 +2313,10 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           return ValidateErrorCode::unableToAllocateSdIpCan1Object ;
        }
 
-       Logger::gx().warn("\ncalling phase1 m_sdEstablishSession %s %d ",__FUNCTION__, __LINE__);
+       Logger::gx().warn("calling phase1 m_sdEstablishSession %s %d ",__FUNCTION__, __LINE__);
        if ( !m_sdEstablishSession->processPhase1() )
        {
-          Logger::gx().warn("\n phase1 return %s %d ",__FUNCTION__, __LINE__);
+          Logger::gx().warn("phase1 return %s %d ",__FUNCTION__, __LINE__);
           if ( ccr.tdf_information.tdf_destination_host.exists() )
           {
              EXP_RESULTCODE_WITH_FAILEDAVP1( getCCA(), VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS,
@@ -2325,7 +2331,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
           return ValidateErrorCode::sdEstablishSessionFailed ;
        }
-       Logger::gx().warn("\nfinished - phase1 m_sdEstablishSession %s %d ",__FUNCTION__, __LINE__);
+       Logger::gx().warn("finished - phase1 m_sdEstablishSession %s %d ",__FUNCTION__, __LINE__);
     }
 
     //
@@ -2344,7 +2350,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           return ValidateErrorCode::unableToAllocateStIpCan1EstablishSessionObject ;
        }
 
-       Logger::gx().warn("\ncalling - phase1 m_stEstablishSession %s %d ",__FUNCTION__, __LINE__);
+       Logger::gx().warn("calling - phase1 m_stEstablishSession %s %d ",__FUNCTION__, __LINE__);
        if ( !m_stEstablishSession->processPhase1() )
        {
           // stEstablishSessionFailed
@@ -2353,7 +2359,7 @@ int GxIpCan1::validate( gx::CreditControlRequestExtractor& ccr )
           StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, VEND_3GPP, DIAMETER_ERROR_INITIAL_PARAMETERS);
           return ValidateErrorCode::stEstablishSessionFailed ;
        }
-       Logger::gx().warn("\nfinished - phase1 m_stEstablishSession %s %d ",__FUNCTION__, __LINE__);
+       Logger::gx().warn("finished - phase1 m_stEstablishSession %s %d ",__FUNCTION__, __LINE__);
     }
     return ValidateErrorCode::success ;
 }
@@ -2370,6 +2376,7 @@ bool GxIpCan1::processPhase1()
 
    setStatus( esProcessing );
    setGxSession( new GxSession( getPCRF()) );
+   Logger::gx().warn("Created Gx session = %p ", getGxSession());
    GxSessionProc *proc = new GxSessionCreateProc(getGxSession(), this);
    getGxSession()->setCurrentProc(proc); // CRASH 
    
@@ -2382,7 +2389,21 @@ bool GxIpCan1::processPhase1()
       	// set current state to ActivePending and again validate the req
          setSubCurrentState( GxSessionPendingState::getInstance( ) );
          // Assumption is IMSI set in the session 
-         std::cout<<"Cleanup existing session \n";
+         Logger::gx().warn("Cleanup existing session Current Session %p", getGxSession());
+
+         GxSession *tempCurrentSession = getGxSession();
+         std::list<DefaultRule*>::iterator itr;
+         itr = tempCurrentSession->getDefaultRuleList().begin();
+         Logger::gx().warn("Current Session %p . Rules size before delete %d",tempCurrentSession, tempCurrentSession->getDefaultRuleList().size());
+         while(itr != tempCurrentSession->getDefaultRuleList().end()) {
+              DefaultRule *rule = *itr;
+              Logger::gx().warn("Current Deleting Rule %s",rule->getRuleName().c_str());
+              tempCurrentSession->getDefaultRuleList().erase(itr);
+              itr = tempCurrentSession->getDefaultRuleList().begin();
+         }
+         Logger::gx().warn("Current Session %p . Rules size after delete %d",tempCurrentSession, tempCurrentSession->getDefaultRuleList().size());
+
+	
 		 ret = cleanupSession( true );
          ret = getSubCurrentState()->handleSubCCR( getCurrentProc(), getCCR() );
          if ( ret == ValidateErrorCode::success )
@@ -2457,7 +2478,7 @@ bool GxIpCan1::processPhase2( bool lockit )
             m_stEstablishSession->getStatusDescription() );
       return true;
    }
-   Logger::gx().warn("\nsd st establish session skipped ");
+   Logger::gx().warn("sd st establish session skipped ");
    if ( getStatus() == esFailed || sdstatus == esFailed || ststatus == esFailed )
    {
       if ( getStatus() == esProcessing )
@@ -2470,7 +2491,7 @@ bool GxIpCan1::processPhase2( bool lockit )
       return false;
    }
 
-   Logger::gx().warn("\ncalling rule evaluator ");
+   Logger::gx().warn("calling rule evaluator ");
    bool result = getRulesEvaluator().evaluate(*getGxSession(), getGxSession()->getRules(),
          getGxSession()->getInstalledRules(), getGxSession()->getTdfSession().getInstalledRules(),
          getGxSession()->getTssfSession().getInstalledRules(), getGxSession()->getSubscriber().getFailOnUninstallableRule() );
@@ -2488,7 +2509,7 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
-      Logger::gx().warn("\ncalling phase1 %s %d ",__FUNCTION__, __LINE__);
+      Logger::gx().warn("calling phase1 %s %d ",__FUNCTION__, __LINE__);
       result = m_sdProcessRules->processPhase1();
       if ( !result )
       {
@@ -2510,7 +2531,7 @@ bool GxIpCan1::processPhase2( bool lockit )
          return false;
       }
 
-      Logger::gx().warn("\ncreated m_stProcessRules calling phase1 %s %d ",__FUNCTION__, __LINE__);
+      Logger::gx().warn("created m_stProcessRules calling phase1 %s %d ",__FUNCTION__, __LINE__);
       result = m_stProcessRules->processPhase1();
       if ( !result )
       {
@@ -2536,26 +2557,26 @@ bool GxIpCan1::processPhase2( bool lockit )
 
 bool GxIpCan1::processPhase3()
 {
-   Logger::gx().warn("\n%s %d ",__FUNCTION__,__LINE__);
+   Logger::gx().warn("%s %d ",__FUNCTION__,__LINE__);
    SMutexLock l( m_mutex );
 
    if ( getStatus() != esProcessing )
       return true;
 
-   Logger::gx().warn("\n%s %d ",__FUNCTION__,__LINE__);
+   Logger::gx().warn("%s %d ",__FUNCTION__,__LINE__);
    EventStatus sdstatus = m_sdProcessRules ? m_sdProcessRules->getStatus() : esComplete;
    EventStatus ststatus = m_stProcessRules ? m_stProcessRules->getStatus() : esComplete;
 
    if ( ( sdstatus == esPending || sdstatus == esProcessing ) ||
         ( ststatus == esPending || ststatus == esProcessing ) )
    {
-      Logger::gx().warn("\n SD ST is either pending or processing %s %d \n",__FUNCTION__,__LINE__);
+      Logger::gx().warn("SD ST is either pending or processing %s %d ",__FUNCTION__,__LINE__);
       return true;
    }
 
    if ( sdstatus == esFailed || ststatus == esFailed )
    {
-      Logger::gx().warn("\n SD ST is failed %s %d \n",__FUNCTION__,__LINE__);
+      Logger::gx().warn("SD ST is failed %s %d ",__FUNCTION__,__LINE__);
       setStatus( esFailed );
       RESULTCODE( getCCA(), DIAMETER_UNABLE_TO_COMPLY );
       sendCCA();
@@ -2616,7 +2637,7 @@ bool GxIpCan1::processPhase3()
 #endif
 
    std::list<DefaultRule*>::iterator itr1;
-   std::cout<<"Default rules list  size "<<getGxSession()->getDefaultRuleList().size()<<"\n";
+   Logger::gx().warn("Default rules list  size %lu",getGxSession()->getDefaultRuleList().size());
    for(itr1 = getGxSession()->getDefaultRuleList().begin();  itr1 != getGxSession()->getDefaultRuleList().end(); itr1++) {
         DefaultRule *rule = NULL;
         rule =  *itr1;
@@ -2627,7 +2648,7 @@ bool GxIpCan1::processPhase3()
         cri.add( getDict().avpChargingRuleName(), rule->getRuleName() );
         cri.add( crdef );
         getCCA().add( cri );
-        std::cout<<"Adding rule in CRI "<<rule->getRuleName()<<"\n";
+        Logger::gx().warn("Adding rule in CRI %s",rule->getRuleName().c_str());
    } 
 
 
@@ -2713,7 +2734,7 @@ bool GxIpCan1::processPhase3()
            new TriggerTimer( this, RARTrigger::triggerActivationTimerExpire, deactivation_timer*1000 );	
    }
 
-   std::cout<<"\nSending CCA-Initial "; 
+   Logger::gx().warn("Sending CCA-Initial "); 
    sendCCA();
    StatsPcrf::singleton().registerStatResult(stat_pcrf_gx_ccr, 0, DIAMETER_SUCCESS);
    setCurrentProc( NULL );
@@ -2755,9 +2776,9 @@ bool SdIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
-      Logger::gx().warn("\ntdf not required start gxEvent phase2 %s %d ",__FUNCTION__,__LINE__);
+      Logger::gx().warn("tdf not required start gxEvent phase2 %s %d ",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
-      std::cout<<"\ngxEvent phase2 over "<<__FUNCTION__<<" line "<<__LINE__<<" result "<<result;
+      Logger::gx().warn("gxEvent phase2 over");
       return result;
    }
 
@@ -2809,7 +2830,7 @@ bool SdIpCan1EstablishSession::processPhase2( bool success )
       tdf.setState( SdSession::sFailed );
    }
 
-   Logger::gx().warn("\ncalling phase2 from %s %d ",__FUNCTION__,__LINE__);
+   Logger::gx().warn("calling phase2 from %s %d ",__FUNCTION__,__LINE__);
    bool result = m_gxevent->processPhase2();
 
    return result;
@@ -2842,7 +2863,7 @@ bool StIpCan1EstablishSession::processPhase1()
       // prevent a deadlock situation from occurring since processPhase1()
       // is called from m_gxevent with it's mutex already locked
       //
-         Logger::gx().warn("\ncalling phase2 from %s %d ",__FUNCTION__,__LINE__);
+         Logger::gx().warn("calling phase2 from %s %d ",__FUNCTION__,__LINE__);
       bool result = m_gxevent->processPhase2( false );
       return result;
    }
@@ -2892,7 +2913,7 @@ bool StIpCan1EstablishSession::processPhase2( bool success )
             __FILE__, __LINE__, getStatusDescription( esProcessing ), getStatusDescription(),
             gxsession->getImsi().c_str(), gxsession->getApn().c_str() );
       setStatus( esFailed );
-         Logger::gx().warn("\ncalling phase2 from %s %d ",__FUNCTION__,__LINE__);
+         Logger::gx().warn("calling phase2 from %s %d ",__FUNCTION__,__LINE__);
       tssf.setState( StSession::sFailed );
    }
 
@@ -2927,9 +2948,9 @@ bool SdIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         Logger::gx().warn("\ncalling gxEvent phase 3 from %s %d ",__FUNCTION__,__LINE__);
+         Logger::gx().warn("calling gxEvent phase 3 from %s %d ",__FUNCTION__,__LINE__);
          bool result = m_gxevent->processPhase3();
-         Logger::gx().warn("\nfinished gxEvent phase 3 from %s %d ",__FUNCTION__,__LINE__);
+         Logger::gx().warn("finished gxEvent phase 3 from %s %d ",__FUNCTION__,__LINE__);
          return result;
       }
       else
@@ -2988,7 +3009,7 @@ bool SdIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
-   Logger::gx().warn("\ncalling phase3 from %s %d ",__FUNCTION__,__LINE__);
+   Logger::gx().warn("calling phase3 from %s %d ",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
@@ -3018,7 +3039,7 @@ bool StIpCan1ProcessRules::processPhase1()
       {
          // mark the event as complete since no session is needed
          setStatus( esComplete );
-         Logger::gx().warn("\ncalling phase3 from %s %d ",__FUNCTION__,__LINE__);
+         Logger::gx().warn("calling phase3 from %s %d ",__FUNCTION__,__LINE__);
          return m_gxevent->processPhase3();
       }
       else
@@ -3077,7 +3098,7 @@ bool StIpCan1ProcessRules::processPhase2( bool success )
       setStatus( esFailed );
    }
 
-   Logger::gx().warn("\ncalling phase3 from %s %d ",__FUNCTION__,__LINE__);
+   Logger::gx().warn("calling phase3 from %s %d ",__FUNCTION__,__LINE__);
    return m_gxevent->processPhase3();
 }
 
