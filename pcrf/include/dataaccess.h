@@ -61,6 +61,7 @@ public:
    bool addEndpoint( const Endpoint &ep );
 
    bool addSession( GxSession &s );
+   void deleteSessionForce(const std::string &imsi, const std::string &apn);
    void deleteSession( GxSession &s );
    bool sessionExists( const char *imsi, const char *apn );
    bool sessionExists( const std::string &imsi, const std::string &apn ) { return sessionExists( imsi.c_str(), apn.c_str() ); }
@@ -71,6 +72,10 @@ public:
    bool addSubscriberApn( const char *imsi, const SubscriberApn &sa );
    bool addSubscriberApn( const std::string &imsi, const SubscriberApn &sa ) { return addSubscriberApn( imsi.c_str(), sa ); }
    void deleteSubscriber( const Subscriber &s );
+   void deleteSubscriber(const std::string &imsi, const std::string &apn);
+   void deleteSessionIP(const std::string &imsi, const std::string &apn);
+   void deleteSessionBearer(const std::string &imsi, const std::string &apn, uint32_t ebi);
+   void deleteSession(const std::string imsi, const std::string apn);
 
 private:
    void _concatenateRules( const RulesList &rules, std::string &str );

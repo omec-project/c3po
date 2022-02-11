@@ -1555,7 +1555,9 @@ void GxIpCan1::sendCCA()
 int GxIpCan1::cleanupSession( bool terminate )
 {
     Logger::gx().warn("%s:%d - terminate = %d ", __FUNCTION__,__LINE__, terminate);
-	// delete the Subscriber table which will internally delete SubscriberApn table.
+
+
+		// delete the Subscriber table which will internally delete SubscriberApn table.
 	GxSession* prevSession = NULL;
     if ( GxSessionMap::getInstance().findSession( getGxSession()->getImsi(), getGxSession()->getApn(), prevSession ) )
     {
@@ -1589,18 +1591,26 @@ int GxIpCan1::cleanupSession( bool terminate )
          Logger::gx().warn("Previous Session %p . Rules size after delete %d",prevSession, prevSession->getDefaultRuleList().size());
 
 	     Subscriber& subscriber = ( prevSession->getSubscriber() );
-		 getPCRF().dataaccess().deleteSubscriber( subscriber );
-	 
+         getPCRF().dataaccess().deleteSubscriber( subscriber );
+ 	 
     	 if ( getPCRF().dataaccess().sessionExists( prevSession->getImsi(), prevSession->getApn() ) )
     	 {
             getPCRF().dataaccess().deleteSession( *prevSession );
     	 }
-		 if( terminate == true )
+
+	     if( terminate == true )
 		 {
             Logger::gx().warn("Erasesession ***** %p", prevSession);
             GxSessionMap::getInstance().eraseSession( prevSession->getImsi(), prevSession->getApn() );
 		 }
-	 }
+	}
+    else if ( getPCRF().dataaccess().sessionExists( getGxSession()->getImsi(), getGxSession()->getApn() ) )
+    {
+        Logger::gx().warn("Session data not present in memory but in database imsi = %s", getGxSession()->getImsi().c_str());
+        getPCRF().dataaccess().deleteSessionForce(getGxSession()->getImsi(), getGxSession()->getApn());
+		getPCRF().dataaccess().deleteSubscriber( getGxSession()->getImsi(), getGxSession()->getApn());
+    }
+
      Logger::gx().warn("Return from %s",__FUNCTION__);
      return ValidateErrorCode::success;
 }
