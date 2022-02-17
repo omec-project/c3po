@@ -396,6 +396,13 @@ bool DataAccess::addSession( GxSession &s )
    return result;
 }
 
+void DataAccess::deleteSessionForce(const std::string &imsi, const std::string &apn)
+{
+      deleteSessionBearer( imsi, apn, 5);
+      deleteSessionIP(imsi, apn);
+      deleteSession(imsi,apn);
+}
+
 void DataAccess::deleteSession( GxSession &s )
 {
    for ( auto bearer : s.getBearers() )
@@ -477,6 +484,13 @@ void DataAccess::deleteSubscriber( const Subscriber &s )
    for ( auto const &pair : s.getApnPolicies() )
       _deleteSubscriberApn( s.getImsi().c_str(), pair.second->getApn().c_str() );
 }
+
+void DataAccess::deleteSubscriber( const std::string &imsi, const std::string &apn )
+{
+   _deleteSubscriber( imsi.c_str() );
+   _deleteSubscriberApn( imsi.c_str(), apn.c_str() );
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -592,6 +606,25 @@ bool DataAccess::_addSessionBearer( const std::string &imsi, const std::string &
    return result;
 }
 
+void DataAccess::deleteSession(const std::string imsi, const std::string apn)
+{
+   std::stringstream ss;
+
+   ss << "DELETE FROM session WHERE "
+      << "imsi = '" << imsi << "' AND "
+      << "apn = '" << apn << "'";
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+   {
+      Logger::system().error( "DataAccess::%s:%d - error %d executing [%s]",
+            __func__, __LINE__, future.errorCode(), ss.str().c_str() );
+   }
+}
+
 void DataAccess::_deleteSession( GxSession &s )
 {
    std::stringstream ss;
@@ -599,6 +632,25 @@ void DataAccess::_deleteSession( GxSession &s )
    ss << "DELETE FROM session WHERE "
       << "imsi = '" << s.getImsi() << "' AND "
       << "apn = '" << s.getApn() << "'";
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+   {
+      Logger::system().error( "DataAccess::%s:%d - error %d executing [%s]",
+            __func__, __LINE__, future.errorCode(), ss.str().c_str() );
+   }
+}
+
+void DataAccess::deleteSessionIP(const std::string &imsi, const std::string &apn )
+{
+   std::stringstream ss;
+
+   ss << "DELETE FROM session_ip WHERE "
+      << "imsi = '" << imsi << "' AND "
+      << "apn = '" << apn << "'";
 
    SCassStatement stmt( ss.str().c_str() );
 
@@ -619,6 +671,27 @@ void DataAccess::_deleteSessionIP( const std::string &ip, const std::string &ims
       << "ip = '" << ip << "' AND "
       << "imsi = '" << imsi << "' AND "
       << "apn = '" << apn << "'";
+
+   SCassStatement stmt( ss.str().c_str() );
+
+   SCassFuture future = m_db.execute( stmt );
+
+   if ( future.errorCode() != CASS_OK )
+   {
+      Logger::system().error( "DataAccess::%s:%d - error %d executing [%s]",
+            __func__, __LINE__, future.errorCode(), ss.str().c_str() );
+   }
+}
+
+void DataAccess::deleteSessionBearer( const std::string &imsi, const std::string &apn, uint32_t ebi )
+{
+   std::stringstream ss;
+
+   ss << "DELETE FROM session_bearer WHERE "
+      << "imsi = '" << imsi << "' AND "
+      << "apn = '" << apn << "' AND "
+      << "ebi = " << ebi;
+
 
    SCassStatement stmt( ss.str().c_str() );
 
