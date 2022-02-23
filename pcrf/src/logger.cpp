@@ -27,7 +27,7 @@ void Logger::_init( const char *app )
    m_sinks.push_back( std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>() );
    m_sinks[1]->set_level( spdlog::level::info );
 
-   if (Options::statlogFilename().length()) {
+   if (Options::logFilename().length()) {
      m_sinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::logFilename(), Options::logMaxSize() * 1024 * 1024, Options::logNumberFiles() ) );
      m_sinks[2]->set_level( spdlog::level::trace );
    }
