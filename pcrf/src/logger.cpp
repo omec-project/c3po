@@ -22,18 +22,25 @@ Logger *Logger::m_singleton = NULL;
 void Logger::_init( const char *app )
 {
    m_sinks.push_back( std::make_shared<spdlog::sinks::syslog_sink>() );
-   m_sinks.push_back( std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>() );
-   m_sinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::logFilename(), Options::logMaxSize() * 1024 * 1024, Options::logNumberFiles() ) );
-
    m_sinks[0]->set_level( spdlog::level::warn );
+
+   m_sinks.push_back( std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>() );
    m_sinks[1]->set_level( spdlog::level::info );
-   m_sinks[2]->set_level( spdlog::level::trace );
 
-   m_statsinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::statlogFilename(), Options::statlogMaxSize() * 1024 * 1024, Options::statlogNumberFiles() ) );
-   m_statsinks[0]->set_level( spdlog::level::info );
+   if (Options::statlogFilename().length()) {
+     m_sinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::logFilename(), Options::logMaxSize() * 1024 * 1024, Options::logNumberFiles() ) );
+     m_sinks[2]->set_level( spdlog::level::trace );
+   }
 
-   m_auditsinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::auditlogFilename(), Options::auditlogMaxSize() * 1024 * 1024, Options::statlogNumberFiles() ) );
-   m_statsinks[0]->set_level( spdlog::level::trace );
+   if(Options::statlogFilename().length()) {
+     m_statsinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::statlogFilename(), Options::statlogMaxSize() * 1024 * 1024, Options::statlogNumberFiles() ) );
+     m_statsinks[0]->set_level( spdlog::level::info );
+   }
+
+   if(Options::auditlogFilename().length()) {
+     m_auditsinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>( Options::auditlogFilename(), Options::auditlogMaxSize() * 1024 * 1024, Options::statlogNumberFiles() ) );
+     m_auditsinks[0]->set_level( spdlog::level::trace );
+   }
 
    std::stringstream ss;
    ss << "[%Y-%m-%dT%H:%M:%S.%e] [" << app << "] [%n] [%l] %v";
