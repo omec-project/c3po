@@ -8,10 +8,18 @@
     "gtwport" : 9080,
     "restport" : 9081,
     "ossport" : 9082,
-    "casssrv": "192.168.33.10",
+    "dbmstype" : "redis",
+    "redissrv" : "127.0.0.1",
+    "redisport" : 6379,
+    "redismaxconnections" : 8,
+    "redis_tls": false,
+    "redistlscert" : "/provisioned_certs/provisioned_ca_sign_cert.crt",
+    "redistlskey" : "/provisioned_certs/provisioned_priv_key.pem",
+    "redistlscacert" : "/provisioned_certs/provisioned_ca_cert.crt",
+    "casssrv": "127.0.0.1",
     "cassusr": "root",
     "casspwd": "root",
-    "cassdb" : "vhss",
+    "dbname" : "vhss",
     "casscoreconnections" : 2,
     "cassmaxconnections" : 8,
     "cassioqueuesize" : 32768,
@@ -33,7 +41,7 @@
     "numworkers": 4,
     "concurrent": 10,
     "ossfile": "conf/oss.json",
-    "verifyroamingsubscribers": true
+    "verifyroamingsubscribers": true,
     "prom_port": 9089
  }
 }

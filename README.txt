@@ -68,6 +68,11 @@ to your setup, such as an IP address
 2. Text enclosed in {} such as {installation_dir} requires a value of your 
 choice
 
+In addition to the above modules, refer the documentation in
+{installation_root}/docs/README.txt to configure HSS to use Redis as database
+and also execute HSS in an Intel-SGX based secured environment with the help
+of Graphene. 
+
 ============
 INSTALLATION 
 ============

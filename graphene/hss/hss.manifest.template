@@ -1,0 +1,291 @@
+# hss manifest file example
+#
+# This manifest was prepared and tested on Ubuntu 18.04.
+
+################################## GRAPHENE ###################################
+
+# LibOS layer library of Graphene. There is currently only one implementation,
+# so it is always set to libsysdb.so. Note that GRAPHENEDIR macro is expanded
+# to relative path to Graphene repository in the Makefile as part of the
+# build process.
+loader.preload = "file:$(GRAPHENEDIR)/Runtime/libsysdb.so"
+libos.entrypoint = "file:../../hss/bin/hss"
+
+# Verbosity of Graphene debug log (none/error/warning/debug/trace/all). Note
+# that GRAPHENE_LOG_LEVEL macro is expanded in the Makefile as part of the
+# building process: the default is "error" for non-debug builds, and "debug"
+# for debug builds.
+loader.log_level = "$(GRAPHENE_LOG_LEVEL)"
+
+################################# ARGUMENTS ###################################
+
+# Read application arguments directly from the command line. Don't use this on production!
+loader.insecure__use_cmdline_argv = 1
+
+################################# ENV VARS ####################################
+
+# Specify paths to search for libraries. The usual LD_LIBRARY_PATH syntax
+# applies. Paths must be in-Graphene visible paths, not host-OS paths (i.e.,
+# paths must be taken from fs.mount.xxx.path, not fs.mount.xxx.uri).
+#
+# - /lib is searched for Glibc libraries (ld, libc, libpthread)
+# - $(ARCH_LIBDIR) is searched for Name Service Switch (NSS) libraries
+loader.env.LD_LIBRARY_PATH = "/lib:$(ARCH_LIBDIR):/usr/$(ARCH_LIBDIR):/usr/local/lib:/usr/local$(ARCH_LIBDIR)"
+
+
+####################### SECURED CERTIFICATE PROVISIONING ######################
+
+# Secret Provisioning library (client-side) is preloaded
+#loader.env.LD_PRELOAD = "./libcert_prov_attest.so"
+
+#loader.env.SECRET_PROVISION_CONSTRUCTOR = "1"
+#loader.env.SECRET_PROVISION_CA_CHAIN_PATH = "conf/test-ca-sha256.crt"
+#loader.env.SECRET_PROVISION_SERVERS = "dummyserver:80;localhost:4433;anotherdummy:4433"
+#loader.env.SECRET_PROVISION_PUB_PRIV_KEY_COMBINED = "false"
+#loader.env.SECRET_PROVISION_SUBJECT_NAME = "CN=securedhss.com,O=Secured HSS Ltd,C=UK"
+#loader.env.VERIFIER_PROVISIONED_CERT_DIR = "$(VERIFIER_PROVISIONED_CERT_DIR)"
+
+# Request remote attestation functionality from Graphene
+#sgx.remote_attestation = 1
+
+# Hints DCAP based remote attestation
+#sgx.ra_client_spid = ""
+
+# "tmpfs" ensures that the provisioned secrets are not visible outside the 
+# Graphene instance.
+#fs.mount.provisionedcerts.type = "tmpfs"
+#fs.mount.provisionedcerts.path = "$(VERIFIER_PROVISIONED_CERT_DIR)"
+#host uri is ignored when the file system type is tmpfs
+#fs.mount.provisionedcerts.uri = ""
+
+#sgx.trusted_files.libcertprovattest = "file:./libcert_prov_attest.so"
+#sgx.trusted_files.cachain = "file:conf/test-ca-sha256.crt"
+
+################################# MOUNT FS  ###################################
+
+# General notes:
+# - There is only one supported type of mount points: 'chroot'.
+# - Directory names are (somewhat confusingly) prepended by 'file:'.
+# - Names of mount entries (lib, lib2, lib3) are irrelevant but must be unique.
+# - In-Graphene visible path names may be arbitrary but we reuse host-OS URIs
+#   for simplicity (except for the first 'lib' case).
+
+# Mount host-OS directory to Graphene glibc/runtime libraries (in 'uri') into
+# in-Graphene visible directory /lib (in 'path'). Note that GRAPHENEDIR macro
+# is expanded to relative path to Graphene repository in the Makefile as part
+# of the build process.
+fs.mount.lib.type = "chroot"
+fs.mount.lib.path = "/lib"
+fs.mount.lib.uri = "file:$(GRAPHENEDIR)/Runtime"
+
+# Mount host-OS directory to Name Service Switch (NSS) libraries (in 'uri')
+# into in-Graphene visible directory /lib/x86_64-linux-gnu (in 'path').
+fs.mount.lib2.type = "chroot"
+fs.mount.lib2.path = "$(ARCH_LIBDIR)"
+fs.mount.lib2.uri = "file:$(ARCH_LIBDIR)"
+
+fs.mount.lib3.type = "chroot"
+fs.mount.lib3.path = "/usr/$(ARCH_LIBDIR)"
+fs.mount.lib3.uri = "file:/usr/$(ARCH_LIBDIR)"
+
+fs.mount.lib4.type = "chroot"
+fs.mount.lib4.path = "/usr/local/lib"
+fs.mount.lib4.uri = "file:/usr/local/lib"
+
+fs.mount.lib5.type = "chroot"
+fs.mount.lib5.path = "/usr/local$(ARCH_LIBDIR)"
+fs.mount.lib5.uri = "file:/usr/local$(ARCH_LIBDIR)"
+
+# Mount host-OS directory to NSS files required by Glibc + NSS libs (in 'uri')
+# into in-Graphene visible directory /etc (in 'path').
+fs.mount.etc.type = "chroot"
+fs.mount.etc.path = "/etc"
+fs.mount.etc.uri = "file:/etc"
+
+
+
+############################### SGX: GENERAL ##################################
+
+sys.insecure__allow_eventfd = 1
+
+# Allow for injecting SIGTERM signal from the host.
+sys.enable_sigterm_injection = 1
+
+# Set enclave size (somewhat arbitrarily) to 8G. Recall that SGX v1 requires
+# to specify enclave size at enclave creation time. If hss exhausts these
+# 8G then it will start failing with random errors. Greater enclave sizes
+# result in longer startup times, smaller enclave sizes are not enough for
+# typical hss workloads.
+sgx.enclave_size = "8G"
+
+# Set maximum number of in-enclave threads (somewhat arbitrarily) to 60. Recall
+# that SGX v1 requires to specify the maximum number of simulteneous threads at
+# enclave creation time.
+#
+# Note that internally Graphene may spawn two additional threads, one for IPC
+# and one for asynchronous events/alarms. hss spawns approximately 54 threads.
+# Much of them are required for the Diameter framework and can be slightly 
+# decreased or increased based on the AppServThreads in hss.conf and numworkers
+# in hss.json.
+sgx.thread_num = 60
+
+# To enable exitless feature add the number of RPC threads.
+#sgx.rpc_thread_num = 60
+
+# To enable SGX enclave stats set following parameter to 1.
+#sgx.enable_stats = 1
+
+
+############################# SGX: TRUSTED FILES ###############################
+
+# Specify all files used by hss and its dependencies (including all
+# libraries which can be loaded at runtime via dlopen). The paths to libraries
+# are host-OS paths. These files will be searched for in in-Graphene visible
+# paths according to mount points above.
+#
+# As part of the build process, Graphene-SGX script (`pal-sgx-sign`) finds each
+# specified files, measures its hash, and outputs the hash in auto-generated
+# entry 'sgx.trusted_checksum.xxx' in auto-generated hss.manifest.sgx.
+# Note that this happens on the developer machine.
+#
+# At runtime, during loading of each "trusted file", Graphene-SGX measures its hash
+# and compares with the one specified in 'sgx.trusted_checksum.xxx'. If hashes
+# match, this library is trusted and allowed to be loaded and used. Note that
+# this happens on the client machine.
+
+sgx.trusted_files.hss = "file:../../hss/bin/hss"
+
+# Glibc libraries. ld, libc, libm, libdl, librt provide common functionality;
+#
+sgx.trusted_files.ld = "file:$(GRAPHENEDIR)/Runtime/ld-linux-x86-64.so.2"
+sgx.trusted_files.libc = "file:$(GRAPHENEDIR)/Runtime/libc.so.6"
+sgx.trusted_files.libm = "file:$(GRAPHENEDIR)/Runtime/libm.so.6"
+sgx.trusted_files.libdl = "file:$(GRAPHENEDIR)/Runtime/libdl.so.2"
+sgx.trusted_files.librt = "file:$(GRAPHENEDIR)/Runtime/librt.so.1"
+sgx.trusted_files.libpthread = "file:$(GRAPHENEDIR)/Runtime/libpthread.so.0"
+sgx.trusted_files.libdnssdns = "file:$(GRAPHENEDIR)/Runtime/libnss_dns.so.2"
+sgx.trusted_files.libresolv = "file:$(GRAPHENEDIR)/Runtime/libresolv.so.2"
+
+sgx.trusted_files.libstdcpp = "file:/usr/$(ARCH_LIBDIR)/libstdc++.so.6"
+sgx.trusted_files.libgccs = "file:$(ARCH_LIBDIR)/libgcc_s.so.1"
+sgx.trusted_files.libuv = "file:/usr/$(ARCH_LIBDIR)/libuv.so.1"
+sgx.trusted_files.libssl = "file:/usr/$(ARCH_LIBDIR)/libssl.so.1.0.0"
+sgx.trusted_files.libcrypto = "file:/usr/$(ARCH_LIBDIR)/libcrypto.so.1.0.0"
+sgx.trusted_files.libgnutls = "file:/usr/$(ARCH_LIBDIR)/libgnutls.so.30"
+sgx.trusted_files.libidn = "file:$(ARCH_LIBDIR)/libidn.so.11"
+sgx.trusted_files.libz = "file:$(ARCH_LIBDIR)/libz.so.1"
+sgx.trusted_files.libp11kit = "file:/usr/$(ARCH_LIBDIR)/libp11-kit.so.0"
+sgx.trusted_files.libidn2 = "file:/usr/$(ARCH_LIBDIR)/libidn2.so.0"
+sgx.trusted_files.libunistring = "file:/usr/$(ARCH_LIBDIR)/libunistring.so.2"
+sgx.trusted_files.libtasn1 = "file:/usr/$(ARCH_LIBDIR)/libtasn1.so.6"
+sgx.trusted_files.libhogweed = "file:/usr/$(ARCH_LIBDIR)/libhogweed.so.4"
+sgx.trusted_files.libffi = "file:/usr/$(ARCH_LIBDIR)/libffi.so.6"
+
+
+# Name Service Switch (NSS) libraries. Glibc calls these libraries as part of
+# name-service information gathering. libnss_{compat,files,nis} are the
+# most widely used libraries, at least on Ubuntu.
+# For more info, see 'man nsswitch.conf'.
+sgx.trusted_files.libnsscompat = "file:$(ARCH_LIBDIR)/libnss_compat.so.2"
+sgx.trusted_files.libnssfiles = "file:$(ARCH_LIBDIR)/libnss_files.so.2"
+sgx.trusted_files.libnssnis = "file:$(ARCH_LIBDIR)/libnss_nis.so.2"
+
+# libNSL is a dependency of libnss_compat above. It is a good example of nested
+# library dependencies required by Graphene-SGX.
+sgx.trusted_files.libnsl = "file:$(ARCH_LIBDIR)/libnsl.so.1"
+
+# Additional dependant libraries for hss
+sgx.trusted_files.libcassandra = "file:/usr/local$(ARCH_LIBDIR)/libcassandra.so.2"
+sgx.trusted_files.libredis = "file:/usr/local/lib/libredis++.so"
+sgx.trusted_files.libhiredis = "file:/usr/local/lib/libhiredis.so.1.0.1-dev"
+sgx.trusted_files.libhiredis_ssl = "file:/usr/local/lib/libhiredis_ssl.so.1.0.1-dev"
+sgx.trusted_files.libfdcore = "file:/usr/local/lib/libfdcore.so.6"
+sgx.trusted_files.libfdproto = "file:/usr/local/lib/libfdproto.so.6"
+sgx.trusted_files.libgmp = "file:/usr/$(ARCH_LIBDIR)/libgmp.so.10"
+sgx.trusted_files.libnettle = "file:/usr/$(ARCH_LIBDIR)/libnettle.so.6"
+sgx.trusted_files.libprometheuscpppull = "file:/usr/local/lib/libprometheus-cpp-pull.so.0.9"
+sgx.trusted_files.libprometheuscppcore = "file:/usr/local/lib/libprometheus-cpp-core.so.0.9"
+sgx.trusted_files.libsystemd = "file:$(ARCH_LIBDIR)/libsystemd.so.0"
+sgx.trusted_files.liblzma = "file:$(ARCH_LIBDIR)/liblzma.so.5"
+sgx.trusted_files.libgcrypt = "file:$(ARCH_LIBDIR)/libgcrypt.so.20"
+sgx.trusted_files.libgpgerror = "file:$(ARCH_LIBDIR)/libgpg-error.so.0"
+sgx.trusted_files.liblz4 = "file:/usr/$(ARCH_LIBDIR)/liblz4.so.1"
+sgx.trusted_files.libnssmdns4min = "file:$(ARCH_LIBDIR)/libnss_mdns4_minimal.so.2"
+sgx.trusted_files.libnssmyhostname = "file:$(ARCH_LIBDIR)/libnss_myhostname.so.2"
+
+sgx.trusted_files.acl_wl = "file:/usr/local/lib/freeDiameter/acl_wl.fdx"
+sgx.trusted_files.dict_3gpp2_avps = "file:/usr/local/lib/freeDiameter/dict_3gpp2_avps.fdx"
+sgx.trusted_files.dict_draftload_avps = "file:/usr/local/lib/freeDiameter/dict_draftload_avps.fdx"
+sgx.trusted_files.dict_etsi283034_avps = "file:/usr/local/lib/freeDiameter/dict_etsi283034_avps.fdx"
+sgx.trusted_files.dict_rfc4004_avps = "file:/usr/local/lib/freeDiameter/dict_rfc4004_avps.fdx"
+sgx.trusted_files.dict_rfc4006bis_avps = "file:/usr/local/lib/freeDiameter/dict_rfc4006bis_avps.fdx"
+sgx.trusted_files.dict_rfc4072_avps = "file:/usr/local/lib/freeDiameter/dict_rfc4072_avps.fdx"
+sgx.trusted_files.dict_rfc4590_avps = "file:/usr/local/lib/freeDiameter/dict_rfc4590_avps.fdx"
+sgx.trusted_files.dict_rfc5447_avps = "file:/usr/local/lib/freeDiameter/dict_rfc5447_avps.fdx"
+sgx.trusted_files.dict_rfc5580_avps = "file:/usr/local/lib/freeDiameter/dict_rfc5580_avps.fdx"
+sgx.trusted_files.dict_rfc5777_avps = "file:/usr/local/lib/freeDiameter/dict_rfc5777_avps.fdx"
+sgx.trusted_files.dict_rfc5778_avps = "file:/usr/local/lib/freeDiameter/dict_rfc5778_avps.fdx"
+sgx.trusted_files.dict_rfc6734_avps = "file:/usr/local/lib/freeDiameter/dict_rfc6734_avps.fdx"
+sgx.trusted_files.dict_rfc6942_avps = "file:/usr/local/lib/freeDiameter/dict_rfc6942_avps.fdx"
+sgx.trusted_files.dict_rfc7155_avps = "file:/usr/local/lib/freeDiameter/dict_rfc7155_avps.fdx"
+sgx.trusted_files.dict_rfc7683_avps = "file:/usr/local/lib/freeDiameter/dict_rfc7683_avps.fdx"
+sgx.trusted_files.dict_rfc7944_avps = "file:/usr/local/lib/freeDiameter/dict_rfc7944_avps.fdx"
+sgx.trusted_files.dict_ts29061_avps = "file:/usr/local/lib/freeDiameter/dict_ts29061_avps.fdx"
+sgx.trusted_files.dict_ts29128_avps = "file:/usr/local/lib/freeDiameter/dict_ts29128_avps.fdx"
+sgx.trusted_files.dict_ts29154_avps = "file:/usr/local/lib/freeDiameter/dict_ts29154_avps.fdx"
+sgx.trusted_files.dict_ts29173_avps = "file:/usr/local/lib/freeDiameter/dict_ts29173_avps.fdx"
+sgx.trusted_files.dict_ts29212_avps = "file:/usr/local/lib/freeDiameter/dict_ts29212_avps.fdx"
+sgx.trusted_files.dict_ts29214_avps = "file:/usr/local/lib/freeDiameter/dict_ts29214_avps.fdx"
+sgx.trusted_files.dict_ts29215_avps = "file:/usr/local/lib/freeDiameter/dict_ts29215_avps.fdx"
+sgx.trusted_files.dict_ts29217_avps = "file:/usr/local/lib/freeDiameter/dict_ts29217_avps.fdx"
+sgx.trusted_files.dict_ts29229_avps = "file:/usr/local/lib/freeDiameter/dict_ts29229_avps.fdx"
+sgx.trusted_files.dict_ts29272_avps = "file:/usr/local/lib/freeDiameter/dict_ts29272_avps.fdx"
+sgx.trusted_files.dict_ts29273_avps = "file:/usr/local/lib/freeDiameter/dict_ts29273_avps.fdx"
+sgx.trusted_files.dict_ts29329_avps = "file:/usr/local/lib/freeDiameter/dict_ts29329_avps.fdx"
+sgx.trusted_files.dict_ts29336_avps = "file:/usr/local/lib/freeDiameter/dict_ts29336_avps.fdx"
+sgx.trusted_files.dict_ts29337_avps = "file:/usr/local/lib/freeDiameter/dict_ts29337_avps.fdx"
+sgx.trusted_files.dict_ts29338_avps = "file:/usr/local/lib/freeDiameter/dict_ts29338_avps.fdx"
+sgx.trusted_files.dict_ts29343_avps = "file:/usr/local/lib/freeDiameter/dict_ts29343_avps.fdx"
+sgx.trusted_files.dict_ts29344_avps = "file:/usr/local/lib/freeDiameter/dict_ts29344_avps.fdx"
+sgx.trusted_files.dict_ts29345_avps = "file:/usr/local/lib/freeDiameter/dict_ts29345_avps.fdx"
+sgx.trusted_files.dict_ts29368_avps = "file:/usr/local/lib/freeDiameter/dict_ts29368_avps.fdx"
+sgx.trusted_files.dict_ts29468_avps = "file:/usr/local/lib/freeDiameter/dict_ts29468_avps.fdx"
+sgx.trusted_files.dict_ts32299_avps = "file:/usr/local/lib/freeDiameter/dict_ts32299_avps.fdx"
+sgx.trusted_files.dict_S6as6d = "file:/usr/local/lib/freeDiameter/dict_S6as6d.fdx"
+sgx.trusted_files.dict_S6t = "file:/usr/local/lib/freeDiameter/dict_S6t.fdx"
+sgx.trusted_files.dict_S6c = "file:/usr/local/lib/freeDiameter/dict_S6c.fdx"
+#sgx.trusted_files.dict_rfc4006bis_avps = "file:/usr/local/lib/freeDiameter/dict_rfc4006bis_avps.fdx"
+#sgx.trusted_files.dict_rfc4006bis_avps = "file:/usr/local/lib/freeDiameter/dict_rfc4006bis_avps.fdx"
+
+# Trusted no-library files include configuration files, read-only files, and
+# other static files. It is useful to specify such files here to make sure
+# they are not maliciously modified (modifications will be detected as hash
+# mismatch by Graphene-SGX).
+#
+# hss config file
+sgx.trusted_files.hssjson = "file:conf/hss.json"
+sgx.trusted_files.hssconf = "file:conf/hss.conf"
+sgx.trusted_files.aclconf = "file:conf/acl.conf"
+sgx.trusted_files.hsscertpem = "file:conf/hss.cert.pem"
+sgx.trusted_files.hsskeypem = "file:conf/hss.key.pem"
+sgx.trusted_files.cacertpem = "file:conf/cacert.pem"
+
+############################# SGX: ALLOWED FILES ###############################
+
+# Specify all non-static files used by app. These files may be accessed by
+# Graphene-SGX but their integrity is not verified (Graphene-SGX does not
+# measure their hashes). This may pose a security risk!
+
+# Name Service Switch (NSS) files. Glibc reads these files as part of name-
+# service information gathering. For more info, see 'man nsswitch.conf'.
+sgx.allowed_files.nsswitch = "file:/etc/nsswitch.conf"
+sgx.allowed_files.ethers = "file:/etc/ethers"
+sgx.allowed_files.hosts = "file:/etc/hosts"
+sgx.allowed_files.hostconf = "file:/etc/host.conf"
+sgx.allowed_files.resolvconf = "file:/etc/resolv.conf"
+sgx.allowed_files.group = "file:/etc/group"
+sgx.allowed_files.passwd = "file:/etc/passwd"
+
+# getaddrinfo(3) configuration file. Glibc reads this file to correctly find
+# network addresses. For more info, see 'man gai.conf'.
+sgx.allowed_files.gaiconf = "file:/etc/gai.conf"

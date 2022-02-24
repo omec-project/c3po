@@ -1,0 +1,58 @@
+--------------------------------------------------------------------------------
+This document provide steps to integrate Graphene Secured Certificate 
+Provisioning flow with Redis
+--------------------------------------------------------------------------------
+
+
+Prerequisites: 
+    1) Ensure that the steps mentioned in section A to E from the file 
+       3_0_integrating_secured_cert_prov_with_hss.txt are already performed.
+    2) The local CA and Secured Certificate Provisioning Server (Veririfer) is 
+       already up and running. 
+    
+
+Integrating the Secured Certificate Provisioning flow with Redis
+    
+    1] cd <Graphene repository>/Examples/redis/
+    
+        Note: The above Graphene repository should have the support for the
+        Secured Certificate Provisioning flow. Refer section A of 
+        3_0_integrating_secured_cert_prov_with_hss.txt file.
+    
+    2] Copy test CA certs from Graphene directory
+        
+        $ cp ../ra-tls-secret-prov/certs/test-ca-sha256.crt .
+    
+    3] Copy Secured Certificate Provisioning library.
+      
+        $ cp ../../Pal/src/host/Linux-SGX/tools/ra-tls/libcert_prov_attest.so .
+          
+    4] Open redis-server.manifest.template
+    
+        Refer section G(Annex A) section of 3_0_integrating_secured_cert_prov_with_hss.txt
+        file to set directives that enable the certificate provisioning feature.
+          
+    5] Open src/redis.conf and set the following options
+    
+        1) tls-cert-file    : "/provisioned_certs/provisioned_ca_sign_cert.crt"
+        2) tls-key-file"    : "/provisioned_certs/provisioned_priv_key.pem"	
+        3) tls-ca-cert-file : "/provisioned_certs/provisioned_ca_cert.crt"
+             
+      
+    6] Building Redis Server
+
+        $ make clean
+        
+            note : if Redis server was previously built without TLS enabled then
+            run "$ make distclean" instead of "$ make clean"
+    
+        $ make SGX=1 BUILD_TLS=yes
+    
+    7] Running Redis Server inside Graphene with the Secured Certificate 
+      Provisioning Flow
+      
+        $ SGX=1 ./pal_loader ./redis-server src/redis.conf --tls-port 6379 --port 0  --save '' --protected-mode no
+    
+        Note: The client side Secured Certificate Provisioning flow will be 
+        executed as a part of the preloaded libcert_prov_attest.so library before
+        the Redis server is launched.

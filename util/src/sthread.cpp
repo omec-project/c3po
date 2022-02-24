@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -247,6 +248,11 @@ void SEventThread::initTimer( SEventThread::Timer &t )
    t.init( this );
 }
 
+void SEventThread::initSimulatedTimer( SEventThread::Timer &t )
+{
+   t.initTimerSimulationThread( this );
+}
+
 void SEventThread::onInit()
 {
 }
@@ -319,6 +325,7 @@ SEventThread::Timer::Timer()
    m_oneshot = true;
 
    m_timer = NULL;
+   m_isSimulatedTimerRunning = false;
 }
 
 SEventThread::Timer::Timer(long milliseconds, bool oneshot)
@@ -330,6 +337,7 @@ SEventThread::Timer::Timer(long milliseconds, bool oneshot)
    m_oneshot = oneshot;
 
    m_timer = NULL;
+   m_isSimulatedTimerRunning = false;
 }
 
 SEventThread::Timer::~Timer()
@@ -359,6 +367,8 @@ void SEventThread::Timer::destroy()
       timer_delete(m_timer);
       m_timer = NULL;
    }
+
+   m_isSimulatedTimerRunning = false;
 }
 
 void SEventThread::Timer::start()
@@ -419,4 +429,29 @@ void SEventThread::TimerHandler::init()
 void SEventThread::TimerHandler::uninit()
 {
 //std::cout << "SEventThread::TimerHandler::uninit()" << std::endl;
+}
+
+
+
+void SEventThread::Timer::initTimerSimulationThread(SEventThread* pThread)
+{
+   m_thread = pThread;
+   m_isSimulatedTimerRunning = true;
+
+   if (pthread_create(&m_timerSimulationThreadId, NULL, _timerSimulationThreadProc, (void *)this) != 0)
+       SError::throwRuntimeExceptionWithErrno("Error initializing thread");
+}
+
+void *SEventThread::Timer::_timerSimulationThreadProc(void *arg)
+{
+
+   SEventThread::Timer* pTimer = (SEventThread::Timer*)arg;
+   if (pTimer)
+   {
+		while(pTimer->isSimulatedTimerRunning())
+		{
+			 pTimer->m_thread->postMessage( new STimerMessage( pTimer ) );
+			 sleep(pTimer->getInterval());
+		}
+	}
 }

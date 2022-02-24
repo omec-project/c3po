@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 # Copyright 2019-present Open Networking Foundation
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2019 Intel Corporation
@@ -22,11 +23,11 @@ install_pkg_deps() {
 		g++ \
 		gcc \
 		libgcrypt-dev \
-		libgnutls-dev \
+		libgnutls28-dev \
 		libidn11-dev \
 		libmemcached-dev \
 		libsctp-dev \
-		libssl-dev \
+		libssl1.0-dev \
 		libtool-bin \
 		libuv1-dev \
 		m4 \

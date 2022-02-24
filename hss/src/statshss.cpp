@@ -1,4 +1,5 @@
 /*
+* Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 * Copyright 2019-present Open Networking Foundation
 * Copyright (c) 2017 Sprint
 *
@@ -88,6 +89,11 @@ StatsHss::StatsHss()
 }
 
 StatsHss::~StatsHss() {
+}
+
+void StatsHss::onInit()
+{
+   onInitUsingSimulatedTimer();
 }
 
 void StatsHss::getSerializedStat(std::string& stats){

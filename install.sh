@@ -1,4 +1,5 @@
 #! /bin/bash
+# Copyright (c) 2021  Great Software Laboratory Pvt. Ltd
 # Copyright 2019-present Open Networking Foundation
 
 #Copyright (c) 2017 Sprint
@@ -45,7 +46,7 @@ setup_env()
   case "$OSDIST" in
     Ubuntu)
       case "$OSVER" in
-        14.04|16.04) echo "$OSDIST version $OSVER is supported." ;;
+        14.04|16.04|18.04) echo "$OSDIST version $OSVER is supported." ;;
         *) echo "$OSDIST version $OSVER is unsupported." ; exit;;
       esac
       ;;
@@ -101,6 +102,11 @@ step_2()
           FUNC[2]="install_libs"
           CPLT[2]=$INSTALL_LIBS_COMPLETE
           ;;
+        18.04)
+          TEXT[2]="Download packages"
+          FUNC[2]="install_libs"
+          CPLT[2]=$INSTALL_LIBS_COMPLETE
+          ;;
         *) echo "$OSDIST version $OSVER is unsupported." ; exit;;
       esac
       ;;
@@ -128,6 +134,11 @@ get_agreement_download()
           echo "gcc g++ make cmake libuv-dev libssl-dev autotools-dev libtool-bin"
           echo "m4 automake libmemcached-dev memcached cmake-curses-gui gcc bison"
           echo "flex libsctp-dev libgnutls-dev libgcrypt-dev libidn11-dev nettle-dev"
+          ;;
+        18.04)
+          echo "gcc g++ make cmake libuv-dev libssl1.0-dev autotools-dev libtool-bin"
+          echo "m4 automake libmemcached-dev memcached cmake-curses-gui gcc bison"
+          echo "flex libsctp-dev libgnutls28-dev libgcrypt-dev libidn11-dev nettle-dev"
           ;;
         *) echo "$OSDIST version $OSVER is unsupported." ; exit;;
       esac
@@ -210,6 +221,7 @@ install_libs()
       case "$OSVER" in
         14.04) sudo apt-get install libuv-dev libssl-dev automake libmemcached-dev memcached gcc bison flex libsctp-dev libgnutls-dev libgcrypt-dev libidn11-dev nettle-dev ;;
         16.04) sudo apt-get install g++ make cmake libuv-dev libssl-dev autotools-dev libtool-bin m4 automake libmemcached-dev memcached cmake-curses-gui gcc bison flex libsctp-dev libgnutls-dev libgcrypt-dev libidn11-dev nettle-dev ;;
+        18.04) sudo apt-get install g++ make cmake libuv-dev libssl1.0-dev autotools-dev libtool-bin m4 automake libmemcached-dev memcached cmake-curses-gui gcc bison flex libsctp-dev libgnutls28-dev libgcrypt-dev libidn11-dev nettle-dev ;;
         *) echo "$OSDIST version $OSVER is unsupported." ; exit;;
       esac
       ;;
@@ -253,6 +265,8 @@ init_submodules()
   build_cpp_driver
   build_pistache
   build_rapidjson
+  build_hiredis
+  build_redis_plus_plus
   sudo ldconfig
 
   INIT_SUBMODULES_COMPLETE="- COMPLETE"
@@ -325,6 +339,31 @@ build_rapidjson() {
   popd
 }
 
+build_hiredis() {
+	echo "Installing hiredis"
+	pushd modules/hiredis
+  rm -rf build
+	mkdir -p build
+  cd build
+	cmake ..
+	make USE_SSL=1
+	sudo make USE_SSL=1 install
+  popd
+}
+
+build_redis_plus_plus() {
+	echo "Installing redis-plus-plus"
+	pushd modules/redis-plus-plus
+  rm -rf build
+	mkdir -p build
+  cd build
+	cmake -DREDIS_PLUS_PLUS_BUILD_TEST=OFF -DREDIS_PLUS_PLUS_USE_TLS=ON ..
+	make
+	sudo make install
+  popd
+}
+
+
 ################################################################################
 
 step_4()
@@ -334,6 +373,12 @@ step_4()
   TEXT[1]="Build all C3PO components"
   FUNC[1]="build_c3po"
   CPLT[1]=$BUILD_C3PO_COMPLETE
+
+
+  TEXT[2]="Build HSS ON GRAPHENE SGX"
+  FUNC[2]="build_hss_on_graphene_sgx"
+  CPLT[2]=$BUILD_HSS_COMPLETE_ON_GRAPHENE_SGX
+
 }
 
 build_c3po()
@@ -344,6 +389,15 @@ build_c3po()
   BUILD_C3PO_COMPLETE="- COMPLETE"
 }
 
+build_hss_on_graphene_sgx()
+{
+	pushd graphene/hss
+	make clean -f hss.Makefile
+  	make SGX=1 -f hss.Makefile
+	popd
+
+  BUILD_HSS_COMPLETE_ON_GRAPHENE_SGX="- COMPLETE"
+}
 ################################################################################
 
 SETUP_PROXY="setup_http_proxy"

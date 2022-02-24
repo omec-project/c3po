@@ -26,6 +26,9 @@ LIBS := \
  $(ROOT)/hsssec/lib/libhsssec.a \
  -l:libpistache.a \
  -lcassandra \
+ -lredis++ \
+ -lhiredis \
+ -lhiredis_ssl \
  -lfdcore \
  -lfdproto \
  -lgmp \
