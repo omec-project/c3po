@@ -1,6 +1,6 @@
 C3PO Core applications build, installation, provisioning and run guide.
 
-About this README
+About this README:
 
 This README contains the instructions to build, install, and configure the 
 core C3PO modules and all dependent external projects, and the Cassandra 
